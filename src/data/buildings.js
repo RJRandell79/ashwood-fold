@@ -73,10 +73,19 @@ export const BUILDINGS = {
               place: { line: 'railway', centre: 3 } },
 };
 
-// Names for cottages built as the village grows, in the order they are used.
-export const COTTAGE_NAMES = ['Market Row Cottage', 'Lane End Cottage', 'Brook Cottage', 'Fold Cottage', 'Brow Cottage', 'Clough Cottage',
-  'Hollin Cottage', 'Ing Cottage', 'Moss Cottage', 'Intack Cottage', 'Holme Cottage', 'Ash Cottage', 'Withy Cottage', 'Rake Cottage'];
-// Household colours for those cottages.
+// Housing for the named cast. About 30 people are simulated in full (decided 27 Oct), which needs
+// at most about 16 homes; homes are built only when someone needs one, and never beyond this.
+// Everyone else will live as townsfolk groups in terrace blocks (Phase 4).
+export const MAX_HOMES = 16;
+
+// Cottage names are built from old Lancashire field and place-name words, in an order set by the valley.
+// The first two match the plots of the v5 village, so old saves keep their names.
+export const COTTAGE_FIRST = ['Market Row', 'Lane End'];
+export const NAME_PARTS = ['Brook', 'Fold', 'Brow', 'Clough', 'Hollin', 'Ing', 'Moss', 'Intack', 'Holme', 'Ash', 'Withy', 'Rake',
+  'Croft', 'Carr', 'Lea', 'Heys', 'Shaw', 'Height', 'Bank', 'Nook', 'Laithe', 'Gill', 'Royd', 'Hey Top', 'Mill Brow', 'Well'];
+// A house built in the cottage or mill years is a cottage; later ones are houses.
+export const HOUSE_WORD = era => (era <= 1 ? 'Cottage' : 'House');
+// Household colours for new homes.
 export const COTTAGE_HUES = [240, 95, 330, 20, 160, 265, 60, 190, 300, 120, 0, 220, 80, 350];
 
 // Long works that cut across the valley, routed along a contour when their idea is built.

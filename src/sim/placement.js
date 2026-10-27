@@ -1,11 +1,11 @@
 // Where buildings go. The game, not the player, chooses every site: each candidate plot is
 // scored against the building's placement rules (src/data/buildings.js) on the valley terrain.
 // Placement is deterministic: no draws from the simulation's dice, ties go to the first plot found.
-import { BUILDINGS, COTTAGE_HUES, COTTAGE_NAMES, LINES, STYLED_ARCHETYPES } from '../data/buildings.js';
+import { BUILDINGS, COTTAGE_FIRST, COTTAGE_HUES, HOUSE_WORD, LINES, MAX_HOMES, NAME_PARTS, STYLED_ARCHETYPES } from '../data/buildings.js';
 import { ERA_STYLES } from '../data/styles.js';
 import { effect } from './effects.js';
 import { log } from './log.js';
-import { valley } from './valley.js';
+import { noise, valley } from './valley.js';
 import { household, isAdult, N, P, PN, S } from './state.js';
 
 const MARGIN = 1; // clear cells kept around every building, so lanes run between them
@@ -144,14 +144,22 @@ export function placeFounding() {
   for (const id of ids) addPlace(id);
 }
 
-export const cottagesLeft = () => (S.cottages || 0) < COTTAGE_NAMES.length;
+/** True while another home may be built: homes are capped for the named cast (MAX_HOMES). */
+export const cottagesLeft = () => Object.values(P).filter(p => p.home).length < MAX_HOMES;
 
-/** A new cottage for a growing village. Returns its id, or null when no names or plots are left. */
+/** The name of the n-th cottage built (0-based), in an order set by the valley's seed. */
+export function cottageName(n, era = S.era || 0) {
+  if (n < COTTAGE_FIRST.length) return `${COTTAGE_FIRST[n]} Cottage`;
+  const order = NAME_PARTS.map((w, i) => [noise(i * 3.7 + 0.5, 11.5, S.valley.seed), w]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+  const k = n - COTTAGE_FIRST.length, part = order[k % order.length], again = Math.floor(k / order.length);
+  return `${part} ${HOUSE_WORD(era)}${again ? ' ' + ['', 'Two', 'Three', 'Four'][again] : ''}`;
+}
+
+/** A new cottage for a growing village. Returns its id, or null when housing is full or no plot fits. */
 export function buildCottage() {
-  const n = S.cottages || 0;
-  if (n >= COTTAGE_NAMES.length) return null;
-  const id = `cottage${n + 1}`;
-  const p = addPlace(id, 'cottage', { name: COTTAGE_NAMES[n], hue: COTTAGE_HUES[n % COTTAGE_HUES.length] });
+  if (!cottagesLeft()) return null;
+  const n = S.cottages || 0, id = `cottage${n + 1}`;
+  const p = addPlace(id, 'cottage', { name: cottageName(n), hue: COTTAGE_HUES[n % COTTAGE_HUES.length] });
   if (!p) return null;
   S.cottages = n + 1;
   return id;
