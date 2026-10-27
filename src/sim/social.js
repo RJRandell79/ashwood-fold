@@ -1,11 +1,11 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { effect } from './effects.js';
 import { raisePressure } from './signals.js';
-import { P, TPD } from '../data/world.js';
+import { TPD } from '../data/world.js';
 import { bringCase, canvass } from './civic.js';
 import { pitch } from './ideas.js';
 import { log } from './log.js';
-import { LIVE, N, PN, S, clamp, dayOf, fairOn, isAdult, isKin, listNames, pantryOf, pick, rnd, takePantry } from './state.js';
+import { clamp, dayOf, fairOn, isAdult, isKin, listNames, LIVE, N, P, pantryOf, pick, PN, rnd, S, takePantry } from './state.js';
 
 export function op(a,b){return (S.op[a.id][b.id]);}
 export function adj(a,b,d){if(a===b||a.dead||b.dead)return;S.op[a.id][b.id]=clamp(S.op[a.id][b.id]+d,-100,100);checkPair(a,b);}

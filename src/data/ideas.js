@@ -19,6 +19,7 @@
 //   resentedBy               { job: daily opinion change towards the owner }
 //   sabotage                 { place, what }  can be wrecked in the night by those it threatens
 //   builtLines               extra chronicle lines when it is finished
+//   places, line             buildings it raises and a line it cuts across the valley (src/data/buildings.js)
 //   opensEra                 the era that begins when it is built
 //   emblem                   charge added to the inventor's family arms
 export const IDEAS = [
@@ -39,6 +40,7 @@ export const IDEAS = [
   },
   {
     id: 'barn', name: 'Tithe barn', what: 'keeps a whole harvest dry through the winter', hint: 'Worry about where to store the corn',
+    places: ['barn'],
     requires: [], inventorJobs: ['farmer', 'reeve', 'carter'], backers: 6, cost: 45,
     pressure: { base: 0.6, when: { granaryFullAtHarvest: 6 }, on: { granaryFull: 3, cornFlattened: 30 } },
     effects: { grainCap: { set: 750 }, protectsHarvest: { set: 1 } },
@@ -56,6 +58,7 @@ export const IDEAS = [
   },
   {
     id: 'school', name: 'Village school', what: 'teaches the children their letters, and the village to question idle talk', hint: 'Concern about idle talk and idle children',
+    places: ['school'],
     requires: [], inventorJobs: ['herbalist', 'reeve', 'innkeeper'], backers: 6, cost: 40,
     pressure: { base: 0.6, when: { manyChildren: 2 }, on: { rumourSpread: 20 } },
     effects: {
@@ -66,6 +69,7 @@ export const IDEAS = [
   },
   {
     id: 'cottonmill', name: 'Cotton mill', what: 'spins thread by water power down by the river', hint: 'Talk of the new mills in the next valley',
+    places: ['cottonmill'],
     requires: ['shuttle', 'millstone'], inventorJobs: ['miller', 'weaver', 'smith'], backers: 8, cost: 90,
     inventorBias: { trait: 'warmth', weight: 0.25, invert: true },
     pressure: { base: 1.5, when: { hasWeavers: 1 } },
@@ -87,6 +91,7 @@ export const IDEAS = [
   },
   {
     id: 'canal', name: 'Canal', what: 'links the valley to the towns, bringing coal and corn by boat', hint: 'Talk of a canal cut through the next valley',
+    line: 'canal', places: ['wharf'],
     requires: ['cottonmill'], inventorJobs: ['carter', 'reeve', 'miller', 'smith'], backers: 9, cost: 140, buildDays: 10, navvies: 3,
     pressure: { base: 1.4 },
     threatens: { carter: 0.6 },
@@ -113,6 +118,7 @@ export const IDEAS = [
   },
   {
     id: 'railway', name: 'Railway', what: 'puts Ashwood Fold an hour from Manchester', hint: 'Surveyors have been seen on the fells',
+    line: 'railway', places: ['station'],
     requires: ['steam'], inventorJobs: ['reeve', 'smith', 'carter', 'miller'], backers: 10, cost: 180, buildDays: 10, navvies: 4,
     pressure: { base: 1.2 },
     threatens: { carter: 1 },

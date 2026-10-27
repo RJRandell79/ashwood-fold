@@ -1,12 +1,12 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { effect } from './effects.js';
 import { raisePressure } from './signals.js';
-import { MAXPOP, P, TPD, YEAR_DAYS } from '../data/world.js';
+import { MAXPOP, TPD, YEAR_DAYS } from '../data/world.js';
 import { plan } from './life.js';
 import { log } from './log.js';
 import { arrive } from './people.js';
 import { adj, mem } from './social.js';
-import { LIVE, N, S, byJob, dayOf, household, isAdult, listNames, pick, rnd, seasonOf, yearOf } from './state.js';
+import { byJob, dayOf, household, isAdult, listNames, LIVE, N, P, pick, rnd, S, seasonOf, yearOf } from './state.js';
 
 export function seasonStart(){
   const s=seasonOf(),y=yearOf(),pop=LIVE.length;

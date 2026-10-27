@@ -2,24 +2,26 @@
 import { IDEAS } from '../data/ideas.js';
 import { effect } from './effects.js';
 import { BOYS, GIRLS, SURNAMES } from '../data/folk.js';
-import { ESSENTIAL, JOBS, MAXPOP, P, TPD, YEAR_DAYS } from '../data/world.js';
+import { ESSENTIAL, JOBS, MAXPOP, TPD, YEAR_DAYS } from '../data/world.js';
 import { callElection, decideCase, tallyElection } from './civic.js';
 import { faceOf } from './faces.js';
 import { plan } from './life.js';
 import { log } from './log.js';
 import { makeAgent } from './setup.js';
+import { buildCottage, cottagesLeft } from './placement.js';
 import { adj, mem, op } from './social.js';
-import { LIVE, N, PN, S, byJob, childrenOf, clamp, dayStart, household, isAdult, isKin, listNames, pick, pointIn, refreshLive, rnd, seasonOf, surname, yearOf } from './state.js';
+import { entryPoint, byJob, childrenOf, clamp, dayStart, household, isAdult, isKin, listNames, LIVE, N, P, pick, PN, pointIn, refreshLive, rnd, S, seasonOf, surname, yearOf } from './state.js';
 
 export function yr(){const y=yearOf();return S.years[y]||(S.years[y]={startPop:LIVE.length,births:0,deaths:0,weddings:0});}
+/** An empty home, or 'new' when a cottage could be built, or null when the valley has no room. */
 export function freeHome(){
-  const homes=Object.keys(P).filter(k=>P[k].home);
-  const empty=homes.filter(k=>household(k).length===0);
-  return empty.find(k=>!P[k].plot||S.built[k])||empty[0]||null;
+  const empty=Object.keys(P).filter(k=>P[k].home&&household(k).length===0);
+  return empty[0]||(cottagesLeft()?'new':null);
 }
+/** Moves someone into a home; 'new' builds a cottage first. Returns the home they end up in. */
 export function setHome(a,home){
-  a.home=home;
-  if(P[home].plot&&!S.built[home]){S.built[home]=true;log(`A new cottage goes up: ${PN(home)}.`,'event','work');}
+  if(home==='new'){const id=buildCottage();if(id)log(`A new cottage goes up: ${PN(id)}.`,'event','work');home=id||a.home||'tavern';}
+  a.home=home;return home;
 }
 export function nameBaby(sex,sur){
   const pool=sex==='f'?GIRLS:BOYS,taken=new Set(LIVE.map(a=>a.first));
@@ -83,11 +85,11 @@ export function arrive(job,reason){
   if(LIVE.length>=MAXPOP)return null;
   const sex=rnd()<.5?'f':'m',name=nameBaby(sex,pick(SURNAMES));
   const tr={temper:.2+rnd()*.6,warmth:.2+rnd()*.7,diligence:.35+rnd()*.6,forgive:.2+rnd()*.7,gossip:.2+rnd()*.7,scruple:.3+rnd()*.65};
-  const home=job==='innkeeper'?'tavern':(freeHome()||'tavern');
+  let home=job==='innkeeper'?'tavern':(freeHome()||'tavern');
   const id=S.agents.length;
   const s=addAgent(makeAgent(id,name,job,'tavern',tr,{age:20+rnd()*22,sex,hue:330}));
-  setHome(s,home);s.coins=8;s.arrivedAt=S.tick;
-  s.x=s.px=.5;s.y=s.py=13;s.arrived=false;s.act={type:'stroll',place:home,left:2,target:null};const q=pointIn(P[home]);s.tx=q[0];s.ty=q[1];
+  home=setHome(s,home);s.coins=8;s.arrivedAt=S.tick;
+  [s.x,s.y]=entryPoint();s.px=s.x;s.py=s.y;s.arrived=false;s.act={type:'stroll',place:home,left:2,target:null};const q=pointIn(P[home]);s.tx=q[0];s.ty=q[1];
   for(const a of LIVE)if(a!==s){S.op[a.id][id]=Math.round(-10+a.tr.warmth*20+(rnd()-.5)*10);S.op[id][a.id]=Math.round((rnd()-.4)*14);}
   log(`${N(s)} arrives along the carters' road ${reason}, and settles at ${PN(home)}.`,'event','arrival',{ids:[id]});
   return s;
@@ -164,7 +166,7 @@ export function gatherTick(){
           if((x.home==='tavern'||y.home==='tavern'||Math.min(xs,ys)>=3)&&fh)home=fh;
           else home=xs<=ys?x.home:y.home;
           if(home==='tavern'&&fh)home=fh;
-          setHome(x,home);setHome(y,home);
+          home=setHome(x,home);setHome(y,home);
           const away=LIVE.filter(a=>isAdult(a)&&!came.includes(a)&&(isKin(a,x)||isKin(a,y)||Math.min(op(a,x),op(a,y))<-35)).slice(0,3);
           log(`${N(x)} and ${N(y)} were married at the Chapel, with ${came.length>LIVE.length*.6?'most of the village':came.length>3?`${came.length} people`:'only a handful'} looking on.${away.length?` ${listNames(away)} stayed away.`:''} They will live at ${PN(home)}.`,'good','wedding',{ids:[x.id,y.id]});
         }

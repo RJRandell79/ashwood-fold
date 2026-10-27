@@ -10,8 +10,7 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "test": "vitest run",
-    "harness": "node harness/run.mjs",
-    "parity": "node harness/parity.mjs"
+    "harness": "node harness/run.mjs"
   },
   "devDependencies": {
     "acorn": "8.14.0",

@@ -1,13 +1,13 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { RUMOURS, STRANGERS } from '../data/folk.js';
-import { MAXPOP, P, TPD } from '../data/world.js';
+import { MAXPOP, TPD } from '../data/world.js';
 import { bringCase } from './civic.js';
 import { log } from './log.js';
 import { addAgent } from './people.js';
 import { stormHits } from './seasons.js';
 import { makeAgent } from './setup.js';
 import { addRumour, adj, mem, op } from './social.js';
-import { LIVE, N, S, dayStart, hourOf, isAdult, pick, pointIn, rnd, seasonOf } from './state.js';
+import { dayStart, hourOf, isAdult, LIVE, N, P, pick, pointIn, rnd, S, seasonOf, entryPoint } from './state.js';
 import { hooks } from './hooks.js';
 
 export function nudgeRumour(id){
@@ -23,7 +23,7 @@ export function nudgeStranger(){
   const tr={temper:.2+rnd()*.6,warmth:.2+rnd()*.7,diligence:.3+rnd()*.6,forgive:.2+rnd()*.7,gossip:.2+rnd()*.7,scruple:.25+rnd()*.7};
   const id=S.agents.length,s=addAgent(makeAgent(id,st[0],'pedlar','tavern',tr,{age:24+rnd()*20,sex:st[1],hue:330}));
   s.coins=10;s.hunger=.5;s.arrivedAt=S.tick;
-  s.x=s.px=.5;s.y=s.py=13;s.arrived=false;s.act={type:'stroll',place:'tavern',left:2,target:null};const q=pointIn(P.tavern);s.tx=q[0];s.ty=q[1];
+  [s.x,s.y]=entryPoint();s.px=s.x;s.py=s.y;s.arrived=false;s.act={type:'stroll',place:'tavern',left:2,target:null};const q=pointIn(P.tavern);s.tx=q[0];s.ty=q[1];
   for(const a of LIVE)if(a!==s){S.op[a.id][id]=Math.round(-12+a.tr.warmth*22+(rnd()-.5)*10);S.op[id][a.id]=Math.round((rnd()-.4)*14);}
   log(`A stranger walks in along the carters' road. ${N(s)}, a pedlar, takes a room at The Plough.`,'nudge','arrival',{ids:[id]});hooks.changed();
 }

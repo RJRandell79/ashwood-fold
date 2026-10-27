@@ -1,11 +1,11 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { effect, employerOf } from './effects.js';
 import { raisePressure } from './signals.js';
-import { FARM, P, SPEED, TPD } from '../data/world.js';
+import { FARM, SPEED, TPD } from '../data/world.js';
 import { bringCase, campaignRound } from './civic.js';
 import { log } from './log.js';
 import { addRumour, adj, avoid, glyph, interact, mem, op, pull, worstFoe } from './social.js';
-import { LIVE, N, S, byJob, dayOf, fairOn, hourOf, household, isAdult, isKin, isSunday, listNames, pantryOf, pick, pointIn, rnd, seasonOf, stage, takePantry } from './state.js';
+import { byJob, dayOf, fairOn, hourOf, household, isAdult, isKin, isSunday, listNames, LIVE, N, P, pantryOf, pick, pointIn, rnd, S, seasonOf, stage, takePantry } from './state.js';
 
 export function activeGathers(){return S.gathers.filter(g=>S.tick>=g.start&&S.tick<g.end);}
 export function gatherPull(a,g){

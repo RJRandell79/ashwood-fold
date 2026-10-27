@@ -3,14 +3,14 @@ import { ERA_LINES } from '../data/eras.js';
 import { SURNAMES } from '../data/folk.js';
 import { IDEA } from '../data/ideas.js';
 import { currentEra, effect, invalidateEffects } from './effects.js';
-import { honourInventor } from './ideas.js';
-import { JOBS, MAXPOP, P, TPD, YEAR_DAYS } from '../data/world.js';
+import { honourInventor, raiseBuildings } from './ideas.js';
+import { JOBS, MAXPOP, TPD, YEAR_DAYS } from '../data/world.js';
 import { familyKey } from './heraldry.js';
 import { log } from './log.js';
 import { addAgent, nameBaby, succeed } from './people.js';
 import { makeAgent } from './setup.js';
 import { adj, glyph, mem, op } from './social.js';
-import { LIVE, N, PN, S, byJob, dayStart, isAdult, isKin, listNames, numberWord, pick, pointIn, refreshLive, rnd, weekday } from './state.js';
+import { byJob, dayStart, isAdult, isKin, listNames, LIVE, N, numberWord, P, pick, PN, pointIn, refreshLive, rnd, S, weekday, entryPoint } from './state.js';
 
 export function standing(a){const v=LIVE.filter(b=>b!==a&&isAdult(b));return v.reduce((s,b)=>s+op(b,a),0)/Math.max(1,v.length);}
 export function ambition(a){return a.tr.diligence*.4+(1-a.tr.warmth)*.25+a.tr.temper*.15+(a.coins>40?.15:0);}
@@ -172,7 +172,7 @@ export function eraDay(){
 }
 export function startBuilding(id){
   const t=S.tech[id],T=IDEA[id];
-  t.state='building';t.doneAt=dayStart()+TPD*T.buildDays+60;t.navvies=[];
+  t.state='building';t.doneAt=dayStart()+TPD*T.buildDays+60;t.navvies=[];raiseBuildings(T);
   const inv=S.agents[t.inventor];
   log(`Work begins on the ${T.name.toLowerCase()}, ${N(inv)}'s great scheme. It will take ${T.buildDays} days.`,'good','tech',{tech:id});
   for(let i=0;i<(T.navvies||0);i++){
@@ -180,7 +180,7 @@ export function startBuilding(id){
     const sex=rnd()<.85?'m':'f',name=nameBaby(sex,pick(SURNAMES));
     const tr={temper:.5+rnd()*.4,warmth:.3+rnd()*.5,diligence:.5+rnd()*.4,forgive:.2+rnd()*.5,gossip:.3+rnd()*.5,scruple:.2+rnd()*.45};
     const nid=S.agents.length,n=addAgent(makeAgent(nid,name,'navvy','tavern',tr,{age:19+rnd()*16,sex,hue:20}));
-    n.coins=6;n.navvy=true;n.arrivedAt=S.tick;n.x=n.px=.5;n.y=n.py=13;n.arrived=false;n.act={type:'stroll',place:'tavern',left:2,target:null};const q=pointIn(P.tavern);n.tx=q[0];n.ty=q[1];
+    n.coins=6;n.navvy=true;n.arrivedAt=S.tick;[n.x,n.y]=entryPoint();n.px=n.x;n.py=n.y;n.arrived=false;n.act={type:'stroll',place:'tavern',left:2,target:null};const q=pointIn(P.tavern);n.tx=q[0];n.ty=q[1];
     for(const a of LIVE)if(a!==n){S.op[a.id][nid]=Math.round(-18+a.tr.warmth*20+(rnd()-.5)*10);S.op[nid][a.id]=Math.round((rnd()-.5)*14);}
     t.navvies.push(nid);
   }
