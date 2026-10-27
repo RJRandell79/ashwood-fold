@@ -56,7 +56,7 @@ export function plan(a){
     if(fairOn())add('fair','square',.55+a.tr.warmth*.4+a.lonely*.3);
     for(const g of activeGathers()){const u=gatherPull(a,g);if(u!=null)add('gather',g.place,u,g.id);}
     const foe=st==='adult'?worstFoe(a):null;
-    if(foe&&!night&&op(a,foe)<-55&&a.tr.temper>.5&&foe.act.type!=='sleep'&&S.tick>(a.vented||0)&&!foe.dead)add('confront',foe.act.place,a.tr.temper*.5+(-op(a,foe)/100)*.45-a.tr.forgive*.3,foe.id);
+    if(foe&&!night&&op(a,foe)<-55&&a.tr.temper>.5&&foe.act.type!=='sleep'&&S.tick>(a.vented||0)&&!foe.dead)add('confront',foe.act.place,a.tr.temper*.5+(-op(a,foe)/100)*.45-a.tr.forgive*.3-Math.hypot(foe.x-a.x,foe.y-a.y)/60,foe.id);
     add('stroll',pick(['square','garden','market','chapel']),.15-(winter?.05:0));
   }
   if(!opts.length)opts.push({type:'stroll',place:a.home,u:0});
