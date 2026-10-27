@@ -49,7 +49,7 @@ function laneNight() {
     if (held[k] < LANE_NIGHTS) continue;
     delete held[k];
     occ = occ || occupancy(valley(S.valley.seed));
-    if (occ[k] && occ[k] !== 4) continue; // never under a building or line
+    if ((occ[k] && occ[k] !== 4) || valley(S.valley.seed).water[k]) continue; // never under a building or line, nor in the river
     roads[k] = S.tick;
     fresh.push(+k);
   }
