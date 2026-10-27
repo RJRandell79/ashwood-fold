@@ -73,6 +73,7 @@ export function familyLine(a){
   const parts=[];
   if(a.spouse>=0){const s=S.agents[a.spouse];parts.push(`${a.sex==='f'?'Wife':'Husband'} of ${N(s)}${s.dead?' (late)':''}`);}
   else if(a.widowOf!=null)parts.push(`${a.sex==='f'?'Widow':'Widower'} of ${N(S.agents[a.widowOf])}`);
+  else if(a.formerSpouse!=null)parts.push(`Once married to ${N(S.agents[a.formerSpouse])}`);
   if(a.parents.length)parts.push(`${a.sex==='f'?'Daughter':'Son'} of ${listNames(a.parents.map(i=>S.agents[i]))}`);
   const kids=childrenOf(a);if(kids.length)parts.push(`${a.sex==='f'?'Mother':'Father'} of ${listNames(kids)}`);
   return parts.join(' · ');

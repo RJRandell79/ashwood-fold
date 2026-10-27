@@ -156,6 +156,10 @@ export function decideCase(c,jurors){
 }
 export function exile(a,reason){
   a.dead={t:S.tick,cause:reason,age:a.age,exiled:true};refreshLive();
+  // Banishment or desertion ends a marriage: the one left behind is free to marry again.
+  const sp=a.spouse>=0?S.agents[a.spouse]:null;
+  if(sp&&!sp.dead&&sp.spouse===a.id){sp.spouse=-1;sp.formerSpouse=a.id;
+    log(`With ${N(a)} gone, ${N(sp)} is no longer bound by the marriage and is free to wed again.`,'event','family',{ids:[sp.id,a.id]});}
   for(const id in S.tech){const t=S.tech[id];t.backers=t.backers.filter(i=>i!==a.id);t.opponents=t.opponents.filter(i=>i!==a.id);}
   if(S.election)S.election.cands=S.election.cands.filter(i=>i!==a.id);
   const kin=LIVE.filter(b=>op(b,a)>50);for(const b of kin){b.lonely=Math.min(1,b.lonely+.25);mem(b,a,'misses');}
