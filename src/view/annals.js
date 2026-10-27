@@ -1,0 +1,93 @@
+// Ported from the v5 prototype by tools/port-v5.mjs.
+import { ERAS } from '../data/eras.js';
+import { TECH } from '../data/ideas.js';
+import { SEASONS, TPD, YEAR_DAYS } from '../data/world.js';
+import { armsOf, blazon, familyCards, familyPlural } from '../sim/heraldry.js';
+import { op } from '../sim/social.js';
+import { LIVE, N, S, numberWord, seasonName, seasonOf, yearOf } from '../sim/state.js';
+import { cv, cw, draw, resize } from './map2d.js';
+import { armsSVG, portraitSVG } from './portraits.js';
+import { G, cv3, draw3d, view } from './three.js';
+import { $, cap, familyLine, traitWords } from './ui.js';
+import { V } from './vstate.js';
+
+export function yearTitle(y,ents){
+  const built=ents.find(e=>e.built);if(built)return `The Year of the ${TECH[built.tech].name.replace(/\b\w/g,c=>c.toUpperCase())}`;
+  const ban=ents.find(e=>e.c==='court'&&/banished/.test(e.h));if(ban)return `The Year ${S.agents[ban.ids[0]].first} Was Banished`;
+  const el=ents.find(e=>e.election);if(el&&el.ids.length>1&&ents.filter(e=>e.c==='death').length===0)return `The Year ${S.agents[el.ids[0]].first} Was Elected`;
+  const deaths=ents.filter(e=>e.c==='death');
+  if(deaths.length){const d=S.agents[deaths[0].ids[0]];return deaths.length>2?'The Year of Many Funerals':`The Year ${d.name} Was Buried`;}
+  const wed=ents.find(e=>e.c==='wedding');if(wed){const [x,y2]=wed.ids.map(i=>S.agents[i]);return `The Year ${x.first} Married ${y2.first}`;}
+  const births=ents.filter(e=>e.c==='birth');if(births.length)return births.length>1?`The Year of ${births.length} Christenings`:`The Year ${S.agents[births[0].ids[0]].first} Was Born`;
+  const sab=ents.find(e=>e.sabotage);if(sab)return 'The Year of the Machine Breakers';
+  const thin=ents.find(e=>e.harvest==='thin');if(thin)return 'The Hungry Year';
+  if(ents.some(e=>e.feud))return 'The Year of Bad Blood';
+  if(ents.some(e=>e.idea))return 'The Year of New Ideas';
+  return 'A Quiet Year';
+}
+export function yearIntro(y){
+  const r=S.years[y]||{startPop:0,births:0,deaths:0,weddings:0},cur=y===yearOf();
+  const endPop=cur?LIVE.length:r.startPop+r.births-r.deaths;
+  const bits=[];
+  bits.push(`${cur?'This year began':`Year ${y} began`} with ${numberWord(r.startPop)} souls in Ashwood Fold${cur?` and there are ${numberWord(LIVE.length)} now`:` and ended with ${numberWord(Math.max(0,endPop))}`}.`);
+  const ev=[];if(r.births)ev.push(`${numberWord(r.births)} ${r.births>1?'births':'birth'}`);if(r.deaths)ev.push(`${numberWord(r.deaths)} ${r.deaths>1?'deaths':'death'}`);if(r.weddings)ev.push(`${numberWord(r.weddings)} ${r.weddings>1?'weddings':'wedding'}`);
+  bits.push(ev.length?`There ${r.births+r.deaths+r.weddings>1?'were':'was'} ${ev.join(', ').replace(/, ([^,]*)$/,' and $1')}.`:'Nobody was born, married or buried.');
+  if(r.harvest)bits.push(`The harvest was ${r.harvest}.`);
+  return bits.join(' ');
+}
+export function paragraphs(ents){const out=[];let cur=[];for(const e of ents){cur.push(e.h);if(cur.length>=4){out.push(cur.join(' '));cur=[];}}if(cur.length)out.push(cur.join(' '));return out.map(p=>`<p>${p}</p>`).join('');}
+export function castEntry(a){
+  const life=a.born!=null?`born ${seasonName(a.born)}`:a.arrivedAt!=null?`came to the village ${seasonName(a.arrivedAt)}`:`aged ${Math.floor(a.dead?a.dead.age-(a.dead.t-36)/TPD/YEAR_DAYS:a.age-(S.tick-36)/TPD/YEAR_DAYS)} when this chronicle begins`;
+  const end=a.dead?(a.dead.exiled?`; ${a.dead.cause}, ${seasonName(a.dead.t)}`:`; died ${seasonName(a.dead.t)}, ${a.dead.cause}, aged ${Math.floor(a.dead.age)}`):`; ${Math.floor(a.age)} years old now`;
+  const others=S.agents.filter(b=>b!==a);
+  const best=others.filter(b=>op(a,b)>50).sort((x,y)=>op(a,y)-op(a,x))[0],worst=others.filter(b=>op(a,b)<-40).sort((x,y)=>op(a,x)-op(a,y))[0];
+  const fam=familyLine(a);
+  const bits=[];if(best)bits.push(`Closest to ${N(best)}.`);if(worst)bits.push(`Never got on with ${N(worst)}.`);
+  const tr=traitWords(a.tr).slice(0,2).join(' and ');
+  return `<div>${portraitSVG(a,64)}<span><b>${a.name}</b><em>${cap(a.job==='child'&&a.dead?'child':a.job==='child'?(a.age<4?'baby':'child'):a.job)}, ${life}${end}</em>${fam?fam+'. ':''}${cap(tr)}. ${bits.join(' ')}</span></div>`;
+}
+export function snapshot(){
+  try{
+    if(view==='3d'&&G){draw3d(1,0);return cv3.toDataURL('image/jpeg',.85);}
+    if(!cw)resize();if(!cw)return null;draw(1);return cv.toDataURL('image/jpeg',.85);
+  }catch(e){return null;}
+}
+export function buildStory(){
+  const img=snapshot(),y0=yearOf(S.annals.length?S.annals[0].t:S.tick),y1=yearOf();
+  let html=`<h1>The Annals of Ashwood Fold</h1><p class="sub">A true account of the village, from Spring of Year 1 to ${seasonName()}</p>`;
+  if(img)html+=`<figure><img src="${img}" alt="Ashwood Fold in ${SEASONS[seasonOf()].toLowerCase()}, as it stands today"><figcaption>Ashwood Fold as it stands, ${seasonName()}</figcaption></figure>`;
+  const prologue=S.annals.filter(e=>e.c==='prologue');
+  if(prologue.length)html+=`<p class="intro">${prologue.map(e=>e.h).join(' ')}</p><p class="orn">· · ·</p>`;
+  let prevEra=-1;const roman=['I','II','III','IV','V'];
+  for(let y=Math.min(y0,1);y<=y1;y++){
+    const era=S.years[y]&&S.years[y].era!=null?S.years[y].era:Math.max(prevEra,0);
+    if(era!==prevEra){prevEra=era;html+=`<div class="bookhead"><span class="num">Book ${roman[era]}</span><h2>${ERAS[era]}</h2></div>`;}
+    const ents=S.annals.filter(e=>yearOf(e.t)===y&&e.c!=='prologue');
+    if(!ents.length&&!S.years[y])continue;
+    html+=`<section class="chapter"><span class="num">Chapter ${y}</span><h2>${yearTitle(y,ents)}</h2><p class="intro">${yearIntro(y)}</p>`;
+    for(let s=0;s<4;s++){
+      const capN={friend:1,fight:2,feud:2,rumour:2,crime:3,court:3,politics:3,letter:1,departure:3},seen={};
+      const se=ents.filter(e=>seasonOf(e.t)===s&&!(e.c==='season'&&e.season===0)&&!/Now for the money|talks .* round to/.test(e.h)).filter(e=>{const c=capN[e.c];if(!c)return true;seen[e.c]=(seen[e.c]||0)+1;return seen[e.c]<=c;});
+      if(!se.length)continue;
+      html+=`<h3>${SEASONS[s]}</h3>${paragraphs(se)}`;
+    }
+    html+=`</section>`;
+  }
+  const cast=[...S.agents].sort((a,b)=>(a.born??-1e9)-(b.born??-1e9)||b.age-a.age);
+  const fams=familyCards();
+  html+=`<section class="chapter"><span class="num">Appendix</span><h2>The Arms of the Families</h2><div class="armorial">${fams.map(({k,live,members})=>{const ar=armsOf(k);return `<div>${armsSVG(ar,96,'Arms of the '+familyPlural(k))}<b>${familyPlural(k)}</b><span>“${ar.motto}”</span><i>${blazon(ar)}</i><i>${live.length?`${live.length} living, ${members.length-live.length} departed`:'The line has ended'}</i></div>`;}).join('')}</div></section>`;
+  html+=`<section class="chapter"><span class="num">Appendix</span><h2>The Folk of Ashwood Fold</h2><div class="cast">${cast.map(castEntry).join('')}</div></section><p class="orn">· · ·</p>`;
+  $('book').innerHTML=html;
+  $('storyMeta').textContent=`${S.annals.length} entries · ${S.agents.length} lives`;
+}
+export let storySpeed=1;
+$('openStory').onclick=()=>{buildStory();$('story').hidden=false;$('story').scrollTop=0;document.body.style.overflow='hidden';storySpeed=V.speed;V.speed=0;$('closeStory').focus();};
+export function closeStory(){$('story').hidden=true;document.body.style.overflow='';V.speed=storySpeed;$('openStory').focus();}
+$('closeStory').onclick=closeStory;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('story').hidden)closeStory();});
+$('copyStory').onclick=()=>{
+  const book=$('book').cloneNode(true);book.querySelectorAll('figure').forEach(f=>f.remove());
+  const text=[...book.querySelectorAll('h1,.sub,h2,.num,h3,p,.cast div')].map(el=>el.matches('h1,h2')?'\n'+el.textContent.toUpperCase():el.matches('h3')?'\n'+el.textContent:el.textContent).join('\n');
+  const done=()=>{$('copyStory').textContent='Copied';setTimeout(()=>$('copyStory').textContent='Copy as text',1800);};
+  try{navigator.clipboard.writeText(text).then(done,()=>{$('copyStory').textContent='Copy failed: select the text instead';});}catch(e){$('copyStory').textContent='Copy failed: select the text instead';}
+};

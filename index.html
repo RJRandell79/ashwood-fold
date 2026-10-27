@@ -1,0 +1,104 @@
+<title>Ashwood Fold</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<!-- STYLES -->
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Ashwood Fold</h1>
+      <p>A Lancashire village with needs, routines and long memories. Families grow, ideas take hold or fail, and the years pass. You can nudge the village, but nobody here takes orders.</p>
+    </div>
+    <div class="clock">
+      <div class="when" id="when">Spring, Year 1</div>
+      <div class="chips" id="chips"></div>
+      <div class="speed" role="group" aria-label="Simulation speed">
+        <button data-speed="0">Pause</button>
+        <button data-speed="1" class="on">1×</button>
+        <button data-speed="3">3×</button>
+        <button data-speed="10">10×</button>
+        <button data-speed="30">30×</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main class="left">
+      <div class="viewbar">
+        <div class="seg" role="group" aria-label="View"><button id="v2d">Map</button><button id="v3d" class="on">3D</button></div>
+        <div class="seg" id="cam3d" role="group" aria-label="Camera"><button id="vReset">Reset view</button><button id="vTop">Top down</button><button id="vFollow" aria-pressed="false">Follow</button></div>
+      </div>
+      <div class="mapbox"><canvas id="map" hidden aria-label="Map of Ashwood Fold showing villagers as coloured dots"></canvas><canvas id="map3d" aria-label="3D view of Ashwood Fold. Drag to turn, pinch or scroll to zoom."></canvas></div>
+      <p class="viewnote" id="viewNote"></p>
+      <div class="stores" id="stores"></div>
+
+      <section class="nudges">
+        <h2 class="sec">Nudge the village</h2>
+        <div class="grid">
+          <div class="nudge rumour">
+            <b>Whisper a rumour</b>
+            <small>The village gossip hears it first. Trust decides who believes it.</small>
+            <div class="inline"><select id="rumourSubject" aria-label="Rumour about"></select><button class="btn" id="nRumour">Whisper</button></div>
+          </div>
+          <button class="nudge" id="nShort"><b>Spoil the flour</b><small>Weevils in the granary. Bread runs out within a day or two.</small></button>
+          <button class="nudge" id="nStorm"><b>Send a storm</b><small>Sixteen hours of rain. In autumn it flattens the standing corn.</small></button>
+          <button class="nudge" id="nStranger"><b>A stranger arrives</b><small>A pedlar takes a room at The Plough.</small></button>
+          <button class="nudge" id="nFair"><b>Hold a fair</b><small>A day of trading and merriment on the Green.</small></button>
+          <button class="nudge" id="nPurse"><b>Lose a purse</b><small>The richest villager drops their pennies. Someone finds them.</small></button>
+        </div>
+      </section>
+
+      <section class="works">
+        <h2 class="sec">Works and ideas</h2>
+        <div class="techs" id="techs"></div>
+      </section>
+
+      <section class="civic">
+        <h2 class="sec">The Moot Hall</h2>
+        <div class="civicgrid" id="civic"></div>
+      </section>
+
+      <section class="families">
+        <h2 class="sec">Families and their arms</h2>
+        <div class="fams" id="fams"></div>
+      </section>
+
+      <section class="people">
+        <div>
+          <div class="roster" id="roster"></div>
+          <details class="yard" id="yardBox" hidden><summary id="yardSum">The chapel yard</summary><div class="roster" id="yard"></div></details>
+        </div>
+        <div class="detail" id="detail"></div>
+      </section>
+
+      <section class="savebox">
+        <h2 class="sec">Keep this village</h2>
+        <div class="row">
+          <button class="btn" id="copySave">Copy save code</button>
+          <button class="btn ghost" id="showLoad">Load a save code</button>
+          <button class="btn ghost" id="newTown">Start a new village</button>
+          <span class="msg" id="saveMsg" role="status"></span>
+        </div>
+        <div id="loadArea" hidden>
+          <textarea id="saveText" aria-label="Save code" placeholder="Paste a save code here"></textarea>
+          <div class="row" style="margin-top:8px"><button class="btn" id="loadSave">Load village</button><button class="btn ghost" id="cancelLoad">Cancel</button></div>
+        </div>
+        <p class="note">This browser also keeps your village between visits, but that copy can be lost if site data is cleared. A save code is the reliable way to keep a long-running village. Older save codes still load.</p>
+      </section>
+    </main>
+
+    <aside class="chron">
+      <header><div><h2>Chronicle</h2><p>Newest first. Tap a name to follow that villager.</p></div><button class="btn" id="openStory">Read the annals</button></header>
+      <div id="log"></div>
+    </aside>
+  </div>
+</div>
+
+<div class="story" id="story" hidden role="dialog" aria-modal="true" aria-label="The Annals of Ashwood Fold">
+  <div class="bar"><button class="btn" id="closeStory">Back to the village</button><span id="storyMeta"></span><button class="btn ghost" id="copyStory">Copy as text</button></div>
+  <article class="book" id="book"></article>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- SCRIPT -->
