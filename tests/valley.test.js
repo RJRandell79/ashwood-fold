@@ -60,3 +60,30 @@ describe('old saves', () => {
     expect(checkInvariants(S)).toEqual([]);
   });
 });
+
+describe('the river and the eras', () => {
+  it('the first village fords the river; once bridged, people walk over by the bridge', () => {
+    let crossed = 0, bridged = false;
+    run(4, { years: 30, onYear: s => { if (s.crossing.kind === 'bridge') bridged = true; } });
+    expect(bridged).toBe(true);
+    const v = valley(S.valley.seed), far = Object.values(S.places).filter(p => p.y + p.h / 2 > v.riverY(p.x + p.w / 2));
+    expect(far.length).toBeGreaterThan(0);
+    // walk a few days and check nobody wades: every step over the river is at the crossing
+    for (let i = 0; i < 144 * 5; i++) {
+      const before = S.agents.map(a => [a.x, a.y]);
+      tick();
+      S.agents.forEach((a, k) => {
+        if (a.dead || !before[k]) return;
+        const [x0, y0] = before[k], s0 = y0 > v.riverY(x0), s1 = a.y > v.riverY(a.x);
+        if (s0 !== s1) { crossed++; expect(Math.abs(a.x - (S.crossing.x + 0.5))).toBeLessThan(1); }
+      });
+    }
+    expect(crossed).toBeGreaterThan(0);
+  });
+  it('old buildings are rebuilt in newer styles as the eras pass', () => {
+    run(1, { years: 30 });
+    const rebuilt = Object.values(S.places).filter(p => p.rebuilt);
+    expect(rebuilt.length).toBeGreaterThan(3);
+    for (const p of rebuilt) expect(p.era).toBeGreaterThanOrEqual(2);
+  });
+});

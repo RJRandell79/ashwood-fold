@@ -40,6 +40,8 @@ export function checkInvariants(S) {
       if (ys.length !== v.W) bad.push(`line ${id} does not cross the valley`);
       ys.forEach((y, x) => { const i = y * v.W + x; if (taken.has(i)) bad.push(`line ${id} runs through ${taken.get(i)}`); });
     }
+    for (const p of ps) if (p.y + p.h / 2 > v.riverY(p.x + p.w / 2) && !(S.crossing && S.crossing.kind === 'bridge')) bad.push(`${p.id} stands on the far bank with no bridge`);
+    if (S.crossing && !(S.crossing.x >= 0 && S.crossing.x < v.W)) bad.push('the river crossing is outside the valley');
     for (const a of S.agents) if (!a.dead) {
       if (a.home && !S.places[a.home]) bad.push(`${a.name} lives at missing place ${a.home}`);
       if (a.act && a.act.place && !S.places[a.act.place]) bad.push(`${a.name} is heading for missing place ${a.act.place}`);

@@ -1,14 +1,15 @@
-// How buildings look in each era. A building keeps the style of the era it was built in,
-// so the old cottages stay stone and thatch while the new rows go up in brick and slate.
+// How buildings look in each era. A building takes the style of the era it was built in, and once it
+// is two eras out of date it may be pulled down and rebuilt in the style of the day (src/sim/placement.js).
 //   wall, roof, trim   colours (hex)
 //   pitch              roof height as a share of the building's depth
 //   storeys            extra floors for long and civic buildings
+//   material           how the chronicle describes a building put up in this style
 export const ERA_STYLES = [
-  { name: 'cottage years', wall: 0xe6dcc4, wallAlt: 0xd8ccb0, roof: 0x9b7f4e, roofAlt: 0x7c6440, trim: 0x4a3326, pitch: 0.55, storeys: 0 },
-  { name: 'mill years',    wall: 0xcfc6ae, wallAlt: 0xbdb39a, roof: 0x6b655c, roofAlt: 0x5c564e, trim: 0x3d3128, pitch: 0.45, storeys: 0 },
-  { name: 'canal years',   wall: 0xc4b89c, wallAlt: 0xb2a68a, roof: 0x58606a, roofAlt: 0x4d545d, trim: 0x33302c, pitch: 0.42, storeys: 1 },
-  { name: 'age of steam',  wall: 0xa85a42, wallAlt: 0x96503b, roof: 0x4e5560, roofAlt: 0x454b55, trim: 0x2b2a28, pitch: 0.38, storeys: 1 },
-  { name: 'railway age',   wall: 0x96503b, wallAlt: 0x8a4834, roof: 0x474d57, roofAlt: 0x3e434c, trim: 0x2b2a28, pitch: 0.36, storeys: 1 },
+  { name: 'cottage years', material: 'stone and thatch', wall: 0xe6dcc4, wallAlt: 0xd8ccb0, roof: 0x9b7f4e, roofAlt: 0x7c6440, trim: 0x4a3326, pitch: 0.55, storeys: 0 },
+  { name: 'mill years', material: 'stone and flags',    wall: 0xcfc6ae, wallAlt: 0xbdb39a, roof: 0x6b655c, roofAlt: 0x5c564e, trim: 0x3d3128, pitch: 0.45, storeys: 0 },
+  { name: 'canal years', material: 'stone and slate',   wall: 0xc4b89c, wallAlt: 0xb2a68a, roof: 0x58606a, roofAlt: 0x4d545d, trim: 0x33302c, pitch: 0.42, storeys: 1 },
+  { name: 'age of steam', material: 'brick and slate',  wall: 0xa85a42, wallAlt: 0x96503b, roof: 0x4e5560, roofAlt: 0x454b55, trim: 0x2b2a28, pitch: 0.38, storeys: 1 },
+  { name: 'railway age', material: 'brick and slate',   wall: 0x96503b, wallAlt: 0x8a4834, roof: 0x474d57, roofAlt: 0x3e434c, trim: 0x2b2a28, pitch: 0.36, storeys: 1 },
 ];
 
 // Ground and foliage by season: spring, summer, autumn, winter.

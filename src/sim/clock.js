@@ -6,6 +6,7 @@ import { civicDay } from './civic.js';
 import { techDay } from './ideas.js';
 import { step } from './life.js';
 import { footDay } from './paths.js';
+import { restyleSeason } from './placement.js';
 import { log } from './log.js';
 import { gatherTick, lifeDay } from './people.js';
 import { collectDues, foodDay, seasonStart, spendDay, upkeepDay, weatherDay } from './seasons.js';
@@ -32,7 +33,7 @@ export function midnight(){
   foodDay();
   techDay();
   civicDay();
-  if(dayInSeason()===1)seasonStart();
+  if(dayInSeason()===1){seasonStart();if(seasonOf()===0)restyleSeason();}
   if(seasonOf()===2&&dayInSeason()===5&&!S.fair){S.fair={start:dayStart()+72,end:dayStart()+126,harvest:true};}
   weatherDay();
   footDay();

@@ -1,8 +1,10 @@
 // Named conditions and events that build pressure for ideas (see pressure.when / pressure.on
 // in src/data/ideas.js). Adding a signal is code; using it in an idea is data.
 import { IDEAS } from '../data/ideas.js';
-import { LIVE, S, seasonOf } from './state.js';
+import { LIVE, P, S, seasonOf } from './state.js';
 import { effect } from './effects.js';
+import { choosePlot, settlementCentre } from './placement.js';
+import { BUILDINGS } from '../data/buildings.js';
 
 const weavers = () => LIVE.filter(a => a.job === 'weaver');
 
@@ -14,6 +16,13 @@ export const SIGNALS = {
   weaversPoor: () => { const w = weavers(); return w.length && w.reduce((s, x) => s + x.coins, 0) / w.length < 8; },
   manyChildren: () => LIVE.filter(a => a.age >= 5 && a.age < 14).length >= 4,
   hasWeavers: () => weavers().length > 0,
+  // the next cottage would stand well out beyond the homes already built
+  shortOfLand: () => {
+    const p = choosePlot('cottage'); if (!p) return true;
+    const c = settlementCentre(), d = BUILDINGS.cottage, far = q => Math.hypot(q.x + q.w / 2 - c.x, q.y + q.h / 2 - c.y);
+    const homes = Object.values(P).filter(q => q.home);
+    return far({ ...p, w: d.w, h: d.h }) > 1.35 * homes.reduce((s, q) => s + far(q), 0) / homes.length;
+  },
 };
 
 /** One-off events raised by the simulation. */

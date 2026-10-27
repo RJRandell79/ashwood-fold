@@ -1,7 +1,7 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { effect, employerOf } from './effects.js';
 import { raisePressure } from './signals.js';
-import { wear } from './paths.js';
+import { setVia, wear } from './paths.js';
 import { FARM, SPEED, TPD } from '../data/world.js';
 import { bringCase, campaignRound } from './civic.js';
 import { log } from './log.js';
@@ -68,7 +68,7 @@ export function setAct(a,o){
   const dur={sleep:999,eat:2,buy:1,meal:4,steal:1,work:20+rnd()*14,social:6+rnd()*8,play:6+rnd()*8,lessons:Math.max(2,(12.5-hourOf())*6),help:8+rnd()*8,
     chapel:Math.max(2,(11.5-hourOf())*6),fair:8+rnd()*6,gather:g?Math.max(1,g.end-S.tick):6,confront:2,stroll:2+rnd()*3}[o.type];
   a.act={type:o.type,place:o.place,target:o.target??null,left:Math.round(dur)};
-  const pt=pointIn(P[o.place]);a.tx=pt[0];a.ty=pt[1];a.arrived=false;a.at=null;
+  const pt=pointIn(P[o.place]);a.tx=pt[0];a.ty=pt[1];a.arrived=false;a.at=null;setVia(a);
 }
 export function purseOf(a){return household(a.home).filter(isAdult).reduce((m,x)=>Math.max(m,x.coins),0);}
 export const SOCIAL_ACTS=['social','fair','chapel','meal','play','gather','lessons'];
@@ -82,8 +82,10 @@ export function step(a){
   a.tipsy=Math.max(0,a.tipsy-.04);
   if(a.glyph&&a.glyph.until<S.tick)a.glyph=null;
   if(!a.arrived){
-    const dx=a.tx-a.x,dy=a.ty-a.y,d=Math.hypot(dx,dy),sp=SPEED*(st==='infant'?.6:a.age>70?.75:1);
-    if(d<=sp){a.x=a.tx;a.y=a.ty;a.arrived=true;a.at=a.act.place;onArrive(a);}
+    const w=a.via&&a.via[0],gx=w?w[0]:a.tx,gy=w?w[1]:a.ty;
+    const dx=gx-a.x,dy=gy-a.y,d=Math.hypot(dx,dy),sp=SPEED*(st==='infant'?.6:a.age>70?.75:1);
+    if(d<=sp&&w){wear(a.x,a.y,gx,gy);a.x=gx;a.y=gy;a.via.shift();if(!a.via.length)delete a.via;}
+    else if(d<=sp){a.x=a.tx;a.y=a.ty;a.arrived=true;a.at=a.act.place;onArrive(a);}
     else{const x0=a.x,y0=a.y;a.x+=dx/d*sp;a.y+=dy/d*sp;wear(x0,y0,a.x,a.y);}
     return;
   }

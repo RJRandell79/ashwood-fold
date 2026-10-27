@@ -1,9 +1,12 @@
 // Where buildings go. The game, not the player, chooses every site: each candidate plot is
 // scored against the building's placement rules (src/data/buildings.js) on the valley terrain.
 // Placement is deterministic: no draws from the simulation's dice, ties go to the first plot found.
-import { BUILDINGS, COTTAGE_HUES, COTTAGE_NAMES, LINES } from '../data/buildings.js';
+import { BUILDINGS, COTTAGE_HUES, COTTAGE_NAMES, LINES, RESTYLED } from '../data/buildings.js';
+import { ERA_STYLES } from '../data/styles.js';
+import { effect } from './effects.js';
+import { log } from './log.js';
 import { valley } from './valley.js';
-import { P, S } from './state.js';
+import { household, isAdult, N, P, PN, S } from './state.js';
 
 const MARGIN = 1; // clear cells kept around every building, so lanes run between them
 
@@ -14,6 +17,8 @@ function occupancy(v) {
   const occ = new Uint8Array(v.W * v.H);
   for (const p of Object.values(P)) for (let y = Math.floor(p.y); y < Math.ceil(p.y + p.h); y++) for (let x = Math.floor(p.x); x < Math.ceil(p.x + p.w); x++) if (x >= 0 && y >= 0 && x < v.W && y < v.H) occ[y * v.W + x] = 1;
   for (const [id, ys] of Object.entries(S.lines || {})) { const w = LINES[id].width; ys.forEach((y, x) => { for (let k = 0; k < w; k++) if (y + k < v.H) occ[(y + k) * v.W + x] = 2; }); }
+  const e = crossingEnds();
+  if (e) for (const end of [e.north, e.south]) for (let y = Math.floor(end.y) - 1; y <= Math.floor(end.y) + 1; y++) for (let x = Math.floor(end.x) - 1; x <= Math.floor(end.x) + 1; x++) if (x >= 0 && y >= 0 && x < v.W && y < v.H && !v.water[y * v.W + x]) occ[y * v.W + x] = 3;
   return occ;
 }
 const gap = (a, b) => Math.hypot(Math.max(0, a.x - (b.x + b.w), b.x - (a.x + a.w)), Math.max(0, a.y - (b.y + b.h), b.y - (a.y + a.h)));
@@ -52,10 +57,13 @@ function score(def, x, y, v, occ, centre) {
   if (maxSlope > (R.maxSlope ?? 0.35) || maxFlood > (R.maxFlood ?? 0.15)) return -Infinity;
   if (R.riverbank && minDist > 1) return -Infinity;
   if (R.line && lineGap(rect, R.line) > 2) return -Infinity;
-  // Stay on the settlement's own bank of the river.
-  if (y + def.h / 2 > v.riverY(x + def.w / 2)) return -Infinity;
+  // The far bank is open only once there is a bridge, and is as far away as the walk over it.
+  const far = y + def.h / 2 > v.riverY(x + def.w / 2);
+  if (far && !effect('farBank')) return -Infinity;
   slope /= n; flood /= n; fert /= n; dist /= n; wood /= n;
-  const c = centreOf(rect), dc = Math.hypot(c.x - centre.x, c.y - centre.y);
+  const c = centreOf(rect);
+  let dc = Math.hypot(c.x - centre.x, c.y - centre.y);
+  if (far) { const e = crossingEnds(); dc = Math.hypot(c.x - e.south.x, c.y - e.south.y) + Math.hypot(e.north.x - centre.x, e.north.y - centre.y) + 2; }
   let s = -wood * 0.3;
   if (R.centre) s += R.centre * (1 - Math.min(1, dc / 30));
   if (R.edge) s += R.edge * Math.min(1, dc / 25);
@@ -104,8 +112,34 @@ export function addPlace(id, defId = id, extra = {}) {
   return P[id];
 }
 
+/** Where the river is crossed: the narrowest reach near the hearth. The first village fords it there. */
+function placeCrossing() {
+  const v = theValley(), h = v.hearth;
+  let best = null, bs = Infinity;
+  for (let x = Math.max(3, Math.floor(h.x - 22)); x <= Math.min(v.W - 4, Math.ceil(h.x + 22)); x++) {
+    const s = v.halfWidth(x + 0.5) * 4 + Math.abs(x + 0.5 - h.x) * 0.06 + Math.abs(v.riverY(x + 1.5) - v.riverY(x - 0.5)) * 2;
+    if (s < bs) { bs = s; best = x; }
+  }
+  S.crossing = { x: best, kind: 'ford' };
+}
+/** The two landings of the crossing, on dry ground either side of the river. */
+export function crossingEnds() {
+  if (!S || !S.crossing) return null;
+  const v = theValley(), x = S.crossing.x, mid = Math.floor(v.riverY(x + 0.5));
+  let n = mid, s = mid;
+  while (n > 0 && v.water[n * v.W + x]) n--;
+  while (s < v.H - 1 && v.water[s * v.W + x]) s++;
+  return { x: x + 0.5, north: { x: x + 0.5, y: n + 0.5 }, south: { x: x + 0.5, y: s + 0.5 } };
+}
+/** An idea has changed the crossing (the ford becomes a bridge). */
+export function setCrossing(kind) {
+  if (!S.crossing) placeCrossing();
+  S.crossing.kind = kind;
+}
+
 /** Lays out the first village, in founding order. */
 export function placeFounding() {
+  if (!S.crossing) placeCrossing();
   const ids = Object.keys(BUILDINGS).filter(k => BUILDINGS[k].founding).sort((a, b) => BUILDINGS[a].founding - BUILDINGS[b].founding);
   for (const id of ids) addPlace(id);
 }
@@ -153,3 +187,29 @@ export function routeLine(id) {
   (S.lines || (S.lines = {}))[id] = ys;
   return ys;
 }
+
+/** Each spring one building that is two eras out of date may be rebuilt in the style of the present:
+ *  a home when its household can pay for it, anything else at the parish's charge. Oldest first. */
+export function restyleSeason() {
+  const era = S.era || 0, now = ERA_STYLES[Math.min(era, ERA_STYLES.length - 1)];
+  const dated = Object.values(P)
+    .filter(p => RESTYLED.includes((BUILDINGS[p.def] || {}).archetype) && era - (p.era || 0) >= 2 && ERA_STYLES[p.era || 0].material !== now.material)
+    .sort((a, b) => (a.era || 0) - (b.era || 0) || (a.built || 0) - (b.built || 0) || (a.id < b.id ? -1 : 1));
+  for (const p of dated) {
+    if (p.home) {
+      const payer = household(p.id).filter(isAdult).sort((a, b) => b.coins - a.coins)[0];
+      if (!payer || payer.coins < 14) continue;
+      payer.coins -= 8;
+      rebuild(p, era);
+      log(`${N(payer)} has ${PN(p.id)} pulled down and rebuilt in ${now.material}.`, 'event', 'work', { ids: [payer.id] });
+      return p.id;
+    }
+    {
+      rebuild(p, era);
+      log(`${PN(p.id).replace(/^the /, 'The ')} is rebuilt in ${now.material}.`, 'event', 'work');
+      return p.id;
+    }
+  }
+  return null;
+}
+function rebuild(p, era) { p.era = era; p.rebuilt = S.tick; }

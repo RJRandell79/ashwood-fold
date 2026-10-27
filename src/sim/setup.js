@@ -18,7 +18,7 @@ export function makeAgent(id,name,job,home,tr,o){
     tr,mem:[],knows:[],glyph:null,age:o.age??30,sex:o.sex||'f',spouse:-1,parents:o.parents||[],born:o.born??null,dead:null,prevJob:null};
 }
 export function blankState(seed){
-  const s={v:3,seed,rng:seed|0,valley:{seed},places:{},lines:{},foot:{},cottages:0,tick:6*6,agents:[],op:[],pair:{},grudge:{},cool:{},
+  const s={v:3,seed,rng:seed|0,valley:{seed},places:{},lines:{},crossing:null,foot:{},cottages:0,tick:6*6,agents:[],op:[],pair:{},grudge:{},cool:{},
      stores:{grain:160,flour:30,bread:30,missing:0},pantry:{},storm:0,fair:null,rumours:[],rid:0,log:[],annals:[],lastThief:-1,bareLogged:0,spoil:0,
      tech:{},gathers:[],gid:0,vacant:[],built:{},years:{},arms:{},election:null,nextElection:(YEAR_DAYS+2)*TPD,cases:[],cid:0,verdicts:[],era:0,reeveSince:null,lastElection:null,brawls:{},harvest:0,yearQ:.8+(((seed>>>3)%40)/100)};
   for(const {id} of IDEAS)s.tech[id]={state:'none',pressure:0,backers:[],opponents:[],adopters:[]};

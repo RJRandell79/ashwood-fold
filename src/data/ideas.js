@@ -20,6 +20,7 @@
 //   sabotage                 { place, what }  can be wrecked in the night by those it threatens
 //   builtLines               extra chronicle lines when it is finished
 //   places, line             buildings it raises and a line it cuts across the valley (src/data/buildings.js)
+//   crossing                 what the river crossing becomes when it is built (the first village has a ford)
 //   opensEra                 the era that begins when it is built
 //   emblem                   charge added to the inventor's family arms
 export const IDEAS = [
@@ -45,6 +46,15 @@ export const IDEAS = [
     pressure: { base: 0.6, when: { granaryFullAtHarvest: 6 }, on: { granaryFull: 3, cornFlattened: 30 } },
     effects: { grainCap: { set: 750 }, protectsHarvest: { set: 1 } },
     emblem: 'garb2',
+  },
+  {
+    id: 'bridge', name: 'Stone bridge', what: 'carries the lane over the river, so the village can build on the far bank', hint: 'Talk of the good land across the water',
+    crossing: 'bridge',
+    requires: [], inventorJobs: ['carter', 'smith', 'reeve', 'farmer'], backers: 6, cost: 60, buildDays: 6,
+    pressure: { base: 0.25, when: { shortOfLand: 4 } },
+    effects: { farBank: { set: 1 } },
+    builtLines: ['Carts no longer wait for low water at the ford.'],
+    emblem: 'bridge',
   },
   {
     id: 'shuttle', name: 'Flying shuttle', what: 'lets one weaver do the work of two', hint: 'The cloth merchant wants more cloth',
@@ -162,6 +172,7 @@ export const EFFECT_BASE = {
   canvassWeight: 1,          // multiplier on election canvassing
   childInherit: 0.6,         // how strongly children take on their parents' opinions
   lessons: null,             // the place where children go to lessons, once there is one
+  farBank: 0,                // 1 = buildings may go up on the far bank of the river
 };
 
 export const IDEA = Object.fromEntries(IDEAS.map(d => [d.id, d]));

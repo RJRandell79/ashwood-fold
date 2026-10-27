@@ -9,6 +9,7 @@ import { plan } from './life.js';
 import { log } from './log.js';
 import { makeAgent } from './setup.js';
 import { buildCottage, cottagesLeft } from './placement.js';
+import { setVia } from './paths.js';
 import { adj, mem, op } from './social.js';
 import { entryPoint, byJob, childrenOf, clamp, dayStart, household, isAdult, isKin, listNames, LIVE, N, P, pick, PN, pointIn, refreshLive, rnd, S, seasonOf, surname, yearOf } from './state.js';
 
@@ -89,7 +90,7 @@ export function arrive(job,reason){
   const id=S.agents.length;
   const s=addAgent(makeAgent(id,name,job,'tavern',tr,{age:20+rnd()*22,sex,hue:330}));
   home=setHome(s,home);s.coins=8;s.arrivedAt=S.tick;
-  [s.x,s.y]=entryPoint();s.px=s.x;s.py=s.y;s.arrived=false;s.act={type:'stroll',place:home,left:2,target:null};const q=pointIn(P[home]);s.tx=q[0];s.ty=q[1];
+  [s.x,s.y]=entryPoint();s.px=s.x;s.py=s.y;s.arrived=false;s.act={type:'stroll',place:home,left:2,target:null};const q=pointIn(P[home]);s.tx=q[0];s.ty=q[1];setVia(s);
   for(const a of LIVE)if(a!==s){S.op[a.id][id]=Math.round(-10+a.tr.warmth*20+(rnd()-.5)*10);S.op[id][a.id]=Math.round((rnd()-.4)*14);}
   log(`${N(s)} arrives along the carters' road ${reason}, and settles at ${PN(home)}.`,'event','arrival',{ids:[id]});
   return s;

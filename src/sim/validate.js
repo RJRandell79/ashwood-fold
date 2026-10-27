@@ -2,7 +2,7 @@
 import { EFFECT_BASE, IDEAS } from '../data/ideas.js';
 import { CHARGE_NAMES } from '../data/heraldry.js';
 import { JOBS } from '../data/world.js';
-import { BUILDINGS, LINES } from '../data/buildings.js';
+import { BUILDINGS, CROSSINGS, LINES } from '../data/buildings.js';
 import { SIGNALS, SIGNAL_EVENTS } from './signals.js';
 
 export function validateIdeas(ideas = IDEAS) {
@@ -29,6 +29,7 @@ export function validateIdeas(ideas = IDEAS) {
     if (d.hires && !BUILDINGS[d.hires.place]) errors.push(`${where}: hires at unknown place ${d.hires.place}`);
     for (const b of d.places || []) if (!BUILDINGS[b]) errors.push(`${where}: raises unknown building ${b}`);
     if (d.line && !LINES[d.line]) errors.push(`${where}: unknown line ${d.line}`);
+    if (d.crossing && !CROSSINGS[d.crossing]) errors.push(`${where}: unknown crossing ${d.crossing}`);
     if (d.emblem && !CHARGE_NAMES[d.emblem]) errors.push(`${where}: emblem ${d.emblem} has no name`);
   }
   // Places that appear with an idea must name a real one.

@@ -7,7 +7,7 @@ import { SEASON_DAYS, TPD } from '../data/world.js';
 import { bringCase, startBuilding } from './civic.js';
 import { effect, invalidateEffects } from './effects.js';
 import { armsOf, familyKey } from './heraldry.js';
-import { addPlace, routeLine } from './placement.js';
+import { addPlace, routeLine, setCrossing } from './placement.js';
 import { log } from './log.js';
 import { SIGNALS } from './signals.js';
 import { addRumour, adj, glyph, mem, op } from './social.js';
@@ -87,6 +87,7 @@ export function honourInventor(d, inv) {
 /** Puts an idea's buildings (and any canal or railway line) into the valley. */
 export function raiseBuildings(d) {
   if (d.line) routeLine(d.line);
+  if (d.crossing) setCrossing(d.crossing);
   for (const b of d.places || []) addPlace(b);
 }
 

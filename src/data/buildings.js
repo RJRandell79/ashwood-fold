@@ -81,3 +81,12 @@ export const LINES = {
   canal:   { name: 'the canal', target: 0.4, smooth: 2.5, width: 1 },
   railway: { name: 'the railway', target: 2.2, smooth: 6, width: 1 },
 };
+
+// Ways over the river. The first village fords it; the stone bridge idea replaces the ford.
+export const CROSSINGS = {
+  ford: { name: 'the ford' },
+  bridge: { name: 'the bridge' },
+};
+
+// Which archetypes are rebuilt in a newer style as the eras pass (the rest keep their first look).
+export const RESTYLED = ['house', 'long', 'workshop', 'civic'];
