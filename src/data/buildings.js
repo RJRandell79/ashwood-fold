@@ -14,6 +14,7 @@
 //     nearWater          prefer closeness to the river (weight)
 //     riverbank          must touch the river bank (true)
 //     fertile, flat, dry prefer good soil / level ground / ground that does not flood (weight)
+//     wooded             prefer standing woodland, to fell it (weight); otherwise woodland counts against a plot
 //     road               prefer well-trodden ground (weight)
 //     near, away         { kind or building id: weight }  prefer to be close to / far from
 //     line               must stand beside a line (canal, railway)
@@ -61,6 +62,8 @@ export const BUILDINGS = {
               place: { centre: 3, near: { hall: 2, home: 1 }, dry: 2 }, founding: 17, hue: 172 },
   cottage:  { name: 'Cottage', legacy: 'replaceable', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
               place: { centre: 2, near: { home: 3 }, road: 1, dry: 2, flat: 1 } },
+  assart:   { name: 'the Intake Fields', legacy: 'replaceable', w: 10, h: 5, indoor: false, kind: 'field', archetype: 'field', features: ['crops'],
+              place: { wooded: 4, fertile: 2, flat: 2, near: { fields: 2, home: 1 }, maxFlood: 0.6, maxSlope: 0.45 } },
   barn:     { name: 'the Tithe Barn', legacy: 'adaptable', w: 3, h: 4, indoor: true, kind: 'work', archetype: 'long',
               place: { near: { fields: 5 }, dry: 2 } },
   school:   { name: 'the School', legacy: 'adaptable', w: 4, h: 3, indoor: true, kind: 'civic', archetype: 'civic', features: ['bell', 'chimney'],

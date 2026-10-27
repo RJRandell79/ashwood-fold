@@ -43,6 +43,21 @@ function lineGap(rect, id) {
   return best;
 }
 
+/** Whether a cell still carries woodland: the valley's woods, less what has been felled (S.cleared). */
+export const wooded = (v, i) => (v.wood[i] && !(S.cleared && S.cleared[i]) ? 1 : 0);
+
+/** Fells the trees on and around a new building. Returns how many cells were cleared. */
+function clearWood(p) {
+  const v = theValley(), cleared = S.cleared || (S.cleared = {});
+  let n = 0;
+  for (let y = Math.floor(p.y) - 1; y < Math.ceil(p.y + p.h) + 1; y++) for (let x = Math.floor(p.x) - 1; x < Math.ceil(p.x + p.w) + 1; x++) {
+    if (x < 0 || y < 0 || x >= v.W || y >= v.H) continue;
+    const i = y * v.W + x;
+    if (wooded(v, i)) { cleared[i] = S.tick; n++; }
+  }
+  return n;
+}
+
 /** Scores one plot, or returns -Infinity if the building cannot stand there. */
 function score(def, x, y, v, occ, centre) {
   const R = def.place || {}, rect = { x, y, w: def.w, h: def.h };
@@ -59,7 +74,7 @@ function score(def, x, y, v, occ, centre) {
   for (let yy = y; yy < y + def.h; yy++) for (let xx = x; xx < x + def.w; xx++) {
     const i = yy * v.W + xx;
     if (v.water[i]) return -Infinity;
-    slope += v.slope[i]; flood += v.flood[i]; fert += v.fertile[i]; dist += v.dist[i]; wood += v.wood[i]; n++;
+    slope += v.slope[i]; flood += v.flood[i]; fert += v.fertile[i]; dist += v.dist[i]; wood += wooded(v, i); n++;
     maxSlope = Math.max(maxSlope, v.slope[i]); maxFlood = Math.max(maxFlood, v.flood[i]); minDist = Math.min(minDist, v.dist[i]);
     if (S.foot) foot += S.foot[i] || 0;
   }
@@ -73,7 +88,7 @@ function score(def, x, y, v, occ, centre) {
   const c = centreOf(rect);
   let dc = Math.hypot(c.x - centre.x, c.y - centre.y);
   if (far) { const e = crossingEnds(); dc = Math.hypot(c.x - e.south.x, c.y - e.south.y) + Math.hypot(e.north.x - centre.x, e.north.y - centre.y) + 2; }
-  let s = -wood * 0.3;
+  let s = R.wooded ? R.wooded * wood : -wood * 0.3;
   if (R.centre) s += R.centre * (1 - Math.min(1, dc / 30));
   if (R.edge) s += R.edge * Math.min(1, dc / 25);
   if (R.nearWater) s += R.nearWater * (1 - Math.min(1, dist / 12));
@@ -118,6 +133,11 @@ export function addPlace(id, defId = id, extra = {}) {
   if (!plot) return null;
   P[id] = { id, def: defId, name: extra.name || def.name, x: plot.x, y: plot.y, w: def.w, h: def.h, indoor: def.indoor, home: !!def.home, kind: def.kind,
     era: S.era || 0, built: S.tick, ...(def.hue != null ? { hue: def.hue } : {}), ...extra };
+  const felled = clearWood(P[id]);
+  if (felled >= 10) {
+    P[id].felled = felled;
+    if (!(def.place && def.place.wooded)) log(`Trees are felled to make room for ${P[id].name}.`, 'event', 'work', { place: id });
+  }
   return P[id];
 }
 

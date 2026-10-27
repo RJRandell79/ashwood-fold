@@ -48,6 +48,15 @@ export const IDEAS = [
     emblem: 'garb2',
   },
   {
+    id: 'assart', name: 'Wood clearing', what: 'fells the nearest wood and ploughs the ground beneath for new fields', hint: 'Talk of the good soil under the trees',
+    places: ['assart'],
+    requires: [], inventorJobs: ['farmer', 'farmhand', 'labourer'], backers: 5, cost: 25, buildDays: 4,
+    pressure: { base: 0.2, when: { grainShort: 4, shortOfLand: 1 } },
+    effects: { farmYield: { mul: 1.25 } },
+    builtLines: ['Where the wood stood there are stumps and fresh furrows: the Intake Fields.'],
+    emblem: 'axe',
+  },
+  {
     id: 'bridge', name: 'Stone bridge', what: 'carries the lane over the river, so the village can build on the far bank', hint: 'Talk of the good land across the water',
     crossing: 'bridge',
     requires: [], inventorJobs: ['carter', 'smith', 'reeve', 'farmer'], backers: 6, cost: 60, buildDays: 6,

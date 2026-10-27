@@ -109,13 +109,15 @@ function syncPlaces(){
   for(const id in W.places)if(!P[id])removePlace3d(id);
   for(const id in (S.lines||{}))if(!W.lines[id]){const L=(id==='canal'?buildCanal:buildRailway)(S.lines[id],W.v,W.O);W.root.add(L.group);W.lines[id]=L;}
   for(const id in W.lines)if(!(S.lines&&S.lines[id])){W.root.remove(W.lines[id].group);delete W.lines[id];}
-  const sig=Object.keys(P).join(',')+'|'+Object.keys(W.lines).join(',');
+  const sig=Object.keys(P).join(',')+'|'+Object.keys(W.lines).join(',')+'|'+Object.keys(S.cleared||{}).length+'|'+Object.keys(S.roads||{}).length;
   if(sig!==W.treeSig){
     W.treeSig=sig;if(W.trees)W.root.remove(W.trees);
     const v=W.v,blocked=new Uint8Array(v.W*v.H),mark=(x,y)=>{if(x>=0&&y>=0&&x<v.W&&y<v.H)blocked[y*v.W+x]=1;};
     for(const p of Object.values(P))for(let y=Math.floor(p.y)-1;y<Math.ceil(p.y+p.h)+1;y++)for(let x=Math.floor(p.x)-1;x<Math.ceil(p.x+p.w)+1;x++)mark(x,y);
     for(const ys of Object.values(S.lines||{}))ys.forEach((y,x)=>{for(let d=-1;d<=1;d++)mark(x,y+d);});
     for(const k in (S.foot||{}))if(S.foot[k]>6)blocked[k]=1;
+    for(const k in (S.roads||{}))blocked[k]=1;
+    for(const k in (S.cleared||{}))blocked[k]=1; // felled woodland stays open ground
     W.trees=makeTrees(v,W.O,blocked,G.leafM,G.trunkM);W.root.add(W.trees);
   }
 }
