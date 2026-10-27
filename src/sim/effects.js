@@ -1,5 +1,6 @@
 // What built ideas do to the village, read from the `effects` of each record in src/data/ideas.js.
 import { EFFECT_BASE, IDEAS } from '../data/ideas.js';
+import { ERAS } from '../data/eras.js';
 import { S, techOn } from './state.js';
 
 let version = 0;
@@ -40,6 +41,10 @@ export function employerOf(job) {
   return IDEAS.find(d => d.hires && d.hires.job === job && techOn(d.id)) || null;
 }
 
+/** The name of an era in this village: the title its opening idea gave it, else the standard one. */
+export function eraName(e) {
+  return (S.eraTitles && S.eraTitles[e]) || ERAS[e];
+}
 /** The era the village is in: the highest era opened by a built idea. */
 export function currentEra() {
   let era = 0;

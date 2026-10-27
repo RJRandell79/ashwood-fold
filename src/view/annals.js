@@ -1,5 +1,5 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
-import { ERAS } from '../data/eras.js';
+import { eraName } from '../sim/effects.js';
 import { IDEA } from '../data/ideas.js';
 import { SEASONS, TPD, YEAR_DAYS } from '../data/world.js';
 import { armsOf, blazon, familyCards, familyPlural } from '../sim/heraldry.js';
@@ -59,7 +59,7 @@ export function buildStory(){
   let prevEra=-1;const roman=['I','II','III','IV','V'];
   for(let y=Math.min(y0,1);y<=y1;y++){
     const era=S.years[y]&&S.years[y].era!=null?S.years[y].era:Math.max(prevEra,0);
-    if(era!==prevEra){prevEra=era;html+=`<div class="bookhead"><span class="num">Book ${roman[era]}</span><h2>${ERAS[era]}</h2></div>`;}
+    if(era!==prevEra){prevEra=era;html+=`<div class="bookhead"><span class="num">Book ${roman[era]}</span><h2>${eraName(era)}</h2></div>`;}
     const ents=S.annals.filter(e=>yearOf(e.t)===y&&e.c!=='prologue');
     if(!ents.length&&!S.years[y])continue;
     html+=`<section class="chapter"><span class="num">Chapter ${y}</span><h2>${yearTitle(y,ents)}</h2><p class="intro">${yearIntro(y)}</p>`;

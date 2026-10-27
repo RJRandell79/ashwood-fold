@@ -5,6 +5,8 @@ import { JOBS } from '../data/world.js';
 import { BUILDINGS, CROSSINGS, LEGACIES, LINES } from '../data/buildings.js';
 import { SIGNALS, SIGNAL_EVENTS } from './signals.js';
 
+const ANSWERS = ['food', 'connectivity', 'economy', 'social'];
+
 export function validateIdeas(ideas = IDEAS) {
   const errors = [], ids = new Set();
   const known = new Set(ideas.map(d => d.id));
@@ -14,7 +16,9 @@ export function validateIdeas(ideas = IDEAS) {
     ids.add(d.id);
     for (const k of ['name', 'what', 'hint']) if (typeof d[k] !== 'string' || !d[k]) errors.push(`${where}: missing ${k}`);
     if (!(d.backers > 0) || !(d.cost > 0)) errors.push(`${where}: needs backers and cost`);
-    for (const r of d.requires || []) if (!known.has(r)) errors.push(`${where}: requires unknown idea ${r}`);
+    for (const r of (d.requires || []).flat()) if (!known.has(r)) errors.push(`${where}: requires unknown idea ${r}`);
+    if (!ANSWERS.includes(d.answers)) errors.push(`${where}: answers must be one of ${ANSWERS.join(', ')}`);
+    if (d.possibleWhen && !(d.possibleWhen in SIGNALS)) errors.push(`${where}: possible only when unknown signal ${d.possibleWhen}`);
     for (const j of d.inventorJobs || []) if (!(j in JOBS)) errors.push(`${where}: unknown inventor trade ${j}`);
     if (!d.inventorJobs || !d.inventorJobs.length) errors.push(`${where}: nobody can think of it`);
     for (const s of Object.keys((d.pressure && d.pressure.when) || {})) if (!(s in SIGNALS)) errors.push(`${where}: unknown signal ${s}`);
@@ -40,12 +44,12 @@ export function validateIdeas(ideas = IDEAS) {
     if (state[id] === 'busy') { errors.push(`requirement cycle: ${[...path, id].join(' -> ')}`); return; }
     state[id] = 'busy';
     const d = ideas.find(x => x.id === id);
-    for (const r of (d && d.requires) || []) visit(r, [...path, id]);
+    for (const r of ((d && d.requires) || []).flat()) visit(r, [...path, id]);
     state[id] = 'done';
   };
   for (const d of ideas) visit(d.id, []);
-  // Eras must open in order along the requirement chain.
-  const eras = ideas.filter(d => d.opensEra).map(d => d.opensEra).sort((a, b) => a - b);
+  // Every era from 1 up must be opened by at least one idea (several ideas may open the same era).
+  const eras = [...new Set(ideas.filter(d => d.opensEra).map(d => d.opensEra))].sort((a, b) => a - b);
   eras.forEach((e, i) => { if (e !== i + 1) errors.push(`eras are not opened 1, 2, 3...: found ${eras.join(', ')}`); });
   return [...new Set(errors)];
 }

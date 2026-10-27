@@ -1,9 +1,9 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { ERA_LINES } from '../data/eras.js';
 import { SURNAMES } from '../data/folk.js';
-import { IDEA } from '../data/ideas.js';
+import { IDEA, IDEAS } from '../data/ideas.js';
 import { currentEra, effect, invalidateEffects } from './effects.js';
-import { honourInventor, raiseBuildings } from './ideas.js';
+import { easeRivals, honourInventor, raiseBuildings } from './ideas.js';
 import { JOBS, MAXPOP, TPD, YEAR_DAYS } from '../data/world.js';
 import { familyKey } from './heraldry.js';
 import { log } from './log.js';
@@ -168,7 +168,11 @@ export function exile(a,reason){
 export function eraOf(){return currentEra();}
 export function eraDay(){
   const e=eraOf();
-  if(e!==S.era){S.era=e;log(ERA_LINES[e],'nudge','era',{era:e});}
+  if(e!==S.era){
+    // the idea that opened the era may give it its own name (the Turnpike Years rather than the Canal Years)
+    const by=IDEAS.filter(d=>d.opensEra===e&&S.tech[d.id].state==='built').sort((a,b)=>S.tech[b.id].builtAt-S.tech[a.id].builtAt)[0];
+    if(by&&by.eraTitle)(S.eraTitles||(S.eraTitles={}))[e]=by.eraTitle;
+    S.era=e;log((by&&by.eraLine)||ERA_LINES[e],'nudge','era',{era:e});}
 }
 export function startBuilding(id){
   const t=S.tech[id],T=IDEA[id];
@@ -180,7 +184,7 @@ export function startBuilding(id){
     const sex=rnd()<.85?'m':'f',name=nameBaby(sex,pick(SURNAMES));
     const tr={temper:.5+rnd()*.4,warmth:.3+rnd()*.5,diligence:.5+rnd()*.4,forgive:.2+rnd()*.5,gossip:.3+rnd()*.5,scruple:.2+rnd()*.45};
     const nid=S.agents.length,n=addAgent(makeAgent(nid,name,'navvy','tavern',tr,{age:19+rnd()*16,sex,hue:20}));
-    n.coins=6;n.navvy=true;n.arrivedAt=S.tick;[n.x,n.y]=entryPoint();n.px=n.x;n.py=n.y;n.arrived=false;n.act={type:'stroll',place:'tavern',left:2,target:null};const q=pointIn(P.tavern);n.tx=q[0];n.ty=q[1];
+    n.work=(T.places&&T.places[0])||n.work;n.coins=6;n.navvy=true;n.arrivedAt=S.tick;[n.x,n.y]=entryPoint();n.px=n.x;n.py=n.y;n.arrived=false;n.act={type:'stroll',place:'tavern',left:2,target:null};const q=pointIn(P.tavern);n.tx=q[0];n.ty=q[1];
     for(const a of LIVE)if(a!==n){S.op[a.id][nid]=Math.round(-18+a.tr.warmth*20+(rnd()-.5)*10);S.op[nid][a.id]=Math.round((rnd()-.5)*14);}
     t.navvies.push(nid);
   }
@@ -191,7 +195,8 @@ export function finishBuilding(id){
   t.state='built';t.builtAt=S.tick;invalidateEffects();
   const inv=S.agents[t.inventor];
   log(`The ${T.name.toLowerCase()} is finished: ${N(inv)}'s great scheme, ${T.what}.`,'good','tech',{tech:id,ids:[inv.id],built:1});
-  honourInventor(T,inv);
+  for(const line of T.builtLines||[])log(line,'event','tech',{tech:id});
+  easeRivals(T);honourInventor(T,inv);
   const stay=[],go=[];
   for(const nid of t.navvies||[]){const n=S.agents[nid];if(n.dead)continue;
     if(n.spouse>=0||LIVE.filter(b=>b!==n).reduce((s,b)=>s+op(b,n),0)/LIVE.length>25){stay.push(n);n.job='labourer';n.work='mill';n.navvy=false;}

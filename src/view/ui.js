@@ -1,12 +1,12 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
-import { ERAS } from '../data/eras.js';
 import { STRANGERS } from '../data/folk.js';
 import { IDEA, IDEAS } from '../data/ideas.js';
-import { effect } from '../sim/effects.js';
+import { effect, eraName } from '../sim/effects.js';
 import { MAXPOP, SEASONS, TPD } from '../data/world.js';
 import { autosave, decode, encode } from '../save/codec.js';
 import { favourite, voters } from '../sim/civic.js';
 import { armsOf, blazon, familyCards, familyKey, familyPlural } from '../sim/heraldry.js';
+import { requiresMet } from '../sim/ideas.js';
 import { nudgeFair, nudgePurse, nudgeRumour, nudgeShort, nudgeStorm, nudgeStranger } from '../sim/nudges.js';
 import { newTown } from '../sim/setup.js';
 import { op } from '../sim/social.js';
@@ -100,7 +100,7 @@ export function renderDetail(){
 }
 export function renderTechs(){
   const html=IDEAS.map(T=>{
-    const id=T.id,t=S.tech[id],locked=!T.requires.every(techBuilt)&&t.state==='none';
+    const id=T.id,t=S.tech[id],locked=!requiresMet(T)&&t.state==='none';
     let tag,line,extra='';
     if(t.state==='building'){const pct=clamp(100-(t.doneAt-S.tick)/(TPD*T.buildDays)*100,0,100);return `<div class="tech st-idea"><div class="tn"><b>${T.name}</b><span>Being built</span></div><div class="ts">${N(S.agents[t.inventor])}'s scheme. Finished in ${Math.max(1,Math.ceil((t.doneAt-S.tick)/TPD))} days.</div><div class="pm"><span style="width:${pct}%"></span></div></div>`;}
     if(t.state==='built'){const broken=t.brokenUntil>S.tick;tag=broken?'Wrecked':'Built';
@@ -109,7 +109,8 @@ export function renderTechs(){
     if(t.state==='idea'){const inv=S.agents[t.inventor],bk=t.backers.map(i=>S.agents[i]).filter(b=>b!==inv),opp=t.opponents.map(i=>S.agents[i]);
       line=`${N(inv)}'s idea. Backers ${t.backers.length} of ${T.backers}${bk.length?` (${listNames(bk.slice(0,4))}${bk.length>4?' and more':''})`:''}${opp.length?`. Against: ${listNames(opp.slice(0,4))}`:''}. Costs ${T.cost} pennies.`;
       return `<div class="tech st-idea"><div class="tn"><b>${T.name}</b><span>Being argued over</span></div><div class="ts">${line}</div></div>`;}
-    if(locked)return `<div class="tech st-locked"><div class="tn"><b>${T.name}</b><span>Unthought of</span></div><div class="ts">Nobody will think of it until the village has the ${T.requires.map(r=>IDEA[r].name.toLowerCase()).join(' and the ')}.</div></div>`;
+    if(locked)return `<div class="tech st-locked"><div class="tn"><b>${T.name}</b><span>Unthought of</span></div><div class="ts">Nobody will think of it until the village has the ${T.requires.map(r=>(Array.isArray(r)?r:[r]).map(x=>IDEA[x].name.toLowerCase()).join(' or the ')).join(' and the ')}.</div></div>`;
+    if(t.state==='abandoned')return `<div class="tech st-locked"><div class="tn"><b>${T.name}</b><span>Set aside</span></div><div class="ts">Twice argued over and twice dropped. Nobody will raise it again until times change, or ten years have passed.</div></div>`;
     const pr=clamp(t.pressure,0,100);
     line=pr<25?'Nobody is talking about it.':pr<75?`${T.hint}.`:`${T.hint}. Someone is bound to think of it soon.`;
     return `<div class="tech"><div class="tn"><b>${T.name}</b><span>Unthought of</span></div><div class="ts">${line}</div><div class="pm" aria-hidden="true"><span style="width:${pr}%"></span></div></div>`;
@@ -155,7 +156,7 @@ export function renderLog(){
 export function render(force){
   if(!S)return;
   $('when').innerHTML=`${seasonName()}<small>${weekday()}, day ${dayInSeason()} of ${SEASONS[seasonOf()].toLowerCase()} · ${fmtTime(S.tick)}</small>`;
-  const chips=[`<span class="chip era">${ERAS[S.era]}</span>`];
+  const chips=[`<span class="chip era">${eraName(S.era)}</span>`];
   if(S.election)chips.push(`<span class="chip fair">Election ${dayOf(S.election.vote)===dayOf()?'today':weekday(S.election.vote)}</span>`);
   if(S.storm>0)chips.push(`<span class="chip storm">${seasonOf()===3?'Blizzard':'Storm'} · ${Math.ceil(S.storm/6)}h left</span>`);
   if(S.fair)chips.push(`<span class="chip fair">${S.fair.harvest?'Harvest Home':fairOn()?'Fair on the Green':'Fair '+(dayOf(S.fair.start)===dayOf()?'at 10:00':'tomorrow')}</span>`);
