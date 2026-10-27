@@ -1,14 +1,18 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
-import { BARN, H, LIGHT, P, SAVEKEY, W } from '../data/world.js';
+import { BARN, H, LIGHT, P, W } from '../data/world.js';
 import { armsOf, familyKey } from '../sim/heraldry.js';
 import { op } from '../sim/social.js';
 import { LIVE, S, byJob, clamp, hourOf, household, hueOf, isAdult, placeShown, seasonOf, techBuilt, techOn } from '../sim/state.js';
-import { cv, darkness, doorOf, visibleA } from './map2d.js';
 import { armsSVG } from './portraits.js';
 import { $, select } from './ui.js';
 import { V } from './vstate.js';
 
-export let view='2d', G=null, follow=false;
+// Light, doors and visibility, shared by the scene and the loop.
+export function darkness(h){const [r,s]=LIGHT[seasonOf()];if(h<r-1.5||h>=s+2)return .55;if(h<r+.5)return .55*(r+.5-h)/2;if(h>=s)return .55*(h-s)/2;return 0;}
+export function doorOf(p){const cx=p.x+p.w/2;return p.y+p.h<=13?[cx,p.y+p.h]:[cx,p.y];}
+export function visibleA(a){return (!a.dead&&!(a.arrived&&a.act.type==='sleep'));}
+
+export let G=null, follow=false;
 export const cv3=$('map3d');
 export function tw(x){return (x-W/2);}
 export function tz(y){return (y-H/2);}
@@ -353,17 +357,12 @@ export function pick3d(e){
   }
 }
 export function syncFollow(){$('vFollow').classList.toggle('on',follow);$('vFollow').setAttribute('aria-pressed',follow);}
-export function setView(v,save){
-  if(v==='3d'&&!init3d()){v='2d';$('v3d').disabled=true;$('viewNote').textContent='3D needs WebGL, which this browser is not providing.';}
-  view=v;cv.hidden=v!=='2d';cv3.hidden=v!=='3d';$('cam3d').hidden=v!=='3d';
-  $('v2d').classList.toggle('on',v==='2d');$('v3d').classList.toggle('on',v==='3d');
-  if(v==='3d')$('viewNote').textContent='Drag to turn. Pinch or scroll to zoom. Two fingers or right-drag to pan.';
-  else if(!$('v3d').disabled)$('viewNote').textContent='';
-  if(v==='3d')size3d();
-  if(save)try{localStorage.setItem(SAVEKEY+'-view',v);}catch(e){}
+/** Starts the 3D view. Without WebGL the village still runs; the chronicle and panels carry on. */
+export function start3d(){
+  if(!init3d()){cv3.parentElement.hidden=true;$('cam3d').hidden=true;$('viewNote').textContent='The view of the village needs WebGL, which this browser is not providing. The village carries on in the chronicle and the panels below.';return false;}
+  cv3.hidden=false;$('cam3d').hidden=false;$('viewNote').textContent='Drag to turn. Pinch or scroll to zoom. Two fingers or right-drag to pan.';
+  size3d();return true;
 }
-$('v2d').onclick=()=>setView('2d',true);
-$('v3d').onclick=()=>setView('3d',true);
 $('vReset').onclick=()=>{if(!G)return;Object.assign(G,{theta:-.35,phi:.92,radius:defR()});G.target.set(0,0,1.5);follow=false;syncFollow();};
 $('vTop').onclick=()=>{if(!G)return;Object.assign(G,{theta:0,phi:.08,radius:defR()*.9});G.target.set(0,0,0);follow=false;syncFollow();};
 $('vFollow').onclick=()=>{if(V.sel<0||!S.agents[V.sel]||S.agents[V.sel].dead){$('viewNote').textContent='Pick a villager first, then Follow keeps the camera on them.';return;}follow=!follow;if(follow&&G)G.radius=Math.min(G.radius,24);syncFollow();};

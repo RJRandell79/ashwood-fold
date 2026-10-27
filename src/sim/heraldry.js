@@ -1,5 +1,6 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
-import { AUG, CHARGE_BY_JOB, CHARGE_NAMES, COLOURS, DIVNAME, DIVS, METALS, TINCT, TRADEWORD, VIRTUE } from '../data/heraldry.js';
+import { IDEA } from '../data/ideas.js';
+import { CHARGE_BY_JOB, CHARGE_NAMES, COLOURS, DIVNAME, DIVS, METALS, TINCT, TRADEWORD, VIRTUE } from '../data/heraldry.js';
 import { hashStr, lrng } from './faces.js';
 import { S, surname } from './state.js';
 
@@ -23,7 +24,7 @@ export function blazon(ar){
   const T=k=>TINCT[k][0];
   let s=ar.div==='plain'?T(ar.c1):`${DIVNAME[ar.div]} ${T(ar.c1)} and ${T(ar.c2)}`;
   s+=`, ${CHARGE_NAMES[ar.charge]} ${T(ar.metal)}`;
-  if(ar.aug.length){const cm=ar.metal==='or'?'argent':'or';const names=ar.aug.map(t=>CHARGE_NAMES[AUG[t]]);
+  if(ar.aug.length){const cm=ar.metal==='or'?'argent':'or';const names=ar.aug.map(t=>CHARGE_NAMES[IDEA[t].emblem]);
     s+=`; on a chief ${T(cm)}, ${names.length>1?names.slice(0,-1).join(', ')+' and '+names[names.length-1]:names[0]} Sable`;}
   return s;
 }

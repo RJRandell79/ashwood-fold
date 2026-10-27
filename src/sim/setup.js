@@ -1,6 +1,6 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { FOLK, STRANGERS } from '../data/folk.js';
-import { TECH } from '../data/ideas.js';
+import { IDEAS } from '../data/ideas.js';
 import { HUES, JOBS, P, TPD, YEAR_DAYS } from '../data/world.js';
 import { armsOf, familyKey } from './heraldry.js';
 import { log } from './log.js';
@@ -19,7 +19,7 @@ export function blankState(seed){
   const s={v:2,seed,rng:seed|0,tick:6*6,agents:[],op:[],pair:{},grudge:{},cool:{},
      stores:{grain:160,flour:30,bread:30,missing:0},pantry:{},storm:0,fair:null,rumours:[],rid:0,log:[],annals:[],lastThief:-1,bareLogged:0,spoil:0,
      tech:{},gathers:[],gid:0,vacant:[],built:{},years:{},arms:{},election:null,nextElection:(YEAR_DAYS+2)*TPD,cases:[],cid:0,verdicts:[],era:0,reeveSince:null,lastElection:null,brawls:{},harvest:0,yearQ:.8+(((seed>>>3)%40)/100)};
-  for(const id in TECH)s.tech[id]={state:'none',pressure:0,backers:[],opponents:[],adopters:[]};
+  for(const {id} of IDEAS)s.tech[id]={state:'none',pressure:0,backers:[],opponents:[],adopters:[]};
   return s;
 }
 export function newTown(seed){
@@ -55,7 +55,7 @@ export function newTown(seed){
 export function ensureState(o){
   const fresh=blankState(o.seed||1);
   for(const k in fresh)if(o[k]===undefined)o[k]=fresh[k];
-  for(const id in TECH)if(!o.tech[id])o.tech[id]={state:'none',pressure:0,backers:[],opponents:[],adopters:[]};
+  for(const {id} of IDEAS)if(!o.tech[id])o.tech[id]={state:'none',pressure:0,backers:[],opponents:[],adopters:[]};
   if(o.nextElection<o.tick)o.nextElection=o.tick+3*TPD+TPD;
   return o;
 }

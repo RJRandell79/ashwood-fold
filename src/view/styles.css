@@ -41,9 +41,8 @@ button:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-v
 .layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:22px;align-items:start}
 @media (max-width:940px){.layout{grid-template-columns:1fr}}
 .left{display:flex;flex-direction:column;gap:18px;min-width:0}
-.viewbar{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;margin-bottom:-8px}
+.viewbar{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-bottom:-8px}
 .mapbox{position:relative;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--grass)}
-#map{display:block;width:100%;aspect-ratio:40/26;max-width:100%;cursor:pointer;touch-action:manipulation}
 #map3d{display:block;width:100%;aspect-ratio:40/26;max-width:100%;cursor:grab;touch-action:none}
 #map3d:active{cursor:grabbing}
 @media (max-width:600px){#map3d{aspect-ratio:1/1}}

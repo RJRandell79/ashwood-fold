@@ -1,4 +1,5 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
+import { effect } from './effects.js';
 import { TPD } from '../data/world.js';
 import { hooks } from './hooks.js';
 import { civicDay } from './civic.js';
@@ -8,7 +9,7 @@ import { log } from './log.js';
 import { gatherTick, lifeDay } from './people.js';
 import { collectDues, foodDay, seasonStart, spendDay, upkeepDay, weatherDay } from './seasons.js';
 import { checkPair, encounters } from './social.js';
-import { LIVE, S, dayInSeason, dayOf, dayStart, listNames, refreshLive, seasonOf, techOn } from './state.js';
+import { LIVE, S, dayInSeason, dayOf, dayStart, listNames, refreshLive, seasonOf } from './state.js';
 
 export function midnight(){
   refreshLive();
@@ -16,9 +17,9 @@ export function midnight(){
     if(o<0)S.op[a.id][b.id]=Math.min(0,o+(.5+a.tr.forgive*2.5)*(1-a.tr.temper*.5));
     else if(o>25&&!b.dead)S.op[a.id][b.id]=o-.6;}
   // children take on their parents' loves and hates
-  const school=techOn('school');
+  const inherit=effect('childInherit');
   for(const c of LIVE){if(c.age>=18||!c.parents.length)continue;const ps=c.parents.map(i=>S.agents[i]);
-    for(const x of LIVE){if(x===c||ps.includes(x))continue;const tgt=ps.reduce((s,p)=>s+S.op[p.id][x.id],0)/ps.length*(school?.35:.6);
+    for(const x of LIVE){if(x===c||ps.includes(x))continue;const tgt=ps.reduce((s,p)=>s+S.op[p.id][x.id],0)/ps.length*inherit;
       S.op[c.id][x.id]+=(tgt-S.op[c.id][x.id])*.06;}}
   for(const a of LIVE)for(const b of LIVE)if(a.id<b.id)checkPair(a,b);
   if((dayOf()-1)%7===0)collectDues();

@@ -1,6 +1,5 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 
-
 export const ERAS=['The Cottage Years','The Mill Years','The Canal Years','The Age of Steam','The Railway Age'];
 export const ERA_LINES=['',
   'With the cotton mill working, Ashwood Fold enters the Mill Years. The cottage looms are falling quiet.',

@@ -1,10 +1,12 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
+import { effect } from './effects.js';
+import { raisePressure } from './signals.js';
 import { MAXPOP, P, TPD, YEAR_DAYS } from '../data/world.js';
 import { plan } from './life.js';
 import { log } from './log.js';
 import { arrive } from './people.js';
 import { adj, mem } from './social.js';
-import { LIVE, N, S, byJob, dayOf, household, isAdult, listNames, pick, rnd, seasonOf, techOn, yearOf } from './state.js';
+import { LIVE, N, S, byJob, dayOf, household, isAdult, listNames, pick, rnd, seasonOf, yearOf } from './state.js';
 
 export function seasonStart(){
   const s=seasonOf(),y=yearOf(),pop=LIVE.length;
@@ -12,14 +14,14 @@ export function seasonStart(){
     S.years[y]={startPop:pop,births:0,deaths:0,weddings:0,era:S.era};S.yearQ=.65+rnd()*.6;
     log(`Spring comes to Ashwood Fold. Year ${y} begins with ${pop} souls in the village.`,'event','season',{season:0});
     if(LIVE.filter(isAdult).length<12)arrive(pick(['labourer','farmhand','weaver']),'looking for work');
-    const extra=techOn('railway')?2:techOn('steam')?1:0;
-    for(let i=0;i<extra&&LIVE.length<MAXPOP-2;i++)arrive(techOn('cottonmill')?'millhand':'labourer',techOn('railway')?'on the train, looking for work':'looking for work at the mill');
+    const extra=effect('springMigrants');
+    for(let i=0;i<extra&&LIVE.length<MAXPOP-2;i++)arrive(effect('migrantJob'),effect('migrantReason'));
   }else if(s===1)log(`Summer. The corn stands green in the South Fields.`,'event');
   else if(s===2){S.harvest=0;log(`Autumn, and the harvest begins.`,'event');}
   else{
     const ratio=S.harvest/Math.max(1,pop*22),verdict=ratio<.8?'thin':ratio<1.15?'fair':'fine';
     S.years[y].harvest=verdict;
-    if(verdict==='thin'){S.tech.plough.pressure+=50;}
+    if(verdict==='thin'){raisePressure('thinHarvest');}
     log(`Winter sets in. The harvest was ${verdict}: ${Math.round(S.harvest)} sheaves brought in for ${pop} mouths${verdict==='thin'?'. It will be a hungry winter.':'.'}`,verdict==='thin'?'bad':'event','season',{season:3,harvest:verdict});
   }
 }
@@ -32,12 +34,12 @@ export function stormHits(natural){
   const s=seasonOf();
   if(s===3)log(natural?'A blizzard sweeps down off the fells. The lanes fill with snow.':'Snow and wind lash Ashwood Fold.','event',natural?'season':null);
   else if(natural)log('Black clouds roll in over the fells and a storm breaks over Ashwood Fold.','event');
-  if(s===2&&!techOn('barn')&&S.stores.grain>20){const lost=Math.round(S.stores.grain*.08);S.stores.grain-=lost;S.harvest=Math.max(0,S.harvest-lost);S.tech.barn.pressure+=30;
+  if(s===2&&!effect('protectsHarvest')&&S.stores.grain>20){const lost=Math.round(S.stores.grain*.08);S.stores.grain-=lost;S.harvest=Math.max(0,S.harvest-lost);raisePressure('cornFlattened');
     log(`The rain lays the standing corn flat. ${lost} sheaves are spoiled in the field.`,'bad','season');}
   for(const a of LIVE)if(!P[a.act.place].indoor)plan(a);
 }
 export function upkeepDay(){
-  const cost=seasonOf()===3?(techOn('canal')?.8:1):.7;
+  const cost=seasonOf()===3?effect('winterUpkeep'):.7;
   for(const h of new Set(LIVE.map(a=>a.home))){
     const folk=household(h),adults=folk.filter(isAdult);if(!adults.length)continue;
     for(const a of adults)if(a.coins>10)a.coins-=(a.coins-10)*.012;
@@ -65,8 +67,8 @@ export function foodDay(){
     if(c&&rnd()<.35){c.switched=S.tick;c.prevJob=c.job;c.job='farmhand';c.work='fields';log(`${N(c)} leaves ${c.prevJob} work for the South Fields. There are too few hands at the harvest.`,'event','work',{ids:[c.id]});}
   }
   // a cartload of corn from the next valley, if anyone will pay for it
-  const canal=techOn('canal'),cost=canal?15:35;
-  if(S.stores.grain+S.stores.flour<pop*(canal?7:4)&&S.tick-(S.lastCart||-1e9)>TPD*2){
+  const canal=effect('cornByBoat'),cost=effect('cornCartCost');
+  if(S.stores.grain+S.stores.flour<pop*effect('cornCartThreshold')&&S.tick-(S.lastCart||-1e9)>TPD*2){
     const rich=LIVE.filter(a=>isAdult(a)&&a.coins>=cost).sort((x,y)=>y.coins*y.tr.warmth-x.coins*x.tr.warmth);
     const buyer=rich.find(a=>rnd()<.25+a.tr.warmth*.6);
     if(buyer){buyer.coins-=cost;S.stores.grain+=70;S.lastCart=S.tick;for(const b of LIVE)if(b!==buyer)adj(b,buyer,4);

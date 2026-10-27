@@ -1,15 +1,16 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { ERA_LINES } from '../data/eras.js';
 import { SURNAMES } from '../data/folk.js';
-import { AUG, CHARGE_NAMES } from '../data/heraldry.js';
-import { TECH } from '../data/ideas.js';
+import { IDEA } from '../data/ideas.js';
+import { currentEra, effect, invalidateEffects } from './effects.js';
+import { honourInventor } from './ideas.js';
 import { JOBS, MAXPOP, P, TPD, YEAR_DAYS } from '../data/world.js';
-import { armsOf, familyKey } from './heraldry.js';
+import { familyKey } from './heraldry.js';
 import { log } from './log.js';
 import { addAgent, nameBaby, succeed } from './people.js';
 import { makeAgent } from './setup.js';
 import { adj, glyph, mem, op } from './social.js';
-import { LIVE, N, PN, S, byJob, dayStart, isAdult, isKin, listNames, numberWord, pick, pointIn, refreshLive, rnd, techBuilt, techOn, weekday } from './state.js';
+import { LIVE, N, PN, S, byJob, dayStart, isAdult, isKin, listNames, numberWord, pick, pointIn, refreshLive, rnd, weekday } from './state.js';
 
 export function standing(a){const v=LIVE.filter(b=>b!==a&&isAdult(b));return v.reduce((s,b)=>s+op(b,a),0)/Math.max(1,v.length);}
 export function ambition(a){return a.tr.diligence*.4+(1-a.tr.warmth)*.25+a.tr.temper*.15+(a.coins>40?.15:0);}
@@ -54,7 +55,7 @@ export function canvass(a,b){
   if(rnd()>(isCand?.55:.22))return false;
   const fav=favourite(a,false);if(fav==null||b.id===fav||e.cands.includes(b.id))return false;
   const c=S.agents[fav],trust=(op(b,a)+100)/200,L=(e.lean[b.id]||(e.lean[b.id]={}));
-  L[fav]=(L[fav]||0)+(isCand?9:6)*trust*(techOn('school')?.8:1);
+  L[fav]=(L[fav]||0)+(isCand?9:6)*trust*effect('canvassWeight');
   glyph(a,'…','rumour');
   if(isCand&&rnd()<.12)log(`${N(a)} asks ${N(b)} for a vote at ${PN(a.at)}.`,'event');
   else if(!isCand&&rnd()<.05)log(`${N(a)} has been telling ${N(b)} to vote for ${N(c)}.`,'event');
@@ -112,11 +113,11 @@ export function scheduleCourt(){
 export function decideCase(c,jurors){
   const acc=S.agents[c.accused],plf=c.accuser!=null?S.agents[c.accuser]:null,reeve=byJob('reeve');
   if(acc.dead)return;
-  const school=techOn('school');
+  const juryBias=effect('juryBias');
   let confessed=false;
   if(c.truth&&acc.tr.scruple>.7&&rnd()<.35)confessed=true;
   const votes=jurors.map(j=>{
-    let p=c.evidence;const bias=((plf&&!plf.dead?op(j,plf):0)-op(j,acc))/100*(school?.35:.6);p+=bias;
+    let p=c.evidence;const bias=((plf&&!plf.dead?op(j,plf):0)-op(j,acc))/100*juryBias;p+=bias;
     if(S.rumours.some(r=>r.subject===acc.id&&j.knows.includes(r.id)))p+=.15;
     if(reeve&&reeve!==j)p+=((plf?op(reeve,plf):0)-op(reeve,acc))/100*.15;
     if(isKin(j,acc)||j.home===acc.home||j.spouse===acc.id)p-=.5;
@@ -160,16 +161,16 @@ export function exile(a,reason){
   const kin=LIVE.filter(b=>op(b,a)>50);for(const b of kin){b.lonely=Math.min(1,b.lonely+.25);mem(b,a,'misses');}
   succeed(a);
 }
-export function eraOf(){return techBuilt('railway')?4:techBuilt('steam')?3:techBuilt('canal')?2:techBuilt('cottonmill')?1:0;}
+export function eraOf(){return currentEra();}
 export function eraDay(){
   const e=eraOf();
   if(e!==S.era){S.era=e;log(ERA_LINES[e],'nudge','era',{era:e});}
 }
 export function startBuilding(id){
-  const t=S.tech[id],T=TECH[id];
-  t.state='building';t.doneAt=dayStart()+TPD*T.build+60;t.navvies=[];
+  const t=S.tech[id],T=IDEA[id];
+  t.state='building';t.doneAt=dayStart()+TPD*T.buildDays+60;t.navvies=[];
   const inv=S.agents[t.inventor];
-  log(`Work begins on the ${T.name.toLowerCase()}, ${N(inv)}'s great scheme. It will take ${T.build} days.`,'good','tech',{tech:id});
+  log(`Work begins on the ${T.name.toLowerCase()}, ${N(inv)}'s great scheme. It will take ${T.buildDays} days.`,'good','tech',{tech:id});
   for(let i=0;i<(T.navvies||0);i++){
     if(LIVE.length>=MAXPOP)break;
     const sex=rnd()<.85?'m':'f',name=nameBaby(sex,pick(SURNAMES));
@@ -182,12 +183,11 @@ export function startBuilding(id){
   if(t.navvies.length)log(`${listNames(t.navvies.map(i=>S.agents[i]))} arrive with the navvy gang and take rooms at The Plough. Some of the village are not glad to see them.`,'event','arrival',{ids:t.navvies});
 }
 export function finishBuilding(id){
-  const t=S.tech[id],T=TECH[id];
-  t.state='built';t.builtAt=S.tick;
+  const t=S.tech[id],T=IDEA[id];
+  t.state='built';t.builtAt=S.tick;invalidateEffects();
   const inv=S.agents[t.inventor];
   log(`The ${T.name.toLowerCase()} is finished: ${N(inv)}'s great scheme, ${T.what}.`,'good','tech',{tech:id,ids:[inv.id],built:1});
-  const fam=familyKey(inv),ar=armsOf(fam);
-  if(ar.aug.length<3&&!ar.aug.includes(id)&&!inv.dead){ar.aug.push(id);log(`The ${fam} family add ${CHARGE_NAMES[AUG[id]]} to their arms, in honour of ${N(inv)}'s ${T.name.toLowerCase()}.`,'good','arms',{fam});}
+  honourInventor(T,inv);
   const stay=[],go=[];
   for(const nid of t.navvies||[]){const n=S.agents[nid];if(n.dead)continue;
     if(n.spouse>=0||LIVE.filter(b=>b!==n).reduce((s,b)=>s+op(b,n),0)/LIVE.length>25){stay.push(n);n.job='labourer';n.work='mill';n.navvy=false;}
@@ -195,9 +195,8 @@ export function finishBuilding(id){
   if(go.length)log(`The navvies move on. ${stay.length?`${listNames(stay)} ${stay.length>1?'stay':'stays'} behind to make a life here.`:'Nobody is sorry to see the back of them.'}`,'event','departure');
 }
 export function a_leave(a,why){exile(a,why);}
-export function navvyWage(a){a.coins+=.09;}
 export function emigrationDay(){
-  if(!techOn('railway'))return;
+  if(!effect('emigration'))return;
   for(const a of [...LIVE]){
     if(a.age<17||a.age>32||a.spouse>=0||a.navvy)continue;
     const push=(a.coins<8?.5:0)+(a.lonely>.6?.3:0)+(a.mem.some(m=>/stocks|guilty/.test(m.t))?.4:0)+.2;

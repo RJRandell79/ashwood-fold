@@ -4,7 +4,9 @@
   "private": true,
   "description": "A rule-based village simulation of a Lancashire river valley, from Stone Age camp to industrial city.",
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "node tools/build.mjs",
     "test": "vitest run",
