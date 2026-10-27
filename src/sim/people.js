@@ -127,6 +127,8 @@ export function lifeDay(){
     if(!k.endsWith('c')||S.pair[k.slice(0,-1)+'w'])continue;
     const [i,j]=k.slice(0,-1).split('-').map(Number),x=S.agents[i],y=S.agents[j];
     if(!x||!y||x.dead||y.dead||x.spouse>=0||y.spouse>=0){delete S.pair[k];continue;}
+    // Someone already promised to another must wait until that wedding is done or called off.
+    if(S.gathers.some(g=>g.type==='wedding'&&(g.ids.includes(i)||g.ids.includes(j))))continue;
     if(op(x,y)>70&&op(y,x)>70&&rnd()<.18){
       S.pair[k.slice(0,-1)+'w']=1;
       S.gathers.push({id:S.gid++,type:'wedding',ids:[i,j],place:'chapel',start:dayStart()+TPD+66,end:dayStart()+TPD+84});
@@ -152,7 +154,7 @@ export function gatherTick(){
       const came=LIVE.filter(a=>a.act.type==='gather'&&a.act.target===g.id);
       if(g.type==='wedding'){
         const [x,y]=g.ids.map(i=>S.agents[i]);
-        if(!x.dead&&!y.dead){
+        if(!x.dead&&!y.dead&&x.spouse<0&&y.spouse<0){
           x.spouse=y.id;y.spouse=x.id;adj(x,y,10);adj(y,x,10);yr().weddings++;
           const fh=freeHome(),xs=household(x.home).length,ys=household(y.home).length;
           let home;
