@@ -1,6 +1,5 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 
-
 export const FOLK=[
  ['Ada Holt','baker','holt',{temper:.35,warmth:.6,diligence:.85,forgive:.5,gossip:.4,scruple:.8},34,'f'],
  ['Sam Holt','labourer','holt',{temper:.6,warmth:.45,diligence:.4,forgive:.4,gossip:.3,scruple:.35},37,'m'],

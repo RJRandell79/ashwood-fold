@@ -1,6 +1,5 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 
-
 export const TPD=144, W=40, H=26, SPEED=3.5, SAVEKEY='ashworth-fold-v1', SEASON_DAYS=5, YEAR_DAYS=20, MAXPOP=26;
 export const DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 export const SEASONS=['Spring','Summer','Autumn','Winter'];

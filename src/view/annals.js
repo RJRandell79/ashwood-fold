@@ -1,6 +1,6 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { ERAS } from '../data/eras.js';
-import { TECH } from '../data/ideas.js';
+import { IDEA } from '../data/ideas.js';
 import { SEASONS, TPD, YEAR_DAYS } from '../data/world.js';
 import { armsOf, blazon, familyCards, familyPlural } from '../sim/heraldry.js';
 import { op } from '../sim/social.js';
@@ -12,7 +12,7 @@ import { $, cap, familyLine, traitWords } from './ui.js';
 import { V } from './vstate.js';
 
 export function yearTitle(y,ents){
-  const built=ents.find(e=>e.built);if(built)return `The Year of the ${TECH[built.tech].name.replace(/\b\w/g,c=>c.toUpperCase())}`;
+  const built=ents.find(e=>e.built);if(built)return `The Year of the ${IDEA[built.tech].name.replace(/\b\w/g,c=>c.toUpperCase())}`;
   const ban=ents.find(e=>e.c==='court'&&/banished/.test(e.h));if(ban)return `The Year ${S.agents[ban.ids[0]].first} Was Banished`;
   const el=ents.find(e=>e.election);if(el&&el.ids.length>1&&ents.filter(e=>e.c==='death').length===0)return `The Year ${S.agents[el.ids[0]].first} Was Elected`;
   const deaths=ents.filter(e=>e.c==='death');

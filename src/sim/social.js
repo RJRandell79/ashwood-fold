@@ -1,9 +1,11 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
+import { effect } from './effects.js';
+import { raisePressure } from './signals.js';
 import { P, TPD } from '../data/world.js';
 import { bringCase, canvass } from './civic.js';
 import { pitch } from './ideas.js';
 import { log } from './log.js';
-import { LIVE, N, PN, S, clamp, dayOf, fairOn, isAdult, isKin, listNames, pantryOf, pick, rnd, takePantry, techOn } from './state.js';
+import { LIVE, N, PN, S, clamp, dayOf, fairOn, isAdult, isKin, listNames, pantryOf, pick, rnd, takePantry } from './state.js';
 
 export function op(a,b){return (S.op[a.id][b.id]);}
 export function adj(a,b,d){if(a===b||a.dead||b.dead)return;S.op[a.id][b.id]=clamp(S.op[a.id][b.id]+d,-100,100);checkPair(a,b);}
@@ -111,15 +113,14 @@ export function gossip(a,b,place){
       adj(b,a,-25);mem(b,a,'spread talk about me',place);glyph(b,'!','bad');
       log(`${N(b)} hears from ${N(a)} what folk have been saying: that ${N(b)} ${r.text}. ${N(b)} is not pleased.`,'rumour','rumour',{ids:[a.id,b.id]});
     }else{
-      const school=techOn('school');
-      const trust=(op(b,a)+100)/200*(school?.6:1);
-      if((op(b,subj)>50&&rnd()<.6)||(school&&rnd()<.25)){
+      const trust=(op(b,a)+100)/200*effect('rumourTrust'),doubt=effect('rumourDoubtChance');
+      if((op(b,subj)>50&&rnd()<.6)||(doubt>0&&rnd()<doubt)){
         adj(b,a,-4);r.doubt++;
         if(r.doubt===1)log(`${N(b)} won't hear a word of it when ${N(a)} repeats that ${N(subj)} ${r.text}.`,'good');
       }else{
         r.reach++;adj(b,subj,-(8+18*trust));mem(b,subj,`was said to have ${r.text.replace(/^is /,'been ').replace(/^has /,'')}`.replace('have been been','have been'),place);
         if(r.reach===2)log(`${N(a)} passes it on to ${N(b)}: ${N(subj)} ${r.text}.`,'rumour');
-        else if(r.reach===5||r.reach===9){log(`By now ${r.reach} people have heard that ${N(subj)} ${r.text}.`,'rumour',r.reach===5?'rumour':null,{ids:[subj.id]});if(r.reach===5)S.tech.school.pressure+=20;}
+        else if(r.reach===5||r.reach===9){log(`By now ${r.reach} people have heard that ${N(subj)} ${r.text}.`,'rumour',r.reach===5?'rumour':null,{ids:[subj.id]});if(r.reach===5)raisePressure('rumourSpread');}
       }
     }
     return true;

@@ -1,9 +1,11 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
+import { effect, employerOf } from './effects.js';
+import { raisePressure } from './signals.js';
 import { FARM, P, SPEED, TPD } from '../data/world.js';
 import { bringCase, campaignRound } from './civic.js';
 import { log } from './log.js';
 import { addRumour, adj, avoid, glyph, interact, mem, op, pull, worstFoe } from './social.js';
-import { LIVE, N, S, byJob, dayOf, fairOn, grainCap, hourOf, household, isAdult, isKin, isSunday, listNames, pantryOf, pick, pointIn, rnd, seasonOf, stage, takePantry, techBuilt, techOn } from './state.js';
+import { LIVE, N, S, byJob, dayOf, fairOn, hourOf, household, isAdult, isKin, isSunday, listNames, pantryOf, pick, pointIn, rnd, seasonOf, stage, takePantry } from './state.js';
 
 export function activeGathers(){return S.gathers.filter(g=>S.tick>=g.start&&S.tick<g.end);}
 export function gatherPull(a,g){
@@ -39,7 +41,8 @@ export function plan(a){
     if(st==='child'){
       const day=h>=8&&h<19;
       if(day)for(const pl of ['square','garden','market'])add('play',pl,a.lonely*.9+.35+(pl==='square'?.1:0)-(winter?.2:0)+pull(a,pl)-avoid(a,pl));
-      if(techBuilt('school')&&!sun&&h>=8.5&&h<12.5)add('lessons','school',.8+a.tr.diligence*.2);
+      const school=effect('lessons');
+      if(school&&!sun&&h>=8.5&&h<12.5)add('lessons',school,.8+a.tr.diligence*.2);
       const par=a.parents.map(i=>S.agents[i]).find(p=>!p.dead&&p.work);
       if(par&&h>=9&&h<17&&a.age>=8)add('help',par.work,.2+a.tr.diligence*.35);
     }
@@ -100,29 +103,26 @@ export function perform(a){
 }
 export function weaverWage(a){
   let w=.07;
-  if(techOn('shuttle'))w=S.tech.shuttle.adopters.includes(a.id)?.11:.035;
-  if(techOn('cottonmill'))w*=.55;
-  if(techOn('steam'))w*=.6;
-  if(techOn('canal'))w*=1.1;
+  w=effect('weaverWage',a);
   return w;
 }
 export function produce(a){
   const st=S.stores,eff=.6+a.tr.diligence*.6-a.tired*.3-Math.max(0,a.age-62)*.015,season=seasonOf();
   switch(a.job){
     case 'farmer':case 'farmhand':{
-      const g=.45*eff*FARM[season]*S.yearQ*(techOn('plough')?1.45:1);
-      const room=Math.max(0,grainCap()-st.grain),add=Math.min(room,g);st.grain+=add;if(season===2)S.harvest+=g;
-      if(g>0&&room<=0&&rnd()<.02)S.tech.barn.pressure+=3;
+      const g=.45*eff*FARM[season]*S.yearQ*effect('farmYield');
+      const room=Math.max(0,effect('grainCap')-st.grain),add=Math.min(room,g);st.grain+=add;if(season===2)S.harvest+=g;
+      if(g>0&&room<=0&&rnd()<.02)raisePressure('granaryFull');
       a.coins+=season===3?.04:.06;break;}
     case 'miller':case 'labourer':{
-      const c=Math.min(st.grain,1*eff*(techOn('millstone')?1.7:1),Math.max(0,100-st.flour));st.grain-=c;if(!(S.spoil>0))st.flour+=c;a.coins+=.06;break;}
+      const c=Math.min(st.grain,1*eff*effect('grindRate'),Math.max(0,100-st.flour));st.grain-=c;if(!(S.spoil>0))st.flour+=c;a.coins+=.06;break;}
     case 'baker':{const c=Math.min(st.flour,1.2*eff,Math.max(0,60-st.bread));st.flour-=c;st.bread+=c;
       const pay=c*.5;if(a.coins>=pay){a.coins-=pay;const mill=LIVE.filter(b=>b.work==='mill'),farm=LIVE.filter(b=>b.work==='fields');
         if(mill.length)pick(mill).coins+=pay*.5;if(farm.length)pick(farm).coins+=pay*.5;}break;}
     case 'innkeeper':break;
     case 'weaver':a.coins+=weaverWage(a);break;
-    case 'millhand':{if(techOn('cottonmill')){const st=techOn('steam');a.coins+=st?.11:.1;const own=S.agents[S.tech.cottonmill.inventor];if(own&&!own.dead&&own!==a)own.coins+=st?.07:.05;}else a.coins+=.015;break;}
-    default:a.coins+=a.job==='carter'?(techOn('railway')?.025:techOn('canal')?.045:.07):.07;
+    case 'millhand':{a.coins+=effect('millhandWage');const works=employerOf('millhand');if(works){const own=S.agents[S.tech[works.id].inventor];if(own&&!own.dead&&own!==a)own.coins+=effect('millOwnerCut');}break;}
+    default:a.coins+=a.job==='carter'?effect('carterWage'):.07;
   }
 }
 export function onArrive(a){
@@ -131,7 +131,7 @@ export function onArrive(a){
   else if(t==='buy'){
     const hs=household(a.home).length,payer=a.coins>=1?a:household(a.home).filter(isAdult).sort((x,y)=>y.coins-x.coins)[0]||a;
     const n=Math.min(1+hs,5,Math.floor(payer.coins),Math.floor(S.stores.bread));
-    if(n<1){glyph(a,'?','bad');if(S.bareLogged!==dayOf()){S.bareLogged=dayOf();S.tech.millstone.pressure+=30;log(`The shelves at the Bakehouse are bare. ${N(a)} goes away empty-handed.`,'bad');}a.act.left=0;return;}
+    if(n<1){glyph(a,'?','bad');if(S.bareLogged!==dayOf()){S.bareLogged=dayOf();raisePressure('shelvesBare');log(`The shelves at the Bakehouse are bare. ${N(a)} goes away empty-handed.`,'bad');}a.act.left=0;return;}
     payer.coins-=n;S.stores.bread-=n;const baker=byJob('baker');if(baker&&baker!==payer)baker.coins+=n;
     a.hunger=Math.max(0,a.hunger-.6);if(a.home!=='tavern')S.pantry[a.home]=(S.pantry[a.home]||0)+n-1;
   }

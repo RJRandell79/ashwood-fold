@@ -3,6 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { run, TICKS_PER_YEAR } from '../harness/lib.mjs';
 import { runV5 } from '../harness/v5-reference.mjs';
+import { canonical } from '../harness/canonical.mjs';
 
 describe('port matches the v5 prototype', () => {
   for (const seed of [1, 42]) {
@@ -11,7 +12,7 @@ describe('port matches the v5 prototype', () => {
       const ref = runV5(seed, { ticks });
       const got = JSON.parse(JSON.stringify(run(seed, { ticks })));
       expect(got.annals).toEqual(ref.annals);
-      expect(JSON.stringify(got)).toBe(JSON.stringify(ref));
+      expect(canonical(got)).toBe(canonical(ref));
     });
   }
 });

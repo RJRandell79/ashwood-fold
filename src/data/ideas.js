@@ -1,14 +1,161 @@
-// Ported from the v5 prototype by tools/port-v5.mjs.
+// Every idea the villagers can think of, argue over, pay for and build.
+// The simulation reads only these records: nothing in src/sim names an idea.
+// The array is in tree order; the engine walks ideas in this order each day.
+//
+// Record fields
+//   id, name, what, hint     identity and the words the annals and panels use
+//   requires                 ideas that must be built before anyone can think of this one
+//   inventorJobs             trades whose members may have the idea (most diligent wins)
+//   inventorBias             optional { trait, weight, invert }: a trait that also favours an inventor
+//   backers, cost            supporters and pennies needed to build it
+//   buildDays, navvies       a great work takes days and may bring a navvy gang (0 = built at once)
+//   pressure.base            pressure added each day while nobody has thought of it
+//   pressure.when            { signal: extra }  daily extra while a signal holds (see sim/signals.js)
+//   pressure.on              { event: amount }  one-off boosts when an event happens (see SIGNAL_EVENTS)
+//   threatens                { job: weight }  how much it threatens a trade's living (opposition, sabotage)
+//   effects                  { effect: { set | mul | adopterSet, while } }  see EFFECT_BASE below
+//   adoption                 bought one by one by a trade (the flying shuttle)
+//   hires                    a works that takes on hands
+//   resentedBy               { job: daily opinion change towards the owner }
+//   sabotage                 { place, what }  can be wrecked in the night by those it threatens
+//   builtLines               extra chronicle lines when it is finished
+//   opensEra                 the era that begins when it is built
+//   emblem                   charge added to the inventor's family arms
+export const IDEAS = [
+  {
+    id: 'plough', name: 'Heavy plough', what: 'turns the clay deeper so the South Fields yield more', hint: 'Talk of thin harvests',
+    requires: [], inventorJobs: ['farmer', 'farmhand', 'smith'], backers: 5, cost: 30,
+    pressure: { base: 0.6, when: { grainShort: 5 }, on: { thinHarvest: 50 } },
+    threatens: { farmhand: 0.35 },
+    effects: { farmYield: { mul: 1.45 } },
+    emblem: 'plough',
+  },
+  {
+    id: 'millstone', name: 'Second millstone', what: 'lets the Watermill grind twice the corn', hint: 'Grumbling about bare shelves',
+    requires: [], inventorJobs: ['miller', 'labourer', 'smith'], backers: 5, cost: 35,
+    pressure: { base: 0.6, when: { flourShort: 4 }, on: { shelvesBare: 30 } },
+    effects: { grindRate: { mul: 1.7 } },
+    emblem: 'millstone',
+  },
+  {
+    id: 'barn', name: 'Tithe barn', what: 'keeps a whole harvest dry through the winter', hint: 'Worry about where to store the corn',
+    requires: [], inventorJobs: ['farmer', 'reeve', 'carter'], backers: 6, cost: 45,
+    pressure: { base: 0.6, when: { granaryFullAtHarvest: 6 }, on: { granaryFull: 3, cornFlattened: 30 } },
+    effects: { grainCap: { set: 750 }, protectsHarvest: { set: 1 } },
+    emblem: 'garb2',
+  },
+  {
+    id: 'shuttle', name: 'Flying shuttle', what: 'lets one weaver do the work of two', hint: 'The cloth merchant wants more cloth',
+    requires: [], inventorJobs: ['weaver', 'smith'], backers: 3, cost: 16,
+    pressure: { base: 0.6, when: { weaversPoor: 3 } },
+    threatens: { weaver: 1 },
+    effects: { weaverWage: { set: 0.035, adopterSet: 0.11 } },
+    adoption: { jobs: ['weaver'], cost: 4, chance: 0.12, minOpinion: -20, resentment: -2, memory: 'is taking my living' },
+    sabotage: { place: 'weaving', what: 'the flying shuttle' },
+    emblem: 'shuttle',
+  },
+  {
+    id: 'school', name: 'Village school', what: 'teaches the children their letters, and the village to question idle talk', hint: 'Concern about idle talk and idle children',
+    requires: [], inventorJobs: ['herbalist', 'reeve', 'innkeeper'], backers: 6, cost: 40,
+    pressure: { base: 0.6, when: { manyChildren: 2 }, on: { rumourSpread: 20 } },
+    effects: {
+      rumourTrust: { mul: 0.6 }, rumourDoubtChance: { set: 0.25 }, juryBias: { set: 0.35 },
+      canvassWeight: { mul: 0.8 }, childInherit: { set: 0.35 }, lessons: { set: 'school' },
+    },
+    emblem: 'book',
+  },
+  {
+    id: 'cottonmill', name: 'Cotton mill', what: 'spins thread by water power down by the river', hint: 'Talk of the new mills in the next valley',
+    requires: ['shuttle', 'millstone'], inventorJobs: ['miller', 'weaver', 'smith'], backers: 8, cost: 90,
+    inventorBias: { trait: 'warmth', weight: 0.25, invert: true },
+    pressure: { base: 1.5, when: { hasWeavers: 1 } },
+    threatens: { weaver: 1, carter: 0.3 },
+    effects: {
+      weaverWage: { mul: 0.55 }, millhandWage: { set: 0.1 }, millOwnerCut: { set: 0.05 }, millHandsCap: { set: 7 },
+      factoryJob: { set: 'millhand' }, migrantJob: { set: 'millhand' },
+    },
+    hires: {
+      job: 'millhand', place: 'cottonmill', chance: 0.25, maxCoins: 5, avoidsOwnerBelow: -35,
+      fromJobs: ['weaver', 'labourer', 'carter', 'pedlar'], fromJobsIfFieldsManned: ['farmhand'],
+      children: { minAge: 12, householdBelow: 6 },
+    },
+    resentedBy: { weaver: -1.5 },
+    sabotage: { place: 'cottonmill', what: 'the spinning frames' },
+    builtLines: ['A tall chimney now stands by the river. Some call it progress.'],
+    opensEra: 1,
+    emblem: 'spindle',
+  },
+  {
+    id: 'canal', name: 'Canal', what: 'links the valley to the towns, bringing coal and corn by boat', hint: 'Talk of a canal cut through the next valley',
+    requires: ['cottonmill'], inventorJobs: ['carter', 'reeve', 'miller', 'smith'], backers: 9, cost: 140, buildDays: 10, navvies: 3,
+    pressure: { base: 1.4 },
+    threatens: { carter: 0.6 },
+    effects: {
+      weaverWage: { mul: 1.1 }, carterWage: { set: 0.045 }, winterUpkeep: { set: 0.8 },
+      cornCartCost: { set: 15 }, cornCartThreshold: { set: 7 }, cornByBoat: { set: 1 },
+    },
+    opensEra: 2,
+    emblem: 'anchor',
+  },
+  {
+    id: 'steam', name: 'Steam engine', what: 'drives the cotton mill with coal instead of the river', hint: 'The mill wants more power than the river gives',
+    requires: ['canal'], inventorJobs: ['smith', 'millhand', 'miller'], backers: 7, cost: 120, buildDays: 3,
+    pressure: { base: 1.5 },
+    threatens: { weaver: 1, millhand: 0.3 },
+    effects: {
+      weaverWage: { mul: 0.6 },
+      millhandWage: { set: 0.11, while: 'cottonmill' }, millOwnerCut: { set: 0.07, while: 'cottonmill' }, millHandsCap: { set: 12, while: 'cottonmill' },
+      springMigrants: { set: 1 }, millCough: { set: 1 },
+    },
+    sabotage: { place: 'cottonmill', what: 'the engine' },
+    opensEra: 3,
+    emblem: 'cog',
+  },
+  {
+    id: 'railway', name: 'Railway', what: 'puts Ashwood Fold an hour from Manchester', hint: 'Surveyors have been seen on the fells',
+    requires: ['steam'], inventorJobs: ['reeve', 'smith', 'carter', 'miller'], backers: 10, cost: 180, buildDays: 10, navvies: 4,
+    pressure: { base: 1.2 },
+    threatens: { carter: 1 },
+    effects: {
+      carterWage: { set: 0.025 }, springMigrants: { set: 2 },
+      migrantReason: { set: 'on the train, looking for work' }, emigration: { set: 1 },
+    },
+    sabotage: { place: 'wharf', what: 'a stretch of the line' },
+    opensEra: 4,
+    emblem: 'wingedwheel',
+  },
+];
 
-
-export const TECH={
-  plough:{name:'Heavy plough',what:'turns the clay deeper so the South Fields yield more',jobs:['farmer','farmhand','smith'],need:5,cost:30,req:[],hint:'Talk of thin harvests'},
-  millstone:{name:'Second millstone',what:'lets the Watermill grind twice the corn',jobs:['miller','labourer','smith'],need:5,cost:35,req:[],hint:'Grumbling about bare shelves'},
-  barn:{name:'Tithe barn',what:'keeps a whole harvest dry through the winter',jobs:['farmer','reeve','carter'],need:6,cost:45,req:[],hint:'Worry about where to store the corn'},
-  shuttle:{name:'Flying shuttle',what:'lets one weaver do the work of two',jobs:['weaver','smith'],need:3,cost:16,req:[],hint:'The cloth merchant wants more cloth'},
-  school:{name:'Village school',what:'teaches the children their letters, and the village to question idle talk',jobs:['herbalist','reeve','innkeeper'],need:6,cost:40,req:[],hint:'Concern about idle talk and idle children'},
-  canal:{name:'Canal',what:'links the valley to the towns, bringing coal and corn by boat',jobs:['carter','reeve','miller','smith'],need:9,cost:140,req:['cottonmill'],hint:'Talk of a canal cut through the next valley',build:10,navvies:3},
-  steam:{name:'Steam engine',what:'drives the cotton mill with coal instead of the river',jobs:['smith','millhand','miller'],need:7,cost:120,req:['canal'],hint:'The mill wants more power than the river gives',build:3},
-  railway:{name:'Railway',what:'puts Ashwood Fold an hour from Manchester',jobs:['reeve','smith','carter','miller'],need:10,cost:180,req:['steam'],hint:'Surveyors have been seen on the fells',build:10,navvies:4},
-  cottonmill:{name:'Cotton mill',what:'spins thread by water power down by the river',jobs:['miller','weaver','smith'],need:8,cost:90,req:['shuttle','millstone'],hint:'Talk of the new mills in the next valley'}
+// What each effect is worth before anything is built. A built, working idea changes it:
+// `set` replaces the value (the most recently built idea wins), `mul` multiplies it,
+// `adopterSet` replaces it for people who have adopted that idea, and `while: id` limits
+// the effect to times when another idea is also working (steam only helps a working mill).
+export const EFFECT_BASE = {
+  farmYield: 1,              // multiplier on field work
+  grindRate: 1,              // multiplier on milling
+  grainCap: 400,             // granary capacity
+  protectsHarvest: 0,        // 1 = autumn storms no longer flatten the corn
+  weaverWage: 0.07,          // pennies per working tick
+  millhandWage: 0.015,
+  millOwnerCut: 0,           // paid to the mill's founder per hand per tick
+  millHandsCap: 0,           // most hands a works will take on
+  carterWage: 0.07,
+  winterUpkeep: 1,           // household cost per adult per winter day
+  cornCartCost: 35,          // pennies for a load of corn from outside
+  cornCartThreshold: 4,      // buy corn when grain + flour falls below this many per head
+  cornByBoat: 0,             // 1 = the corn comes by canal
+  springMigrants: 0,         // extra newcomers each spring
+  migrantJob: 'labourer',
+  migrantReason: 'looking for work at the mill',
+  factoryJob: null,          // the trade poor youngsters are sent into
+  millCough: 0,              // 1 = mill work shortens lives
+  emigration: 0,             // 1 = young people may leave for the towns
+  rumourTrust: 1,            // multiplier on how far a rumour is believed
+  rumourDoubtChance: 0,      // chance anyone doubts a rumour on hearing it
+  juryBias: 0.6,             // how much friendship sways a juror
+  canvassWeight: 1,          // multiplier on election canvassing
+  childInherit: 0.6,         // how strongly children take on their parents' opinions
+  lessons: null,             // the place where children go to lessons, once there is one
 };
+
+export const IDEA = Object.fromEntries(IDEAS.map(d => [d.id, d]));

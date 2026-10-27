@@ -2,6 +2,7 @@
 //   node harness/parity.mjs [--seeds 1,11,23] [--years 10]
 import { run, TICKS_PER_YEAR } from './lib.mjs';
 import { runV5 } from './v5-reference.mjs';
+import { canonical } from './canonical.mjs';
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const seeds = arg('--seeds', '1,11,23,42,77').split(',').map(Number);
@@ -15,12 +16,12 @@ for (const seed of seeds) {
   const t1 = Date.now();
   const got = JSON.parse(JSON.stringify(run(seed, { ticks })));
   const t2 = Date.now();
-  const same = JSON.stringify(ref) === JSON.stringify(got);
+  const same = canonical(ref) === canonical(got);
   let detail = '';
   if (!same) {
     failed++;
     const i = ref.annals.findIndex((e, k) => JSON.stringify(e) !== JSON.stringify(got.annals[k]));
-    const keys = Object.keys(ref).filter(k => JSON.stringify(ref[k]) !== JSON.stringify(got[k]));
+    const keys = Object.keys(ref).filter(k => canonical(ref[k]) !== canonical(got[k]));
     detail = ` differs in [${keys.join(', ')}]` + (i >= 0 ? `; first annal mismatch #${i}:\n  v5:   ${ref.annals[i]?.h}\n  port: ${got.annals[i]?.h}` : '');
   }
   console.log(`seed ${seed}: ${years} years, ${ref.annals.length} annals, ${ref.agents.length} lives — ${same ? 'identical' : 'DIFFERENT'} (v5 ${t1 - t0} ms, port ${t2 - t1} ms)${detail}`);

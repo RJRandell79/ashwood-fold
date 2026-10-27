@@ -35,7 +35,6 @@ export function byJob(j){return (LIVE.find(a=>a.job===j));}
 export function pantryOf(a){return a.home==='tavern'?Math.floor(S.stores.bread):(S.pantry[a.home]||0);}
 export function takePantry(a){if(a.home==='tavern'){if(S.stores.bread>=1){S.stores.bread-=1;return true;}return false;}if((S.pantry[a.home]||0)>=1){S.pantry[a.home]--;return true;}return false;}
 export function fairOn(){return (S.fair&&S.tick>=S.fair.start&&S.tick<S.fair.end);}
-export function grainCap(){return (techOn('barn')?750:400);}
 export function moodOf(a){return (clamp(1-(a.hunger*.45+a.tired*.3+a.lonely*.25),0,1));}
 export function numberWord(n){return ['no','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'][n]||String(n);}
 

@@ -1,5 +1,6 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
-import { AUG, TINCT } from '../data/heraldry.js';
+import { IDEA } from '../data/ideas.js';
+import { TINCT } from '../data/heraldry.js';
 import { faceOf } from '../sim/faces.js';
 import { blazon } from '../sim/heraldry.js';
 import { clamp, hueOf, moodOf } from '../sim/state.js';
@@ -94,6 +95,8 @@ export function chargeSVG(kind,col,cx,cy,s){
     case 'rose':{let d='';for(let i=0;i<5;i++){const a=(i*72-90)*Math.PI/180;d+=`<circle cx="${(Math.cos(a)*7).toFixed(1)}" cy="${(Math.sin(a)*7).toFixed(1)}" r="6" fill="${col}"/>`;}return g(d+`<circle r="4" fill="${col}" stroke="#000" stroke-opacity=".25" stroke-width="1"/>`);}
     case 'star':{let p='';for(let i=0;i<10;i++){const a=(i*36-90)*Math.PI/180,r=i%2?5.5:14;p+=`${(Math.cos(a)*r).toFixed(1)},${(Math.sin(a)*r).toFixed(1)} `;}return g(`<polygon points="${p}" fill="${col}"/>`);}
     case 'crescent':return g(`<path d="M-12,-3 A12,12 0 0 0 12,-3 A9,9 0 0 1 -12,-3Z" fill="${col}"/>`);
+    case 'anchor':return g(`<circle cx="0" cy="-12" r="3.2" ${st}/><line x1="0" y1="-9" x2="0" y2="13" stroke="${col}" stroke-width="3"/><line x1="-7" y1="-5" x2="7" y2="-5" stroke="${col}" stroke-width="3"/><path d="M-12,4 Q-10,14 0,14 Q10,14 12,4" ${st}/><path d="M-14,6 L-12,2 L-9,6 M14,6 L12,2 L9,6" fill="${col}" stroke="${col}" stroke-width="1.5"/>`);
+    case 'wingedwheel':{let d=`<circle r="8" ${st}/><circle r="2.2" fill="${col}"/>`;for(let i=0;i<6;i++){const a=i*Math.PI/3;d+=`<line x1="0" y1="0" x2="${(Math.cos(a)*8).toFixed(1)}" y2="${(Math.sin(a)*8).toFixed(1)}" stroke="${col}" stroke-width="1.6"/>`;}for(const s of [-1,1])d+=`<path d="M${s*9},-2 Q${s*15},-12 ${s*19},-11 Q${s*16},-6 ${s*18},-4 Q${s*14},-1 ${s*16},2 Q${s*12},3 ${s*9},3 Z" fill="${col}"/>`;return g(d);}
     case 'book':return g(`<path d="M0,-8 Q-8,-12 -15,-9 L-15,9 Q-8,6 0,10 Q8,6 15,9 L15,-9 Q8,-12 0,-8Z" fill="${col}"/><line x1="0" y1="-8" x2="0" y2="10" stroke="#000" stroke-opacity=".3" stroke-width="1"/>`);
     case 'plough':return g(`<path d="M-14,6 L6,-2 L14,6 Z" fill="${col}"/><line x1="-4" y1="2" x2="-12" y2="-12" stroke="${col}" stroke-width="3"/>`);
     case 'spindle':{let d=`<circle r="10" ${st}/><circle r="2.5" fill="${col}"/>`;for(let i=0;i<6;i++){const a=i*Math.PI/3;d+=`<line x1="0" y1="0" x2="${(Math.cos(a)*10).toFixed(1)}" y2="${(Math.sin(a)*10).toFixed(1)}" stroke="${col}" stroke-width="1.6"/>`;}return g(d+`<line x1="-14" y1="14" x2="-4" y2="4" stroke="${col}" stroke-width="2.4"/>`);}
@@ -113,6 +116,6 @@ export function armsSVG(ar,px,label){
   }
   f+=chargeSVG(ar.charge,m,50,chief?60:50,chief?1.05:1.35);
   if(chief){f+=`<rect width="100" height="28" fill="${TINCT[ar.metal==='or'?'argent':'or'][1]}"/><line x1="0" y1="28" x2="100" y2="28" stroke="#000" stroke-opacity=".25"/>`;
-    const n=ar.aug.length;ar.aug.forEach((t,i)=>{f+=chargeSVG(AUG[t],TINCT.sable[1],(50+(i-(n-1)/2)*26).toFixed(1),16,.55);});}
+    const n=ar.aug.length;ar.aug.forEach((t,i)=>{f+=chargeSVG(IDEA[t].emblem,TINCT.sable[1],(50+(i-(n-1)/2)*26).toFixed(1),16,.55);});}
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 106" width="${px}" height="${Math.round(px*1.06)}" class="arms" role="img" aria-label="${(label?label+': ':'')+blazon(ar)}"><defs><clipPath id="${id}"><path d="${shield}"/></clipPath><linearGradient id="${id}s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></linearGradient></defs><g clip-path="url(#${id})">${f}<rect width="100" height="110" fill="url(#${id}s)"/></g><path d="${shield}" fill="none" stroke="#3a3328" stroke-width="2.6" stroke-linejoin="round"/></svg>`;
 }

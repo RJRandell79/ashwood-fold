@@ -1,4 +1,6 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
+import { IDEAS } from '../data/ideas.js';
+import { effect } from './effects.js';
 import { BOYS, GIRLS, SURNAMES } from '../data/folk.js';
 import { ESSENTIAL, JOBS, MAXPOP, P, TPD, YEAR_DAYS } from '../data/world.js';
 import { callElection, decideCase, tallyElection } from './civic.js';
@@ -7,7 +9,7 @@ import { plan } from './life.js';
 import { log } from './log.js';
 import { makeAgent } from './setup.js';
 import { adj, mem, op } from './social.js';
-import { LIVE, N, PN, S, byJob, childrenOf, clamp, dayStart, household, isAdult, isKin, listNames, pick, pointIn, refreshLive, rnd, seasonOf, surname, techOn, yearOf } from './state.js';
+import { LIVE, N, PN, S, byJob, childrenOf, clamp, dayStart, household, isAdult, isKin, listNames, pick, pointIn, refreshLive, rnd, seasonOf, surname, yearOf } from './state.js';
 
 export function yr(){const y=yearOf();return S.years[y]||(S.years[y]={startPop:LIVE.length,births:0,deaths:0,weddings:0});}
 export function freeHome(){
@@ -95,11 +97,12 @@ export function comeOfAge(a){
   const crafts=['baker','miller','smith','innkeeper','weaver','farmer','herbalist','carter'];
   const par=pars.filter(p=>crafts.includes(p.job)).sort((x,y)=>LIVE.filter(b=>b.job===x.job).length-LIVE.filter(b=>b.job===y.job).length)[0];
   let job;
-  if(techOn('cottonmill')&&household(a.home).reduce((s,x)=>s+x.coins,0)<8&&rnd()<.6)job='millhand';
+  const factory=effect('factoryJob');
+  if(factory&&household(a.home).reduce((s,x)=>s+x.coins,0)<8&&rnd()<.6)job=factory;
   else if(par)job=par.job==='farmer'?'farmer':par.job;
   else job=pick(['labourer','farmhand','carter']);
   a.job=job;a.work=JOBS[job];a.coins=2;
-  if(job==='weaver'&&par&&S.tech.shuttle.adopters.includes(par.id))S.tech.shuttle.adopters.push(a.id);
+  for(const d of IDEAS)if(d.adoption&&d.adoption.jobs.includes(job)&&par&&S.tech[d.id].adopters.includes(par.id))S.tech[d.id].adopters.push(a.id);
   log(`${N(a)} turns fourteen and starts work as a ${job}${par&&job===par.job?`, alongside ${par.dead?'the memory of ':''}${N(par)}`:''}.`,'event','work',{ids:[a.id]});
 }
 export function lifeDay(){
@@ -107,7 +110,7 @@ export function lifeDay(){
   for(const a of [...LIVE]){
     const before=a.age;a.age+=1/YEAR_DAYS;
     if(before<14&&a.age>=14&&a.job==='child')comeOfAge(a);
-    if(techOn('steam')){const ex=a.job==='millhand'?.0012*(1+Math.max(0,a.age-30)/20):.00025;if(rnd()<ex){die(a,'of the mill cough');continue;}}
+    if(effect('millCough')){const ex=a.job==='millhand'?.0012*(1+Math.max(0,a.age-30)/20):.00025;if(rnd()<ex){die(a,'of the mill cough');continue;}}
     let hz=.004+Math.pow(Math.max(0,a.age-58),2)*.0025;if(winter&&a.age>60)hz*=1.6;
     let p=hz/YEAR_DAYS,cause=winter&&a.age>55?'of the winter cold':a.age>75?'peacefully in their sleep':pick(['after a short illness','of a fever','in their sleep']);
     a.starve=a.hunger>=.98?(a.starve||0)+1:0;

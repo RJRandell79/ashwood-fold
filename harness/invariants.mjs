@@ -24,5 +24,6 @@ export function checkInvariants(S) {
   }
   for (let i = 1; i < S.annals.length; i++) if (S.annals[i].t < S.annals[i - 1].t) { bad.push('annals are out of order'); break; }
   if (S.era < 0 || S.era > 4) bad.push(`era out of range (${S.era})`);
+  for (const e of S.annals) if (/\bundefined\b|\bNaN\b|\[object Object\]/.test(e.h)) { bad.push(`broken text in the annals: ${e.h.replace(/<[^>]+>/g, '').slice(0, 90)}`); break; }
   return bad;
 }
