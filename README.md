@@ -9,7 +9,7 @@ A rule-based village simulation of a Lancashire river valley, played from a Ston
 
 | Phase | Goal | Gate | State |
 | --- | --- | --- | --- |
-| 0 | Port v5 into modules, esbuild, headless harness | Same seed gives the same annals as v5 | Passed (tag `phase-0-parity`) |
+| 0 | Port v5 into modules, esbuild, headless harness | Same seed gives the same annals as v5 | Passed at commit 6f340ea |
 | 1 | Ideas and buildings as data; 2D map dropped | The v5 tech tree runs from data alone | |
 | 2 | Valley terrain, scored building sites, 3D archetypes | The village grows itself | |
 | 3 | Dynasty records, interludes, eras 1 to 3 | A run goes from camp to the Bronze Age | |
