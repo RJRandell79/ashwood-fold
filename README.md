@@ -27,6 +27,7 @@ npm run build        # writes dist/ashwood-fold.html, one self-contained page
 npm test             # parity with v5, save codes, invariants over long runs
 npm run harness      # balance report: 5 seeds x 30 years (--seeds 1,2,3 --years 50)
 npm run parity       # full comparison with the v5 prototype (--seeds, --years)
+node harness/compare.mjs --base ../other-checkout   # behaviour report against another branch
 ```
 
 Open `dist/ashwood-fold.html` in a browser to play. Three.js r128 loads from cdnjs.
@@ -42,7 +43,7 @@ Open `dist/ashwood-fold.html` in a browser to play. Three.js r128 loads from cdn
 | `src/view/` | 3D view, panels, portraits and arms, the annals book |
 | `src/main.js` | Boot and game loop |
 | `index.html`, `src/view/styles.css` | Page shell and styles, inlined by the build |
-| `harness/` | Headless runner, balance report, invariants, v5 reference and parity check |
+| `harness/` | Headless runner, balance report, invariants, v5 reference and parity check, behaviour comparison between branches |
 | `tests/` | Vitest tests |
 | `tools/build.mjs` | esbuild bundle, inlined into one HTML file |
 | `tools/port-v5.mjs` | One-off tool that split the prototype into modules (kept as a record) |

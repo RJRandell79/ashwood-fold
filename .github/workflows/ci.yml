@@ -59,3 +59,22 @@ jobs:
         with:
           name: ashwood-fold-html
           path: dist/ashwood-fold.html
+
+  compare:
+    name: Behaviour vs base branch
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Compare 20 villages x 30 years with the base branch
+        run: node harness/compare.mjs --base base --seeds 20 --years 30 --markdown compare.md
+      - name: Add the report to the job summary
+        if: always()
+        run: test -f compare.md && cat compare.md >> "$GITHUB_STEP_SUMMARY" || true
