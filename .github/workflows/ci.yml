@@ -34,6 +34,8 @@ jobs:
       - run: npm ci
       - name: Balance report and invariants
         run: node harness/run.mjs --seeds 1,11,23,42,77 --years 30 --json harness-report.json
+      - name: Diversity report
+        run: node harness/diversity.mjs --seeds 12 --years 30 --markdown diversity.md && cat diversity.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v6
         if: always()
         with:

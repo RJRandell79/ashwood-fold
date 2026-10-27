@@ -26,6 +26,7 @@ npm install
 npm run build        # writes dist/ashwood-fold.html, one self-contained page
 npm test             # valley and placement, old saves (v5 included), save codes, invariants over long runs
 npm run harness      # balance report: 5 seeds x 30 years (--seeds 1,2,3 --years 50)
+npm run diversity    # how different the histories are: ideas, eras, layouts, families (--seeds 20)
 node harness/compare.mjs --base ../other-checkout   # behaviour report against another branch
 ```
 
