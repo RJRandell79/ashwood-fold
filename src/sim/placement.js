@@ -201,12 +201,12 @@ export function restyleSeason() {
       if (!payer || payer.coins < 14) continue;
       payer.coins -= 8;
       rebuild(p, era);
-      log(`${N(payer)} has ${PN(p.id)} pulled down and rebuilt in ${now.material}.`, 'event', 'work', { ids: [payer.id] });
+      log(`${N(payer)} has ${PN(p.id)} pulled down and rebuilt in ${now.material}.`, 'event', 'work', { ids: [payer.id], place: p.id });
       return p.id;
     }
     {
       rebuild(p, era);
-      log(`${PN(p.id).replace(/^the /, 'The ')} is rebuilt in ${now.material}.`, 'event', 'work');
+      log(`${PN(p.id).replace(/^the /, 'The ')} is rebuilt in ${now.material}.`, 'event', 'work', { place: p.id });
       return p.id;
     }
   }

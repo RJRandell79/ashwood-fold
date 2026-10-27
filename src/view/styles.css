@@ -158,6 +158,8 @@ h2.sec{font-size:22px;margin-bottom:10px}
 .entry time{color:var(--muted);font-size:12px;padding-top:3px;font-variant-numeric:tabular-nums}
 .entry i{width:6px;height:6px;margin-top:8px;transform:rotate(45deg);background:var(--muted)}
 .entry p{margin:0}
+.show{font:inherit;font-size:12px;line-height:1;padding:2px 7px;margin-left:4px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);cursor:pointer;vertical-align:1px}
+.show:hover,.show:focus-visible{color:var(--ink);border-color:var(--muted)}
 .k-good i{background:var(--good)} .k-bad i{background:var(--bad)} .k-rumour i{background:var(--lamp)} .k-nudge i{background:var(--accent);width:8px;height:8px;margin-top:7px}
 .k-life i{background:var(--ink);width:8px;height:8px;margin-top:7px}
 .k-nudge p{font-style:italic}

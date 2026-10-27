@@ -6,8 +6,8 @@ import { armsOf, blazon, familyCards, familyPlural } from '../sim/heraldry.js';
 import { op } from '../sim/social.js';
 import { LIVE, N, S, numberWord, seasonName, seasonOf, yearOf } from '../sim/state.js';
 import { armsSVG, portraitSVG } from './portraits.js';
-import { G, cv3, draw3d } from './three.js';
-import { $, cap, familyLine, traitWords } from './ui.js';
+import { G, cv3, draw3d, flyTo } from './three.js';
+import { $, cap, familyLine, showBtn, traitWords } from './ui.js';
 import { V } from './vstate.js';
 
 export function yearTitle(y,ents){
@@ -34,7 +34,7 @@ export function yearIntro(y){
   if(r.harvest)bits.push(`The harvest was ${r.harvest}.`);
   return bits.join(' ');
 }
-export function paragraphs(ents){const out=[];let cur=[];for(const e of ents){cur.push(e.h);if(cur.length>=4){out.push(cur.join(' '));cur=[];}}if(cur.length)out.push(cur.join(' '));return out.map(p=>`<p>${p}</p>`).join('');}
+export function paragraphs(ents){const out=[];let cur=[];for(const e of ents){cur.push(e.h+(e.place?showBtn(e.place):''));if(cur.length>=4){out.push(cur.join(' '));cur=[];}}if(cur.length)out.push(cur.join(' '));return out.map(p=>`<p>${p}</p>`).join('');}
 export function castEntry(a){
   const life=a.born!=null?`born ${seasonName(a.born)}`:a.arrivedAt!=null?`came to the village ${seasonName(a.arrivedAt)}`:`aged ${Math.floor(a.dead?a.dead.age-(a.dead.t-36)/TPD/YEAR_DAYS:a.age-(S.tick-36)/TPD/YEAR_DAYS)} when this chronicle begins`;
   const end=a.dead?(a.dead.exiled?`; ${a.dead.cause}, ${seasonName(a.dead.t)}`:`; died ${seasonName(a.dead.t)}, ${a.dead.cause}, aged ${Math.floor(a.dead.age)}`):`; ${Math.floor(a.age)} years old now`;
@@ -82,6 +82,10 @@ export let storySpeed=1;
 $('openStory').onclick=()=>{buildStory();$('story').hidden=false;$('story').scrollTop=0;document.body.style.overflow='hidden';storySpeed=V.speed;V.speed=0;$('closeStory').focus();};
 export function closeStory(){$('story').hidden=true;document.body.style.overflow='';V.speed=storySpeed;$('openStory').focus();}
 $('closeStory').onclick=closeStory;
+// "Show" on a chronicle or annals entry: close the book if it is open, then go to the place in the valley.
+document.addEventListener('click',e=>{const b=e.target.closest('.show');if(!b)return;e.preventDefault();
+  if(!$('story').hidden)closeStory();
+  if(flyTo(b.dataset.place))cv3.scrollIntoView({behavior:'smooth',block:'center'});});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('story').hidden)closeStory();});
 $('copyStory').onclick=()=>{
   const book=$('book').cloneNode(true);book.querySelectorAll('figure').forEach(f=>f.remove());

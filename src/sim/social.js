@@ -94,7 +94,7 @@ export function quarrel(a,b,host,place,confront){
     else if(wit.length)line+=` ${listNames(wit.slice(0,3))} pulled them apart.`;
     S.fightCase=S.fightCase||{};
     if(!reeve&&op(b,a)<-60&&S.tick-(S.fightCase[pk]||-1e9)>TPD*12&&rnd()<.3&&(S.fightCase[pk]=S.tick))bringCase(a,b,`starting a fight at ${PN(place)}`,.5,true);
-    log(line,'bad',again?null:'fight',{ids:[a.id,b.id]});
+    log(line,'bad',again?null:'fight',{ids:[a.id,b.id],place});
   }else if(!adults){
     if(rnd()<.15)log(`${N(a)} and ${N(b)} squabbled at ${PN(place)}, ${cause}.`,'event');
   }else if(confront){

@@ -142,12 +142,14 @@ export function renderFamilies(){
   if(sig!==renderFamilies.sig){renderFamilies.sig=sig;$('fams').innerHTML=html;}
 }
 export let logLen=-1, logFirst=null;
+/** A small button after a chronicle entry that shows where it happened. */
+export function showBtn(id){const nm=id==='crossing'?'the river crossing':(P[id]?P[id].name:'');return nm?` <button class="show" data-place="${id}" aria-label="Show ${nm} in the valley" title="Show ${nm}">Show</button>`:'';}
 export function renderLog(){
   if(S.log.length===logLen&&S.log[0]===logFirst)return;logLen=S.log.length;logFirst=S.log[0];
   let html='',day=-1;
   for(let i=S.log.length-1;i>=Math.max(0,S.log.length-220);i--){const e=S.log[i],d=dayOf(e.t);
     if(d!==day){day=d;html+=`<h3 class="dayhead">${weekday(e.t)}, day ${dayInSeason(e.t)} of ${seasonName(e.t)}</h3>`;}
-    html+=`<div class="entry k-${e.k}"><time>${fmtTime(e.t)}</time><i></i><p>${e.h}</p></div>`;}
+    html+=`<div class="entry k-${e.k}"><time>${fmtTime(e.t)}</time><i></i><p>${e.h}${e.p?showBtn(e.p):''}</p></div>`;}
   $('log').innerHTML=html||'<p class="empty">Nothing has happened yet.</p>';
 }
 export function render(force){

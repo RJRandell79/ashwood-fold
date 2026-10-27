@@ -70,7 +70,7 @@ export function init3d(){
 // --- the world: rebuilt whenever the valley changes (a new village, a loaded save) ----------
 
 function disposeWorld(){
-  const W=G.world;if(!W)return;
+  const W=G.world;if(!W)return;G.fly=null;if(G.marker)G.marker.visible=false;
   G.scene.remove(W.root);
   W.root.traverse(o=>{if(o.geometry)o.geometry.dispose();});
   for(const c of W.puffs)G.scene.remove(c);
@@ -250,6 +250,8 @@ export function draw3d(al,dt){
   if(snowing){const sp2=G.snow.geometry.attributes.position,rate=storm?3.2:1.1,cnt=storm?G.rv.length:Math.floor(G.rv.length*.4);
     G.rv.forEach((d,i)=>{if(i>=cnt){sp2.setXYZ(i,0,-50,0);return;}d[1]-=dt*rate;if(d[1]<0)d[1]+=16;sp2.setXYZ(i,d[0]+Math.sin(G.time+i)*.3,d[1],d[2]);});sp2.needsUpdate=true;}
   if(follow&&sa&&!sa.dead&&G.agents[sa.id]&&G.agents[sa.id].g.visible){const p=G.agents[sa.id].g.position;T.x+=(p.x-T.x)*.06;T.z+=(p.z-T.z)*.06;}
+  if(G.fly){const f=G.fly;f.t=Math.min(1,f.t+dt*1.4);const k=f.t*f.t*(3-2*f.t);T.lerpVectors(f.from,f.to,k);G.radius=f.r0+(f.r1-f.r0)*k;if(f.t>=1)G.fly=null;}
+  if(G.marker&&G.marker.visible){const left=G.marker.userData.until-G.time;G.marker.visible=left>0;G.marker.material.opacity=Math.min(1,left)*(.6+.4*Math.sin(G.time*6));}
   T.y+=(groundAt(v,T.x+O.x,T.z+O.y)-T.y)*.1;
   const c=G.camera,sp=Math.sin(G.phi);
   c.position.set(T.x+G.radius*sp*Math.sin(G.theta),T.y+G.radius*Math.cos(G.phi),T.z+G.radius*sp*Math.cos(G.theta));
@@ -298,6 +300,18 @@ export function start3d(){
   if(!init3d()){cv3.parentElement.hidden=true;$('cam3d').hidden=true;$('viewNote').textContent='The view of the village needs WebGL, which this browser is not providing. The village carries on in the chronicle and the panels below.';return false;}
   cv3.hidden=false;$('cam3d').hidden=false;$('viewNote').textContent='Drag to turn. Pinch or scroll to zoom. Two fingers or right-drag to pan.';
   size3d();return true;
+}
+/** Moves the camera to a place named in the chronicle and marks it for a few seconds. */
+export function flyTo(id){
+  if(!G||!G.world)return false;
+  const W=G.world;let x,y,r=3;
+  if(id==='crossing'){const e=crossingEnds();if(!e)return false;x=e.x;y=(e.north.y+e.south.y)/2;}
+  else{const p=P[id];if(!p)return false;x=p.x+p.w/2;y=p.y+p.h/2;r=Math.max(p.w,p.h)*.75+.6;}
+  follow=false;syncFollow();
+  G.fly={from:G.target.clone(),to:new THREE.Vector3(x-W.O.x,groundAt(W.v,x,y),y-W.O.y),t:0,r0:G.radius,r1:Math.min(G.radius,26)};
+  if(!G.marker){G.marker=new THREE.Mesh(new THREE.RingGeometry(.86,1,48),new THREE.MeshBasicMaterial({color:0xe0a43a,transparent:true,depthTest:false,side:THREE.DoubleSide}));G.marker.rotation.x=-Math.PI/2;G.marker.renderOrder=27;G.scene.add(G.marker);}
+  G.marker.scale.setScalar(r);G.marker.position.set(x-W.O.x,groundAt(W.v,x,y)+.15,y-W.O.y);G.marker.userData.until=G.time+4;G.marker.visible=true;
+  return true;
 }
 const home=()=>{const W=G.world;G.target.set(0,W?groundAt(W.v,W.O.x,W.O.y):0,0);};
 $('vReset').onclick=()=>{if(!G)return;Object.assign(G,{theta:-.35,phi:.92,radius:defR()});home();follow=false;syncFollow();};

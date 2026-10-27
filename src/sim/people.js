@@ -21,7 +21,7 @@ export function freeHome(){
 }
 /** Moves someone into a home; 'new' builds a cottage first. Returns the home they end up in. */
 export function setHome(a,home){
-  if(home==='new'){const id=buildCottage();if(id)log(`A new cottage goes up: ${PN(id)}.`,'event','work');home=id||a.home||'tavern';}
+  if(home==='new'){const id=buildCottage();if(id)log(`A new cottage goes up: ${PN(id)}.`,'event','work',{place:id});home=id||a.home||'tavern';}
   a.home=home;return home;
 }
 export function nameBaby(sex,sur){
@@ -43,7 +43,7 @@ export function birth(mother,father){
     S.op[x.id][id]=fam;}
   mother.lastBirth=S.tick;yr().births++;faceOf(b);
   const mid=LIVE.find(a=>a.job==='herbalist'&&a!==mother);
-  log(`${N(mother)} and ${N(father)} have a ${sex==='f'?'daughter':'son'}, ${N(b)}.${mid?` ${N(mid)} saw ${sex==='f'?'her':'him'} safely into the world.`:''}`,'life','birth',{ids:[b.id,mother.id,father.id]});
+  log(`${N(mother)} and ${N(father)} have a ${sex==='f'?'daughter':'son'}, ${N(b)}.${mid?` ${N(mid)} saw ${sex==='f'?'her':'him'} safely into the world.`:''}`,'life','birth',{ids:[b.id,mother.id,father.id],place:b.home});
 }
 export function die(a,cause){
   cause=cause.replace('their',a.sex==='f'?'her':'his');
@@ -63,7 +63,7 @@ export function die(a,cause){
   let line=`${N(a)} the ${a.job==='child'?'child':a.job} died ${cause} ${ageTxt}.`;
   if(mourners[0])line+=` ${N(mourners[0])} is heartbroken.`;
   if(glad[0])line+=` ${N(glad[0])} sheds no tears.`;
-  log(line,'life','death',{ids:[a.id]});
+  log(line,'life','death',{ids:[a.id],place:'chapel'});
   // funeral tomorrow
   S.gathers.push({id:S.gid++,type:'funeral',who:a.id,place:'chapel',start:dayStart()+TPD+66,end:dayStart()+TPD+84});
   // rumours and ideas move on
@@ -79,7 +79,7 @@ export function succeed(dead){
   const loose=LIVE.filter(a=>isAdult(a)&&['labourer','farmhand','carter','pedlar','millhand'].includes(a.job));
   const heir=kin.sort((x,y)=>(y.parents.includes(dead.id)-x.parents.includes(dead.id))||(y.tr.diligence-x.tr.diligence))[0]||(rnd()<.6?loose.sort((x,y)=>y.tr.diligence-x.tr.diligence)[0]:null);
   if(heir){heir.prevJob=heir.job;heir.job=job;heir.work=JOBS[job];
-    log(`${N(heir)} takes on ${PN(JOBS[job])} after ${N(dead)}.`,'event','work',{ids:[heir.id]});}
+    log(`${N(heir)} takes on ${PN(JOBS[job])} after ${N(dead)}.`,'event','work',{ids:[heir.id],place:JOBS[job]});}
   else{S.vacant.push({job,since:S.tick});log(`With ${N(dead)} gone, nobody in the village can take on ${PN(JOBS[job])}.`,'bad','work');}
 }
 export function arrive(job,reason){
@@ -92,7 +92,7 @@ export function arrive(job,reason){
   home=setHome(s,home);s.coins=8;s.arrivedAt=S.tick;
   [s.x,s.y]=entryPoint();s.px=s.x;s.py=s.y;s.arrived=false;s.act={type:'stroll',place:home,left:2,target:null};const q=pointIn(P[home]);s.tx=q[0];s.ty=q[1];setVia(s);
   for(const a of LIVE)if(a!==s){S.op[a.id][id]=Math.round(-10+a.tr.warmth*20+(rnd()-.5)*10);S.op[id][a.id]=Math.round((rnd()-.4)*14);}
-  log(`${N(s)} arrives along the carters' road ${reason}, and settles at ${PN(home)}.`,'event','arrival',{ids:[id]});
+  log(`${N(s)} arrives along the carters' road ${reason}, and settles at ${PN(home)}.`,'event','arrival',{ids:[id],place:home});
   return s;
 }
 export function comeOfAge(a){
@@ -169,7 +169,7 @@ export function gatherTick(){
           if(home==='tavern'&&fh)home=fh;
           home=setHome(x,home);setHome(y,home);
           const away=LIVE.filter(a=>isAdult(a)&&!came.includes(a)&&(isKin(a,x)||isKin(a,y)||Math.min(op(a,x),op(a,y))<-35)).slice(0,3);
-          log(`${N(x)} and ${N(y)} were married at the Chapel, with ${came.length>LIVE.length*.6?'most of the village':came.length>3?`${came.length} people`:'only a handful'} looking on.${away.length?` ${listNames(away)} stayed away.`:''} They will live at ${PN(home)}.`,'good','wedding',{ids:[x.id,y.id]});
+          log(`${N(x)} and ${N(y)} were married at the Chapel, with ${came.length>LIVE.length*.6?'most of the village':came.length>3?`${came.length} people`:'only a handful'} looking on.${away.length?` ${listNames(away)} stayed away.`:''} They will live at ${PN(home)}.`,'good','wedding',{ids:[x.id,y.id],place:'chapel'});
         }
       }else if(g.type==='election'){tallyElection();
       }else if(g.type==='court'){const js=g.jurors.map(i=>S.agents[i]).filter(j=>!j.dead);for(const c of g.cases)decideCase(c,js);

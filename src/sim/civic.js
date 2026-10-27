@@ -150,7 +150,7 @@ export function decideCase(c,jurors){
   }
   const swayed=votes.filter(v=>!confessed&&Math.abs(v.bias)>.3&&v.g===(v.bias>0)).sort((x,y)=>Math.abs(y.bias)-Math.abs(x.bias))[0];
   if(swayed)line+=` ${N(swayed.j)}, who ${swayed.bias>0?'has no love for':'is fond of'} ${N(acc)}, voted ${swayed.g?'guilty':'to acquit'}.`;
-  log(line+(sentence?' '+sentence:''),guilty?'bad':'good','court',{ids:[acc.id],guilty});
+  log(line+(sentence?' '+sentence:''),guilty?'bad':'good','court',{ids:[acc.id],guilty,place:'hall'});
   S.verdicts.unshift({t:S.tick,acc:acc.id,plf:plf?plf.id:null,charge:c.charge,guilty,score:[g,votes.length-g],truth:c.truth});
   if(S.verdicts.length>12)S.verdicts.length=12;
 }

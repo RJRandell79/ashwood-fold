@@ -166,7 +166,7 @@ export function steal(a){
   if(wit.length){
     for(const w of wit){adj(w,a,kid?-8:-24);mem(w,a,'caught stealing bread','bakery');}
     adj(a,wit[0],-6);glyph(a,'!','bad');
-    log(kid?`Young ${N(a)} was caught slipping a loaf from the Bakehouse by ${listNames(wit)}.`:`${N(a)}, hungry and without a penny, was caught taking bread from the Bakehouse by ${listNames(wit)}.`,'bad','crime',{ids:[a.id]});
+    log(kid?`Young ${N(a)} was caught slipping a loaf from the Bakehouse by ${listNames(wit)}.`:`${N(a)}, hungry and without a penny, was caught taking bread from the Bakehouse by ${listNames(wit)}.`,'bad','crime',{place:'bakery',ids:[a.id]});
     if(!kid){addRumour(a.id,'is a thief',wit[0]);bringCase(a,wit[0],'stealing bread from the Bakehouse',.75,true);}
   }else{
     S.stores.missing+=2;S.lastThief=a.id;mem(a,null,'took bread from the Bakehouse unseen','bakery');
@@ -180,7 +180,7 @@ export function bakerNotices(a){
   if(!sus){log(`${N(a)} finds ${n} loaves missing from the Bakehouse and cannot think who would do such a thing.`,'event');return;}
   adj(a,sus,-14);mem(a,sus,'probably took bread from the Bakehouse','bakery');
   const right=S.lastThief===sus.id;
-  log(`${N(a)} counts the loaves, finds ${n} gone, and suspects ${N(sus)}${right?'. The suspicion happens to be right.':', who had nothing to do with it.'}`,'rumour','crime',{ids:[a.id,sus.id]});
+  log(`${N(a)} counts the loaves, finds ${n} gone, and suspects ${N(sus)}${right?'. The suspicion happens to be right.':', who had nothing to do with it.'}`,'rumour','crime',{ids:[a.id,sus.id],place:'bakery'});
   addRumour(sus.id,'has been helping themselves at the Bakehouse',a);
   bringCase(sus,a,'stealing bread from the Bakehouse',.15,right);
 }
