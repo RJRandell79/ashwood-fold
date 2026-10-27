@@ -72,6 +72,8 @@ export const BUILDINGS = {
               place: { riverbank: true, centre: 1, away: { sacred: 2 }, maxFlood: 1, maxSlope: 0.5 } },
   wharf:    { name: 'the Canal Wharf', legacy: 'adaptable', w: 4, h: 2, indoor: false, kind: 'open', archetype: 'wharf', features: ['crane'],
               place: { line: 'canal', centre: 3 } },
+  tollhouse: { name: 'the Toll House', legacy: 'adaptable', w: 3, h: 3, indoor: true, kind: 'civic', archetype: 'house', features: ['chimney'],
+              place: { line: 'turnpike', centre: 3 } },
   station:  { name: 'the Station', legacy: 'adaptable', w: 5, h: 2, indoor: true, kind: 'civic', archetype: 'station',
               place: { line: 'railway', centre: 3 } },
 };
@@ -93,9 +95,11 @@ export const COTTAGE_HUES = [240, 95, 330, 20, 160, 265, 60, 190, 300, 120, 0, 2
 
 // Long works that cut across the valley, routed along a contour when their idea is built.
 //   target: height above the hearth to follow; smooth: how hard the route resists bending
+//   water: a waterway, which must keep one level (so not every valley can carry one)
 export const LINES = {
-  canal:   { name: 'the canal', target: 0.4, smooth: 2.5, width: 1 },
+  canal:   { name: 'the canal', target: 0.4, smooth: 2.5, width: 1, water: true },
   railway: { name: 'the railway', target: 2.2, smooth: 6, width: 1 },
+  turnpike: { name: 'the turnpike', target: 1.2, smooth: 3, width: 1 },
 };
 
 // Ways over the river. The first village fords it; the stone bridge idea replaces the ford.

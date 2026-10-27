@@ -5,6 +5,7 @@ import { runV5 } from '../harness/v5-reference.mjs';
 import { checkInvariants } from '../harness/invariants.mjs';
 import { canonical } from '../harness/canonical.mjs';
 import { valley, VW, VH } from '../src/sim/valley.js';
+import { IDEAS } from '../src/data/ideas.js';
 import { migrate } from '../src/sim/setup.js';
 import { S, setState } from '../src/sim/state.js';
 import { tick } from '../src/sim/clock.js';
@@ -38,9 +39,11 @@ describe('placement', () => {
       const problems = [];
       run(seed, { years: 30, onYear: s => problems.push(...checkInvariants(s)) });
       expect(problems).toEqual([]);
-      for (const id of ['cottonmill', 'wharf', 'station', 'school', 'barn']) expect(S.places[id], `${id} in seed ${seed}`).toBeTruthy();
-      expect(S.lines.canal).toHaveLength(VW);
-      expect(S.lines.railway).toHaveLength(VW);
+      // every built idea's buildings and lines stand in the valley
+      for (const d of IDEAS) if (S.tech[d.id].state === 'built') {
+        for (const id of d.places || []) expect(S.places[id], `${id} in seed ${seed}`).toBeTruthy();
+        if (d.line) expect(S.lines[d.line]).toHaveLength(VW);
+      }
     }
   });
 });

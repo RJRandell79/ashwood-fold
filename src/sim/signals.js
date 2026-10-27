@@ -3,10 +3,13 @@
 import { IDEAS } from '../data/ideas.js';
 import { LIVE, P, S, seasonOf } from './state.js';
 import { effect } from './effects.js';
-import { choosePlot, settlementCentre } from './placement.js';
-import { BUILDINGS } from '../data/buildings.js';
+import { choosePlot, lineDifficulty, settlementCentre } from './placement.js';
+import { BUILDINGS, LINES } from '../data/buildings.js';
+const WATERWAY = Object.keys(LINES).find(k => LINES[k].water);
 
 const weavers = () => LIVE.filter(a => a.job === 'weaver');
+// Above this difficulty (see lineDifficulty) a valley is too steep and broken for a canal: about a third of valleys.
+const CANAL_LIMIT = 1.4;
 
 /** Daily conditions: while one holds, ideas that list it gain extra pressure each day. */
 export const SIGNALS = {
@@ -16,6 +19,13 @@ export const SIGNALS = {
   weaversPoor: () => { const w = weavers(); return w.length && w.reduce((s, x) => s + x.coins, 0) / w.length < 8; },
   manyChildren: () => LIVE.filter(a => a.age >= 5 && a.age < 14).length >= 4,
   hasWeavers: () => weavers().length > 0,
+  // a works is running in the village and wants its goods carried
+  worksRunning: () => effect('millHandsCap') > 0,
+  // a works is running but its goods and corn still go by packhorse and cart on a bad road
+  goodsStuck: () => effect('millHandsCap') > 0 && effect('cornCartCost') > 30,
+  // the valley side is gentle enough to carry a canal at one level, or it is not
+  canalCountry: () => lineDifficulty(WATERWAY) < CANAL_LIMIT,
+  hillCountry: () => lineDifficulty(WATERWAY) >= CANAL_LIMIT,
   // the next cottage would stand well out beyond the homes already built
   shortOfLand: () => {
     const p = choosePlot('cottage'); if (!p) return true;

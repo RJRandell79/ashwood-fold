@@ -4,7 +4,9 @@
 //
 // Record fields
 //   id, name, what, hint     identity and the words the annals and panels use
-//   requires                 ideas that must be built before anyone can think of this one
+//   answers                  the pressure it answers: food, connectivity, economy or social (ideas sharing a signal compete)
+//   requires                 ideas that must be built first; an inner list means any one of them ([['canal', 'turnpike']])
+//   possibleWhen             a signal that must hold for anyone to think of it at all (the canal needs canal country)
 //   inventorJobs             trades whose members may have the idea (most diligent wins)
 //   inventorBias             optional { trait, weight, invert }: a trait that also favours an inventor
 //   backers, cost            supporters and pennies needed to build it
@@ -22,53 +24,54 @@
 //   places, line             buildings it raises and a line it cuts across the valley (src/data/buildings.js)
 //   crossing                 what the river crossing becomes when it is built (the first village has a ford)
 //   opensEra                 the era that begins when it is built
+//   eraTitle, eraLine        how that era is named and announced, if this idea opens it (else src/data/eras.js)
 //   emblem                   charge added to the inventor's family arms
 export const IDEAS = [
   {
-    id: 'plough', name: 'Heavy plough', what: 'turns the clay deeper so the South Fields yield more', hint: 'Talk of thin harvests',
+    id: 'plough', answers: 'food', name: 'Heavy plough', what: 'turns the clay deeper so the South Fields yield more', hint: 'Talk of thin harvests',
     requires: [], inventorJobs: ['farmer', 'farmhand', 'smith'], backers: 5, cost: 30,
-    pressure: { base: 0.6, when: { grainShort: 5 }, on: { thinHarvest: 50 } },
+    pressure: { base: 0.03, when: { grainShort: 5 }, on: { thinHarvest: 50 } },
     threatens: { farmhand: 0.35 },
     effects: { farmYield: { mul: 1.45 } },
     emblem: 'plough',
   },
   {
-    id: 'millstone', name: 'Second millstone', what: 'lets the Watermill grind twice the corn', hint: 'Grumbling about bare shelves',
+    id: 'millstone', answers: 'food', name: 'Second millstone', what: 'lets the Watermill grind twice the corn', hint: 'Grumbling about bare shelves',
     requires: [], inventorJobs: ['miller', 'labourer', 'smith'], backers: 5, cost: 35,
-    pressure: { base: 0.6, when: { flourShort: 4 }, on: { shelvesBare: 30 } },
+    pressure: { base: 0.15, when: { flourShort: 4 }, on: { shelvesBare: 30 } },
     effects: { grindRate: { mul: 1.7 } },
     emblem: 'millstone',
   },
   {
-    id: 'barn', name: 'Tithe barn', what: 'keeps a whole harvest dry through the winter', hint: 'Worry about where to store the corn',
+    id: 'barn', answers: 'food', name: 'Tithe barn', what: 'keeps a whole harvest dry through the winter', hint: 'Worry about where to store the corn',
     places: ['barn'],
     requires: [], inventorJobs: ['farmer', 'reeve', 'carter'], backers: 6, cost: 45,
-    pressure: { base: 0.6, when: { granaryFullAtHarvest: 6 }, on: { granaryFull: 3, cornFlattened: 30 } },
+    pressure: { base: 0.05, when: { granaryFullAtHarvest: 6 }, on: { granaryFull: 3, cornFlattened: 30 } },
     effects: { grainCap: { set: 750 }, protectsHarvest: { set: 1 } },
     emblem: 'garb2',
   },
   {
-    id: 'assart', name: 'Wood clearing', what: 'fells the nearest wood and ploughs the ground beneath for new fields', hint: 'Talk of the good soil under the trees',
+    id: 'assart', answers: 'food', name: 'Wood clearing', what: 'fells the nearest wood and ploughs the ground beneath for new fields', hint: 'Talk of the good soil under the trees',
     places: ['assart'],
     requires: [], inventorJobs: ['farmer', 'farmhand', 'labourer'], backers: 5, cost: 25, buildDays: 4,
-    pressure: { base: 0.2, when: { grainShort: 4, shortOfLand: 1 } },
+    pressure: { base: 0, when: { grainShort: 4, shortOfLand: 1 } },
     effects: { farmYield: { mul: 1.25 } },
     builtLines: ['Where the wood stood there are stumps and fresh furrows: the Intake Fields.'],
     emblem: 'axe',
   },
   {
-    id: 'bridge', name: 'Stone bridge', what: 'carries the lane over the river, so the village can build on the far bank', hint: 'Talk of the good land across the water',
+    id: 'bridge', answers: 'connectivity', name: 'Stone bridge', what: 'carries the lane over the river, so the village can build on the far bank', hint: 'Talk of the good land across the water',
     crossing: 'bridge',
     requires: [], inventorJobs: ['carter', 'smith', 'reeve', 'farmer'], backers: 6, cost: 60, buildDays: 6,
-    pressure: { base: 0.25, when: { shortOfLand: 4 } },
+    pressure: { base: 0.02, when: { shortOfLand: 4 } },
     effects: { farBank: { set: 1 } },
     builtLines: ['Carts no longer wait for low water at the ford.'],
     emblem: 'bridge',
   },
   {
-    id: 'shuttle', name: 'Flying shuttle', what: 'lets one weaver do the work of two', hint: 'The cloth merchant wants more cloth',
+    id: 'shuttle', answers: 'economy', name: 'Flying shuttle', what: 'lets one weaver do the work of two', hint: 'The cloth merchant wants more cloth',
     requires: [], inventorJobs: ['weaver', 'smith'], backers: 3, cost: 16,
-    pressure: { base: 0.6, when: { weaversPoor: 3 } },
+    pressure: { base: 0.45, when: { weaversPoor: 3 } },
     threatens: { weaver: 1 },
     effects: { weaverWage: { set: 0.035, adopterSet: 0.11 } },
     adoption: { jobs: ['weaver'], cost: 4, chance: 0.12, minOpinion: -20, resentment: -2, memory: 'is taking my living' },
@@ -76,10 +79,10 @@ export const IDEAS = [
     emblem: 'shuttle',
   },
   {
-    id: 'school', name: 'Village school', what: 'teaches the children their letters, and the village to question idle talk', hint: 'Concern about idle talk and idle children',
+    id: 'school', answers: 'social', name: 'Village school', what: 'teaches the children their letters, and the village to question idle talk', hint: 'Concern about idle talk and idle children',
     places: ['school'],
     requires: [], inventorJobs: ['herbalist', 'reeve', 'innkeeper'], backers: 6, cost: 40,
-    pressure: { base: 0.6, when: { manyChildren: 2 }, on: { rumourSpread: 20 } },
+    pressure: { base: 0.2, when: { manyChildren: 2 }, on: { rumourSpread: 20 } },
     effects: {
       rumourTrust: { mul: 0.6 }, rumourDoubtChance: { set: 0.25 }, juryBias: { set: 0.35 },
       canvassWeight: { mul: 0.8 }, childInherit: { set: 0.35 }, lessons: { set: 'school' },
@@ -87,11 +90,11 @@ export const IDEAS = [
     emblem: 'book',
   },
   {
-    id: 'cottonmill', name: 'Cotton mill', what: 'spins thread by water power down by the river', hint: 'Talk of the new mills in the next valley',
+    id: 'cottonmill', answers: 'economy', name: 'Cotton mill', what: 'spins thread by water power down by the river', hint: 'Talk of the new mills in the next valley',
     places: ['cottonmill'],
     requires: ['shuttle', 'millstone'], inventorJobs: ['miller', 'weaver', 'smith'], backers: 8, cost: 90,
     inventorBias: { trait: 'warmth', weight: 0.25, invert: true },
-    pressure: { base: 1.5, when: { hasWeavers: 1 } },
+    pressure: { base: 0.9, when: { hasWeavers: 0.6, weaversPoor: 1 } },
     threatens: { weaver: 1, carter: 0.3 },
     effects: {
       weaverWage: { mul: 0.55 }, millhandWage: { set: 0.1 }, millOwnerCut: { set: 0.05 }, millHandsCap: { set: 7 },
@@ -109,10 +112,11 @@ export const IDEAS = [
     emblem: 'spindle',
   },
   {
-    id: 'canal', name: 'Canal', what: 'links the valley to the towns, bringing coal and corn by boat', hint: 'Talk of a canal cut through the next valley',
+    id: 'canal', answers: 'connectivity', name: 'Canal', what: 'links the valley to the towns, bringing coal and corn by boat', hint: 'Talk of a canal cut through the next valley',
     line: 'canal', places: ['wharf'],
     requires: ['cottonmill'], inventorJobs: ['carter', 'reeve', 'miller', 'smith'], backers: 9, cost: 140, buildDays: 10, navvies: 3,
-    pressure: { base: 1.4 },
+    pressure: { base: 0.1, when: { goodsStuck: 1.4 } },
+    possibleWhen: 'canalCountry',
     threatens: { carter: 0.6 },
     effects: {
       weaverWage: { mul: 1.1 }, carterWage: { set: 0.045 }, winterUpkeep: { set: 0.8 },
@@ -122,9 +126,20 @@ export const IDEAS = [
     emblem: 'anchor',
   },
   {
-    id: 'steam', name: 'Steam engine', what: 'drives the cotton mill with coal instead of the river', hint: 'The mill wants more power than the river gives',
-    requires: ['canal'], inventorJobs: ['smith', 'millhand', 'miller'], backers: 7, cost: 120, buildDays: 3,
-    pressure: { base: 1.5 },
+    id: 'turnpike', answers: 'connectivity', name: 'Turnpike road', what: 'makes a proper road up the valley, paid for by tolls', hint: 'Complaints about the state of the carters\' road',
+    line: 'turnpike', places: ['tollhouse'],
+    requires: ['cottonmill'], inventorJobs: ['carter', 'reeve', 'innkeeper', 'smith'], backers: 7, cost: 100, buildDays: 8, navvies: 2,
+    pressure: { base: 0.1, when: { goodsStuck: 0.9, hillCountry: 0.8 } },
+    effects: { carterWage: { set: 0.09 }, winterUpkeep: { set: 0.9 }, cornCartCost: { set: 25 }, cornCartThreshold: { set: 6 } },
+    builtLines: ['Coaches and carts come up the valley on the new road, and the tollkeeper does well out of all of them.'],
+    opensEra: 2, eraTitle: 'The Turnpike Years',
+    eraLine: 'The turnpike is open. Carts and coaches come up the valley on a made road, and the Turnpike Years begin.',
+    emblem: 'cartwheel',
+  },
+  {
+    id: 'steam', answers: 'economy', name: 'Steam engine', what: 'drives the cotton mill with coal instead of the river', hint: 'The mill wants more power than the river gives',
+    requires: [['canal', 'turnpike']], inventorJobs: ['smith', 'millhand', 'miller'], backers: 7, cost: 120, buildDays: 3,
+    pressure: { base: 0.3, when: { worksRunning: 1 } },
     threatens: { weaver: 1, millhand: 0.3 },
     effects: {
       weaverWage: { mul: 0.6 },
@@ -136,16 +151,16 @@ export const IDEAS = [
     emblem: 'cog',
   },
   {
-    id: 'railway', name: 'Railway', what: 'puts Ashwood Fold an hour from Manchester', hint: 'Surveyors have been seen on the fells',
+    id: 'railway', answers: 'connectivity', name: 'Railway', what: 'puts Ashwood Fold an hour from Manchester', hint: 'Surveyors have been seen on the fells',
     line: 'railway', places: ['station'],
     requires: ['steam'], inventorJobs: ['reeve', 'smith', 'carter', 'miller'], backers: 10, cost: 180, buildDays: 10, navvies: 4,
-    pressure: { base: 1.2 },
+    pressure: { base: 0.2, when: { worksRunning: 0.8 } },
     threatens: { carter: 1 },
     effects: {
       carterWage: { set: 0.025 }, springMigrants: { set: 2 },
       migrantReason: { set: 'on the train, looking for work' }, emigration: { set: 1 },
     },
-    sabotage: { place: 'wharf', what: 'a stretch of the line' },
+    sabotage: { place: 'station', what: 'a stretch of the line' },
     opensEra: 4,
     emblem: 'wingedwheel',
   },

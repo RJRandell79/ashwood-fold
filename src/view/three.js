@@ -9,7 +9,8 @@ import { byJob, clamp, hourOf, household, hueOf, isAdult, LIVE, P, S, seasonOf, 
 import { crossingEnds } from '../sim/placement.js';
 import { valley } from '../sim/valley.js';
 import { buildPlace, mat, roofMats } from './archetypes.js';
-import { along, buildCanal, buildCrossing, buildRailway } from './lines.js';
+import { along, buildCanal, buildCrossing, buildRailway, buildTurnpike } from './lines.js';
+const LINE_BUILDERS={canal:buildCanal,railway:buildRailway,turnpike:buildTurnpike};
 import { armsSVG } from './portraits.js';
 import { groundAt, leafMaterials, makeGround, makeTrees } from './terrain.js';
 import { $, select } from './ui.js';
@@ -107,7 +108,7 @@ function syncPlaces(){
   const ck=S.crossing&&S.crossing.kind;
   if(ck&&(!W.crossing||W.crossing.kind!==ck)){if(W.crossing)W.root.remove(W.crossing.group);W.crossing=buildCrossing(crossingEnds(),ck,W.v,W.O);W.root.add(W.crossing.group);}
   for(const id in W.places)if(!P[id])removePlace3d(id);
-  for(const id in (S.lines||{}))if(!W.lines[id]){const L=(id==='canal'?buildCanal:buildRailway)(S.lines[id],W.v,W.O);W.root.add(L.group);W.lines[id]=L;}
+  for(const id in (S.lines||{}))if(!W.lines[id]){const L=(LINE_BUILDERS[id]||buildTurnpike)(S.lines[id],W.v,W.O);W.root.add(L.group);W.lines[id]=L;}
   for(const id in W.lines)if(!(S.lines&&S.lines[id])){W.root.remove(W.lines[id].group);delete W.lines[id];}
   const sig=Object.keys(P).join(',')+'|'+Object.keys(W.lines).join(',')+'|'+Object.keys(S.cleared||{}).length+'|'+Object.keys(S.roads||{}).length;
   if(sig!==W.treeSig){
@@ -211,8 +212,8 @@ export function draw3d(al,dt){
   }
   if(G.time-(G.bannerT||-9)>1){G.bannerT=G.time;updateBanners();}
   for(const id in W.lines){
-    const L=W.lines[id],t=(G.time*L.speed)%1,a=along(L.path,id==='canal'?(t<.5?t*2:2-t*2):t);
-    L.mover.position.set(a.x,a.y+(id==='canal'?.02:.12),a.z);L.mover.rotation.y=a.heading+(id==='canal'&&t>=.5?Math.PI:0);
+    const L=W.lines[id],back=id==='canal'||L.shuttle,t=(G.time*L.speed)%1,a=along(L.path,back?(t<.5?t*2:2-t*2):t);
+    L.mover.position.set(a.x,a.y+(id==='canal'?.02:.12),a.z);L.mover.rotation.y=a.heading+(back&&t>=.5?Math.PI:0);
     if(L.funnel){if(!L.puffs)L.puffs=puffsFor({big:false});const fp=L.funnel.clone().applyMatrix4(L.mover.matrixWorld);
       L.puffs.forEach((p,i)=>{const k=((G.time*1.5+i/3)%1);p.visible=!storm;p.position.set(fp.x,fp.y+k*1.6,fp.z);p.scale.setScalar(.8+k*2);p.material.opacity=.6*(1-k);});}
   }

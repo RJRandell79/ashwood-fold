@@ -194,15 +194,16 @@ export function buildCottage() {
   return id;
 }
 
-/** Routes a canal or railway along the valley side at a steady height, around what is already built. */
-export function routeLine(id) {
-  if (S.lines && S.lines[id]) return S.lines[id];
-  const L = LINES[id], v = theValley(), occ = occupancy(v), c = settlementCentre();
-  const ci = Math.floor(c.y) * v.W + Math.floor(c.x), target = v.height[ci] + L.target;
-  const W = v.W, top = 3;
+/** Plans a line along the valley side at a steady height above the settlement, by dynamic programming
+ *  over one row per column. With terrainOnly it ignores buildings (to judge whether the valley suits a line).
+ *  Returns { ys, cost } where cost is the average cost per column. */
+export function planLine(id, terrainOnly = false) {
+  const L = LINES[id], v = theValley(), W = v.W, top = 3;
+  const occ = terrainOnly ? new Uint8Array(W * v.H) : occupancy(v), c = terrainOnly ? v.hearth : settlementCentre();
+  const ci = Math.floor(c.y) * W + Math.floor(c.x), target = v.height[ci] + L.target;
   // Lines keep a clear berth of a few cells from buildings rather than threading the gaps between them.
   const near = new Float32Array(W * v.H);
-  for (const p of Object.values(P)) for (let y = Math.floor(p.y) - 3; y < Math.ceil(p.y + p.h) + 3; y++) for (let x = Math.floor(p.x) - 3; x < Math.ceil(p.x + p.w) + 3; x++)
+  if (!terrainOnly) for (const p of Object.values(P)) for (let y = Math.floor(p.y) - 3; y < Math.ceil(p.y + p.h) + 3; y++) for (let x = Math.floor(p.x) - 3; x < Math.ceil(p.x + p.w) + 3; x++)
     if (x >= 0 && y >= 0 && x < W && y < v.H) { const d = gap({ x, y, w: 1, h: 1 }, p); near[y * W + x] = Math.max(near[y * W + x], d < 1 ? 60 : d < 2 ? 25 : 8); }
   const bottom = x => Math.max(top + 1, Math.floor(v.riverY(x + 0.5) - v.halfWidth(x + 0.5) - 2));
   let prev = new Map(), back = [];
@@ -218,9 +219,25 @@ export function routeLine(id) {
     }
     back.push(from); prev = cur;
   }
-  let y = [...prev.entries()].sort((a, b) => a[1] - b[1] || a[0] - b[0])[0][0];
+  const [end, total] = [...prev.entries()].sort((a, b) => a[1] - b[1] || a[0] - b[0])[0];
+  let y = end;
   const ys = new Array(W);
   for (let x = W - 1; x >= 0; x--) { ys[x] = y; if (x > 0) y = back[x].get(y); }
+  return { ys, cost: total / W };
+}
+
+const suitCache = new Map();
+/** How hard the valley makes a line, judged on the terrain alone (average cost per column; lower suits it). */
+export function lineDifficulty(id) {
+  const key = `${S.valley.seed}:${id}`;
+  if (!suitCache.has(key)) { suitCache.set(key, planLine(id, true).cost); if (suitCache.size > 32) suitCache.delete(suitCache.keys().next().value); }
+  return suitCache.get(key);
+}
+
+/** Routes a canal or railway (or road) along the valley side, around what is already built, and records it. */
+export function routeLine(id) {
+  if (S.lines && S.lines[id]) return S.lines[id];
+  const { ys } = planLine(id);
   (S.lines || (S.lines = {}))[id] = ys;
   return ys;
 }
