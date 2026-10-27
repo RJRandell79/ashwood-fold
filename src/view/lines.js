@@ -93,3 +93,18 @@ export function buildCrossing(e, kind, v, O) {
   for (let z = z0 + 0.4; z < z1 - 0.2; z += 0.7) { const s = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 0.25, 7), st); s.position.set(x + Math.sin(z * 3) * 0.15, -0.05, z); s.castShadow = true; group.add(s); }
   return { group, kind, deck: 0, x, z0, z1 };
 }
+
+/** The turnpike: a made road with verges along its route, and a carrier's cart going up and down it. */
+export function buildTurnpike(ys, v, O) {
+  const path = linePath(ys, v, O, false), group = new THREE.Group();
+  group.add(strip(path, 2.0, 0.07, 0x7f8f5c));
+  group.add(strip(path, 1.6, 0.1, 0xa8977a));
+  const cart = new THREE.Group();
+  const bed = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.35, 1.6), mat(0x6b4f39)); bed.position.y = 0.55; cart.add(bed);
+  const load = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.4, 1.2), mat(0xd9cdb5)); load.position.y = 0.92; cart.add(load);
+  for (const s of [-1, 1]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.1, 10), mat(0x3d3128)); w.rotation.z = Math.PI / 2; w.position.set(s * 0.5, 0.35, 0); cart.add(w); }
+  const horse = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.6, 1.1), mat(0x5a4130)); horse.position.set(0, 0.7, 1.5); cart.add(horse);
+  cart.traverse(m => { m.castShadow = true; });
+  group.add(cart);
+  return { group, path, mover: cart, speed: 1 / 160, shuttle: true };
+}

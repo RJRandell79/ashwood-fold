@@ -9,7 +9,8 @@ import { byJob, clamp, hourOf, household, hueOf, isAdult, LIVE, P, S, seasonOf, 
 import { crossingEnds } from '../sim/placement.js';
 import { valley } from '../sim/valley.js';
 import { buildPlace, mat, roofMats } from './archetypes.js';
-import { along, buildCanal, buildCrossing, buildRailway } from './lines.js';
+import { along, buildCanal, buildCrossing, buildRailway, buildTurnpike } from './lines.js';
+const LINE_BUILDERS={canal:buildCanal,railway:buildRailway,turnpike:buildTurnpike};
 import { armsSVG } from './portraits.js';
 import { groundAt, leafMaterials, makeGround, makeTrees } from './terrain.js';
 import { $, select } from './ui.js';
@@ -93,7 +94,7 @@ function addPlace3d(id){
   const W=G.world,p=P[id],def=BUILDINGS[p.def]||BUILDINGS.cottage;
   const b=buildPlace(p,def,{v:W.v,O:W.O,cropMat:G.cropMat,greenMat:G.greenMat});
   for(const c of b.chimneys){c.id=id;c.puffs=puffsFor(c);}
-  let nm=p.name.replace(/^the /,'');if(p.home)nm=nm.split(' ')[0];
+  let nm=p.name.replace(/^the /,'');if(p.home)nm=nm.replace(/ (Cottage|House|Farmhouse)( \w+)?$/,'');
   const lb=makeLabel(nm,{h:p.home?.7:.85});lb.position.set(p.x+p.w/2-W.O.x,b.top+.7,p.y+p.h/2-W.O.y);b.group.add(lb);b.label=lb;
   b.era=p.era;W.root.add(b.group);W.places[id]=b;
 }
@@ -107,15 +108,17 @@ function syncPlaces(){
   const ck=S.crossing&&S.crossing.kind;
   if(ck&&(!W.crossing||W.crossing.kind!==ck)){if(W.crossing)W.root.remove(W.crossing.group);W.crossing=buildCrossing(crossingEnds(),ck,W.v,W.O);W.root.add(W.crossing.group);}
   for(const id in W.places)if(!P[id])removePlace3d(id);
-  for(const id in (S.lines||{}))if(!W.lines[id]){const L=(id==='canal'?buildCanal:buildRailway)(S.lines[id],W.v,W.O);W.root.add(L.group);W.lines[id]=L;}
+  for(const id in (S.lines||{}))if(!W.lines[id]){const L=(LINE_BUILDERS[id]||buildTurnpike)(S.lines[id],W.v,W.O);W.root.add(L.group);W.lines[id]=L;}
   for(const id in W.lines)if(!(S.lines&&S.lines[id])){W.root.remove(W.lines[id].group);delete W.lines[id];}
-  const sig=Object.keys(P).join(',')+'|'+Object.keys(W.lines).join(',');
+  const sig=Object.keys(P).join(',')+'|'+Object.keys(W.lines).join(',')+'|'+Object.keys(S.cleared||{}).length+'|'+Object.keys(S.roads||{}).length;
   if(sig!==W.treeSig){
     W.treeSig=sig;if(W.trees)W.root.remove(W.trees);
     const v=W.v,blocked=new Uint8Array(v.W*v.H),mark=(x,y)=>{if(x>=0&&y>=0&&x<v.W&&y<v.H)blocked[y*v.W+x]=1;};
     for(const p of Object.values(P))for(let y=Math.floor(p.y)-1;y<Math.ceil(p.y+p.h)+1;y++)for(let x=Math.floor(p.x)-1;x<Math.ceil(p.x+p.w)+1;x++)mark(x,y);
     for(const ys of Object.values(S.lines||{}))ys.forEach((y,x)=>{for(let d=-1;d<=1;d++)mark(x,y+d);});
     for(const k in (S.foot||{}))if(S.foot[k]>6)blocked[k]=1;
+    for(const k in (S.roads||{}))blocked[k]=1;
+    for(const k in (S.cleared||{}))blocked[k]=1; // felled woodland stays open ground
     W.trees=makeTrees(v,W.O,blocked,G.leafM,G.trunkM);W.root.add(W.trees);
   }
 }
@@ -164,7 +167,7 @@ export function agentMesh(a){
 export function lerpC(a,b,t){return (new THREE.Color(a).lerp(new THREE.Color(b),clamp(t,0,1)));}
 export function applySeason(s){
   G.seasonSeen=s;
-  G.world.ground.colourise(s,S.foot);G.world.footT=G.time;
+  G.world.ground.colourise(s,S.foot,S.roads);G.world.footT=G.time;
   G.leafM.forEach((m,i)=>m.color.set(SEASON_LEAF[s][i]));
   G.cropMat.color.set(SEASON_CROP.colour[s]);
   G.greenMat.color.set(s===3?0xe8edf0:s===2?0xa9b46c:0x9cc177);
@@ -179,7 +182,7 @@ export function draw3d(al,dt){
   const W=G.world,v=W.v,O=W.O;
   syncPlaces();
   const season=seasonOf();if(season!==G.seasonSeen)applySeason(season);
-  if(G.time-W.footT>2){W.footT=G.time;W.ground.colourise(season,S.foot);}
+  if(G.time-W.footT>2){W.footT=G.time;W.ground.colourise(season,S.foot,S.roads);}
   const [rise,set]=LIGHT[season];
   const h=hourOf()+(V.speed?al/6:0),f=(h-rise+.5)/(set-rise+1),day=clamp(Math.sin(Math.PI*f),0,1)*(f>0&&f<1?1:0),storm=S.storm>0;
   const winterDim=season===3?.8:1,T=G.target;
@@ -209,8 +212,8 @@ export function draw3d(al,dt){
   }
   if(G.time-(G.bannerT||-9)>1){G.bannerT=G.time;updateBanners();}
   for(const id in W.lines){
-    const L=W.lines[id],t=(G.time*L.speed)%1,a=along(L.path,id==='canal'?(t<.5?t*2:2-t*2):t);
-    L.mover.position.set(a.x,a.y+(id==='canal'?.02:.12),a.z);L.mover.rotation.y=a.heading+(id==='canal'&&t>=.5?Math.PI:0);
+    const L=W.lines[id],back=id==='canal'||L.shuttle,t=(G.time*L.speed)%1,a=along(L.path,back?(t<.5?t*2:2-t*2):t);
+    L.mover.position.set(a.x,a.y+(id==='canal'?.02:.12),a.z);L.mover.rotation.y=a.heading+(back&&t>=.5?Math.PI:0);
     if(L.funnel){if(!L.puffs)L.puffs=puffsFor({big:false});const fp=L.funnel.clone().applyMatrix4(L.mover.matrixWorld);
       L.puffs.forEach((p,i)=>{const k=((G.time*1.5+i/3)%1);p.visible=!storm;p.position.set(fp.x,fp.y+k*1.6,fp.z);p.scale.setScalar(.8+k*2);p.material.opacity=.6*(1-k);});}
   }

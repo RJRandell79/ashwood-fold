@@ -14,6 +14,7 @@
 //     nearWater          prefer closeness to the river (weight)
 //     riverbank          must touch the river bank (true)
 //     fertile, flat, dry prefer good soil / level ground / ground that does not flood (weight)
+//     wooded             prefer standing woodland, to fell it (weight); otherwise woodland counts against a plot
 //     road               prefer well-trodden ground (weight)
 //     near, away         { kind or building id: weight }  prefer to be close to / far from
 //     line               must stand beside a line (canal, railway)
@@ -61,6 +62,8 @@ export const BUILDINGS = {
               place: { centre: 3, near: { hall: 2, home: 1 }, dry: 2 }, founding: 17, hue: 172 },
   cottage:  { name: 'Cottage', legacy: 'replaceable', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
               place: { centre: 2, near: { home: 3 }, road: 1, dry: 2, flat: 1 } },
+  assart:   { name: 'the Intake Fields', legacy: 'replaceable', w: 10, h: 5, indoor: false, kind: 'field', archetype: 'field', features: ['crops'],
+              place: { wooded: 4, fertile: 2, flat: 2, near: { fields: 2, home: 1 }, maxFlood: 0.6, maxSlope: 0.45 } },
   barn:     { name: 'the Tithe Barn', legacy: 'adaptable', w: 3, h: 4, indoor: true, kind: 'work', archetype: 'long',
               place: { near: { fields: 5 }, dry: 2 } },
   school:   { name: 'the School', legacy: 'adaptable', w: 4, h: 3, indoor: true, kind: 'civic', archetype: 'civic', features: ['bell', 'chimney'],
@@ -69,21 +72,34 @@ export const BUILDINGS = {
               place: { riverbank: true, centre: 1, away: { sacred: 2 }, maxFlood: 1, maxSlope: 0.5 } },
   wharf:    { name: 'the Canal Wharf', legacy: 'adaptable', w: 4, h: 2, indoor: false, kind: 'open', archetype: 'wharf', features: ['crane'],
               place: { line: 'canal', centre: 3 } },
+  tollhouse: { name: 'the Toll House', legacy: 'adaptable', w: 3, h: 3, indoor: true, kind: 'civic', archetype: 'house', features: ['chimney'],
+              place: { line: 'turnpike', centre: 3 } },
   station:  { name: 'the Station', legacy: 'adaptable', w: 5, h: 2, indoor: true, kind: 'civic', archetype: 'station',
               place: { line: 'railway', centre: 3 } },
 };
 
-// Names for cottages built as the village grows, in the order they are used.
-export const COTTAGE_NAMES = ['Market Row Cottage', 'Lane End Cottage', 'Brook Cottage', 'Fold Cottage', 'Brow Cottage', 'Clough Cottage',
-  'Hollin Cottage', 'Ing Cottage', 'Moss Cottage', 'Intack Cottage', 'Holme Cottage', 'Ash Cottage', 'Withy Cottage', 'Rake Cottage'];
-// Household colours for those cottages.
+// Housing for the named cast. About 30 people are simulated in full (decided 27 Oct), which needs
+// at most about 16 homes; homes are built only when someone needs one, and never beyond this.
+// Everyone else will live as townsfolk groups in terrace blocks (Phase 4).
+export const MAX_HOMES = 16;
+
+// Cottage names are built from old Lancashire field and place-name words, in an order set by the valley.
+// The first two match the plots of the v5 village, so old saves keep their names.
+export const COTTAGE_FIRST = ['Market Row', 'Lane End'];
+export const NAME_PARTS = ['Brook', 'Fold', 'Brow', 'Clough', 'Hollin', 'Ing', 'Moss', 'Intack', 'Holme', 'Ash', 'Withy', 'Rake',
+  'Croft', 'Carr', 'Lea', 'Heys', 'Shaw', 'Height', 'Bank', 'Nook', 'Laithe', 'Gill', 'Royd', 'Hey Top', 'Mill Brow', 'Well'];
+// A house built in the cottage or mill years is a cottage; later ones are houses.
+export const HOUSE_WORD = era => (era <= 1 ? 'Cottage' : 'House');
+// Household colours for new homes.
 export const COTTAGE_HUES = [240, 95, 330, 20, 160, 265, 60, 190, 300, 120, 0, 220, 80, 350];
 
 // Long works that cut across the valley, routed along a contour when their idea is built.
 //   target: height above the hearth to follow; smooth: how hard the route resists bending
+//   water: a waterway, which must keep one level (so not every valley can carry one)
 export const LINES = {
-  canal:   { name: 'the canal', target: 0.4, smooth: 2.5, width: 1 },
+  canal:   { name: 'the canal', target: 0.4, smooth: 2.5, width: 1, water: true },
   railway: { name: 'the railway', target: 2.2, smooth: 6, width: 1 },
+  turnpike: { name: 'the turnpike', target: 1.2, smooth: 3, width: 1 },
 };
 
 // Ways over the river. The first village fords it; the stone bridge idea replaces the ford.

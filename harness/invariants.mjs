@@ -42,6 +42,8 @@ export function checkInvariants(S) {
     }
     for (const p of ps) if (p.y + p.h / 2 > v.riverY(p.x + p.w / 2) && !(S.crossing && S.crossing.kind === 'bridge')) bad.push(`${p.id} stands on the far bank with no bridge`);
     if (S.crossing && !(S.crossing.x >= 0 && S.crossing.x < v.W)) bad.push('the river crossing is outside the valley');
+    for (const k in S.roads || {}) { if (taken.has(+k)) { bad.push(`a lane runs under ${taken.get(+k)}`); break; } if (v.water[+k]) { bad.push('a lane runs through the river'); break; } }
+    if (Object.values(S.places).filter(p => p.home).length > 16) bad.push('more homes than the cast can need');
     for (const a of S.agents) if (!a.dead) {
       if (a.home && !S.places[a.home]) bad.push(`${a.name} lives at missing place ${a.home}`);
       if (a.act && a.act.place && !S.places[a.act.place]) bad.push(`${a.name} is heading for missing place ${a.act.place}`);

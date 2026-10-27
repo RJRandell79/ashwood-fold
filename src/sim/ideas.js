@@ -3,7 +3,7 @@
 // from its record in src/data/ideas.js.
 import { CHARGE_NAMES } from '../data/heraldry.js';
 import { IDEA, IDEAS } from '../data/ideas.js';
-import { SEASON_DAYS, TPD } from '../data/world.js';
+import { SEASON_DAYS, TPD, YEAR_DAYS } from '../data/world.js';
 import { bringCase, startBuilding } from './civic.js';
 import { effect, invalidateEffects } from './effects.js';
 import { armsOf, familyKey } from './heraldry.js';
@@ -14,6 +14,24 @@ import { addRumour, adj, glyph, mem, op } from './social.js';
 import { LIVE, N, PN, S, byJob, household, isAdult, listNames, pick, rnd, techBuilt, techOn } from './state.js';
 
 const lower = d => d.name.toLowerCase();
+
+/** Whether an idea's requirements are built: each entry is an idea, or a list of which any one will do. */
+export function requiresMet(d) {
+  return d.requires.every(r => (Array.isArray(r) ? r.some(techBuilt) : techBuilt(r)));
+}
+/** Whether anyone could think of the idea at all here and now (possibleWhen names a signal). */
+function possible(d) {
+  return !d.possibleWhen || !!SIGNALS[d.possibleWhen]();
+}
+/** Building one answer to a need eases the others: ideas pressed by the same signal lose most of their pressure. */
+export function easeRivals(d) {
+  const mine = Object.keys((d.pressure && d.pressure.when) || {});
+  if (!mine.length) return;
+  for (const e of IDEAS) {
+    if (e === d || S.tech[e.id].state !== 'none') continue;
+    if (Object.keys((e.pressure && e.pressure.when) || {}).some(k => mine.includes(k))) S.tech[e.id].pressure *= 0.4;
+  }
+}
 
 /** How much an idea threatens someone's living (0 = not at all, 1 = takes it). */
 export function threatOf(b, id) {
@@ -58,7 +76,9 @@ function buildPressure() {
   const held = {};
   for (const d of IDEAS) {
     const t = S.tech[d.id];
-    if (t.state !== 'none' || !d.requires.every(techBuilt)) continue;
+    // a new era, or ten years on, and an abandoned idea gets a fresh hearing (so a stall is never a dead end)
+    if (t.state === 'abandoned' && ((S.era || 0) > t.abandonedEra || S.tick - t.abandonedAt > TPD * YEAR_DAYS * 10)) { t.state = 'none'; t.fizzles = 0; t.pressure = 0; }
+    if (t.state !== 'none' || !requiresMet(d) || !possible(d)) continue;
     let v = d.pressure.base;
     for (const [sig, extra] of Object.entries(d.pressure.when || {})) {
       if (!(sig in held)) held[sig] = !!SIGNALS[sig]();
@@ -92,7 +112,7 @@ export function raiseBuildings(d) {
 }
 
 function finish(d, t, inv, bk) {
-  t.state = 'built'; t.builtAt = S.tick; invalidateEffects(); raiseBuildings(d);
+  t.state = 'built'; t.builtAt = S.tick; invalidateEffects(); raiseBuildings(d); easeRivals(d);
   for (const b of bk) if (b !== inv) adj(b, inv, 6);
   for (const o of t.opponents.map(i => S.agents[i])) adj(o, inv, -4);
   if (d.adoption) t.adopters = bk.filter(b => d.adoption.jobs.includes(b.job)).map(b => b.id);
@@ -104,7 +124,7 @@ function finish(d, t, inv, bk) {
 /** One idea's day: thought of, argued over, funded, built, mended. */
 function ideaDay(d) {
   const id = d.id, t = S.tech[id];
-  if (t.state === 'none' && t.pressure >= 100 && d.requires.every(techBuilt)) {
+  if (t.state === 'none' && t.pressure >= 100 && requiresMet(d) && possible(d)) {
     const cands = LIVE.filter(a => isAdult(a) && d.inventorJobs.includes(a.job));
     if (!cands.length) return;
     let inv = null, best = -9;
@@ -129,7 +149,11 @@ function ideaDay(d) {
     if (t.state === 'idea' && S.tick - t.since > TPD * 15) {
       const opp = t.opponents.map(i => S.agents[i]);
       log(`Nothing comes of ${N(inv)}'s ${lower(d)}. ${opp.length ? `${listNames(opp.slice(0, 3))} saw to that.` : 'The village never quite took to it.'}`, 'bad', 'tech', { tech: id, fizzle: 1 });
-      Object.assign(t, { state: 'none', pressure: 40, backers: [], opponents: [] });
+      t.fizzles = (t.fizzles || 0) + 1;
+      if (t.fizzles >= 2) {
+        Object.assign(t, { state: 'abandoned', abandonedEra: S.era || 0, abandonedAt: S.tick, pressure: 0, backers: [], opponents: [] });
+        log(`The village has set its face against the ${lower(d)}. Nobody will raise it again for a long while.`, 'bad', 'tech', { tech: id, abandoned: 1 });
+      } else Object.assign(t, { state: 'none', pressure: 40, backers: [], opponents: [] });
     }
   } else if (t.state === 'built' && t.brokenUntil && t.brokenUntil <= S.tick) {
     t.brokenUntil = 0; invalidateEffects();

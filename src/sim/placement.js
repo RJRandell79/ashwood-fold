@@ -1,20 +1,22 @@
 // Where buildings go. The game, not the player, chooses every site: each candidate plot is
 // scored against the building's placement rules (src/data/buildings.js) on the valley terrain.
 // Placement is deterministic: no draws from the simulation's dice, ties go to the first plot found.
-import { BUILDINGS, COTTAGE_HUES, COTTAGE_NAMES, LINES, STYLED_ARCHETYPES } from '../data/buildings.js';
+import { BUILDINGS, COTTAGE_FIRST, COTTAGE_HUES, HOUSE_WORD, LINES, MAX_HOMES, NAME_PARTS, STYLED_ARCHETYPES } from '../data/buildings.js';
 import { ERA_STYLES } from '../data/styles.js';
 import { effect } from './effects.js';
 import { log } from './log.js';
-import { valley } from './valley.js';
+import { noise, valley } from './valley.js';
 import { household, isAdult, N, P, PN, S } from './state.js';
 
 const MARGIN = 1; // clear cells kept around every building, so lanes run between them
 
 export const theValley = () => valley(S.valley.seed);
 
-/** Cells already taken by buildings or lines. */
+/** Cells already taken: 1 buildings, 2 lines, 3 the crossing's landings, 4 lanes. */
+export { occupancy };
 function occupancy(v) {
   const occ = new Uint8Array(v.W * v.H);
+  for (const k in S.roads || {}) occ[k] = 4; // lanes: kept clear, though buildings may front onto them
   for (const p of Object.values(P)) for (let y = Math.floor(p.y); y < Math.ceil(p.y + p.h); y++) for (let x = Math.floor(p.x); x < Math.ceil(p.x + p.w); x++) if (x >= 0 && y >= 0 && x < v.W && y < v.H) occ[y * v.W + x] = 1;
   for (const [id, ys] of Object.entries(S.lines || {})) { const w = LINES[id].width; ys.forEach((y, x) => { for (let k = 0; k < w; k++) if (y + k < v.H) occ[(y + k) * v.W + x] = 2; }); }
   const e = crossingEnds();
@@ -41,16 +43,38 @@ function lineGap(rect, id) {
   return best;
 }
 
+/** Whether a cell still carries woodland: the valley's woods, less what has been felled (S.cleared). */
+export const wooded = (v, i) => (v.wood[i] && !(S.cleared && S.cleared[i]) ? 1 : 0);
+
+/** Fells the trees on and around a new building. Returns how many cells were cleared. */
+function clearWood(p) {
+  const v = theValley(), cleared = S.cleared || (S.cleared = {});
+  let n = 0;
+  for (let y = Math.floor(p.y) - 1; y < Math.ceil(p.y + p.h) + 1; y++) for (let x = Math.floor(p.x) - 1; x < Math.ceil(p.x + p.w) + 1; x++) {
+    if (x < 0 || y < 0 || x >= v.W || y >= v.H) continue;
+    const i = y * v.W + x;
+    if (wooded(v, i)) { cleared[i] = S.tick; n++; }
+  }
+  return n;
+}
+
 /** Scores one plot, or returns -Infinity if the building cannot stand there. */
 function score(def, x, y, v, occ, centre) {
   const R = def.place || {}, rect = { x, y, w: def.w, h: def.h };
   if (x - MARGIN < 0 || y - MARGIN < 0 || x + def.w + MARGIN > v.W || y + def.h + MARGIN > v.H) return -Infinity;
-  for (let yy = y - MARGIN; yy < y + def.h + MARGIN; yy++) for (let xx = x - MARGIN; xx < x + def.w + MARGIN; xx++) if (occ[yy * v.W + xx]) return -Infinity;
+  let lane = 0;
+  for (let yy = y - MARGIN; yy < y + def.h + MARGIN; yy++) for (let xx = x - MARGIN; xx < x + def.w + MARGIN; xx++) {
+    const o = occ[yy * v.W + xx];
+    if (!o) continue;
+    const inside = xx >= x && xx < x + def.w && yy >= y && yy < y + def.h;
+    if (o !== 4 || inside) return -Infinity;
+    lane++;
+  }
   let slope = 0, flood = 0, fert = 0, dist = 0, wood = 0, maxSlope = 0, maxFlood = 0, minDist = Infinity, n = 0, foot = 0;
   for (let yy = y; yy < y + def.h; yy++) for (let xx = x; xx < x + def.w; xx++) {
     const i = yy * v.W + xx;
     if (v.water[i]) return -Infinity;
-    slope += v.slope[i]; flood += v.flood[i]; fert += v.fertile[i]; dist += v.dist[i]; wood += v.wood[i]; n++;
+    slope += v.slope[i]; flood += v.flood[i]; fert += v.fertile[i]; dist += v.dist[i]; wood += wooded(v, i); n++;
     maxSlope = Math.max(maxSlope, v.slope[i]); maxFlood = Math.max(maxFlood, v.flood[i]); minDist = Math.min(minDist, v.dist[i]);
     if (S.foot) foot += S.foot[i] || 0;
   }
@@ -64,14 +88,14 @@ function score(def, x, y, v, occ, centre) {
   const c = centreOf(rect);
   let dc = Math.hypot(c.x - centre.x, c.y - centre.y);
   if (far) { const e = crossingEnds(); dc = Math.hypot(c.x - e.south.x, c.y - e.south.y) + Math.hypot(e.north.x - centre.x, e.north.y - centre.y) + 2; }
-  let s = -wood * 0.3;
+  let s = R.wooded ? R.wooded * wood : -wood * 0.3;
   if (R.centre) s += R.centre * (1 - Math.min(1, dc / 30));
   if (R.edge) s += R.edge * Math.min(1, dc / 25);
   if (R.nearWater) s += R.nearWater * (1 - Math.min(1, dist / 12));
   if (R.fertile) s += R.fertile * fert;
   if (R.flat) s -= R.flat * slope * 3;
   if (R.dry) s -= R.dry * flood * 3;
-  if (R.road) s += R.road * Math.min(1, foot / 60);
+  if (R.road) s += R.road * (Math.min(1, foot / 60) + Math.min(1, lane / 3));
   for (const [k, w] of Object.entries(R.near || {})) { const d = nearest(rect, k); if (d < Infinity) s += w * (1 - Math.min(1, d / 15)); }
   for (const [k, w] of Object.entries(R.away || {})) { const d = nearest(rect, k); if (d < Infinity) s -= w * (1 - Math.min(1, d / 12)); }
   return s;
@@ -109,6 +133,11 @@ export function addPlace(id, defId = id, extra = {}) {
   if (!plot) return null;
   P[id] = { id, def: defId, name: extra.name || def.name, x: plot.x, y: plot.y, w: def.w, h: def.h, indoor: def.indoor, home: !!def.home, kind: def.kind,
     era: S.era || 0, built: S.tick, ...(def.hue != null ? { hue: def.hue } : {}), ...extra };
+  const felled = clearWood(P[id]);
+  if (felled >= 10) {
+    P[id].felled = felled;
+    if (!(def.place && def.place.wooded)) log(`Trees are felled to make room for ${P[id].name}.`, 'event', 'work', { place: id });
+  }
   return P[id];
 }
 
@@ -144,28 +173,37 @@ export function placeFounding() {
   for (const id of ids) addPlace(id);
 }
 
-export const cottagesLeft = () => (S.cottages || 0) < COTTAGE_NAMES.length;
+/** True while another home may be built: homes are capped for the named cast (MAX_HOMES). */
+export const cottagesLeft = () => Object.values(P).filter(p => p.home).length < MAX_HOMES;
 
-/** A new cottage for a growing village. Returns its id, or null when no names or plots are left. */
+/** The name of the n-th cottage built (0-based), in an order set by the valley's seed. */
+export function cottageName(n, era = S.era || 0) {
+  if (n < COTTAGE_FIRST.length) return `${COTTAGE_FIRST[n]} Cottage`;
+  const order = NAME_PARTS.map((w, i) => [noise(i * 3.7 + 0.5, 11.5, S.valley.seed), w]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+  const k = n - COTTAGE_FIRST.length, part = order[k % order.length], again = Math.floor(k / order.length);
+  return `${part} ${HOUSE_WORD(era)}${again ? ' ' + ['', 'Two', 'Three', 'Four'][again] : ''}`;
+}
+
+/** A new cottage for a growing village. Returns its id, or null when housing is full or no plot fits. */
 export function buildCottage() {
-  const n = S.cottages || 0;
-  if (n >= COTTAGE_NAMES.length) return null;
-  const id = `cottage${n + 1}`;
-  const p = addPlace(id, 'cottage', { name: COTTAGE_NAMES[n], hue: COTTAGE_HUES[n % COTTAGE_HUES.length] });
+  if (!cottagesLeft()) return null;
+  const n = S.cottages || 0, id = `cottage${n + 1}`;
+  const p = addPlace(id, 'cottage', { name: cottageName(n), hue: COTTAGE_HUES[n % COTTAGE_HUES.length] });
   if (!p) return null;
   S.cottages = n + 1;
   return id;
 }
 
-/** Routes a canal or railway along the valley side at a steady height, around what is already built. */
-export function routeLine(id) {
-  if (S.lines && S.lines[id]) return S.lines[id];
-  const L = LINES[id], v = theValley(), occ = occupancy(v), c = settlementCentre();
-  const ci = Math.floor(c.y) * v.W + Math.floor(c.x), target = v.height[ci] + L.target;
-  const W = v.W, top = 3;
+/** Plans a line along the valley side at a steady height above the settlement, by dynamic programming
+ *  over one row per column. With terrainOnly it ignores buildings (to judge whether the valley suits a line).
+ *  Returns { ys, cost } where cost is the average cost per column. */
+export function planLine(id, terrainOnly = false) {
+  const L = LINES[id], v = theValley(), W = v.W, top = 3;
+  const occ = terrainOnly ? new Uint8Array(W * v.H) : occupancy(v), c = terrainOnly ? v.hearth : settlementCentre();
+  const ci = Math.floor(c.y) * W + Math.floor(c.x), target = v.height[ci] + L.target;
   // Lines keep a clear berth of a few cells from buildings rather than threading the gaps between them.
   const near = new Float32Array(W * v.H);
-  for (const p of Object.values(P)) for (let y = Math.floor(p.y) - 3; y < Math.ceil(p.y + p.h) + 3; y++) for (let x = Math.floor(p.x) - 3; x < Math.ceil(p.x + p.w) + 3; x++)
+  if (!terrainOnly) for (const p of Object.values(P)) for (let y = Math.floor(p.y) - 3; y < Math.ceil(p.y + p.h) + 3; y++) for (let x = Math.floor(p.x) - 3; x < Math.ceil(p.x + p.w) + 3; x++)
     if (x >= 0 && y >= 0 && x < W && y < v.H) { const d = gap({ x, y, w: 1, h: 1 }, p); near[y * W + x] = Math.max(near[y * W + x], d < 1 ? 60 : d < 2 ? 25 : 8); }
   const bottom = x => Math.max(top + 1, Math.floor(v.riverY(x + 0.5) - v.halfWidth(x + 0.5) - 2));
   let prev = new Map(), back = [];
@@ -173,7 +211,7 @@ export function routeLine(id) {
     const cur = new Map(), from = new Map();
     for (let y = top; y <= bottom(x); y++) {
       const i = y * W + x;
-      const cost = Math.abs(v.height[i] - target) * 1.5 + v.flood[i] * 4 + v.slope[i] * 2 + (occ[i] ? 500 : near[i]) + (v.water[i] ? 500 : 0);
+      const cost = Math.abs(v.height[i] - target) * 1.5 + v.flood[i] * 4 + v.slope[i] * 2 + (occ[i] === 4 ? 3 + near[i] : occ[i] ? 500 : near[i]) + (v.water[i] ? 500 : 0);
       if (x === 0) { cur.set(y, cost); continue; }
       let best = Infinity, arg = -1;
       for (let dy = -2; dy <= 2; dy++) { const p = prev.get(y + dy); if (p === undefined) continue; const t = p + L.smooth * Math.abs(dy) + L.smooth * 0.1 * dy * dy; if (t < best) { best = t; arg = y + dy; } }
@@ -181,9 +219,25 @@ export function routeLine(id) {
     }
     back.push(from); prev = cur;
   }
-  let y = [...prev.entries()].sort((a, b) => a[1] - b[1] || a[0] - b[0])[0][0];
+  const [end, total] = [...prev.entries()].sort((a, b) => a[1] - b[1] || a[0] - b[0])[0];
+  let y = end;
   const ys = new Array(W);
   for (let x = W - 1; x >= 0; x--) { ys[x] = y; if (x > 0) y = back[x].get(y); }
+  return { ys, cost: total / W };
+}
+
+const suitCache = new Map();
+/** How hard the valley makes a line, judged on the terrain alone (average cost per column; lower suits it). */
+export function lineDifficulty(id) {
+  const key = `${S.valley.seed}:${id}`;
+  if (!suitCache.has(key)) { suitCache.set(key, planLine(id, true).cost); if (suitCache.size > 32) suitCache.delete(suitCache.keys().next().value); }
+  return suitCache.get(key);
+}
+
+/** Routes a canal or railway (or road) along the valley side, around what is already built, and records it. */
+export function routeLine(id) {
+  if (S.lines && S.lines[id]) return S.lines[id];
+  const { ys } = planLine(id);
   (S.lines || (S.lines = {}))[id] = ys;
   return ys;
 }
