@@ -3,14 +3,14 @@ import { ERA_LINES } from '../data/eras.js';
 import { SURNAMES } from '../data/folk.js';
 import { IDEA } from '../data/ideas.js';
 import { currentEra, effect, invalidateEffects } from './effects.js';
-import { honourInventor } from './ideas.js';
-import { JOBS, MAXPOP, P, TPD, YEAR_DAYS } from '../data/world.js';
+import { honourInventor, raiseBuildings } from './ideas.js';
+import { JOBS, MAXPOP, TPD, YEAR_DAYS } from '../data/world.js';
 import { familyKey } from './heraldry.js';
 import { log } from './log.js';
 import { addAgent, nameBaby, succeed } from './people.js';
 import { makeAgent } from './setup.js';
 import { adj, glyph, mem, op } from './social.js';
-import { LIVE, N, PN, S, byJob, dayStart, isAdult, isKin, listNames, numberWord, pick, pointIn, refreshLive, rnd, weekday } from './state.js';
+import { byJob, dayStart, isAdult, isKin, listNames, LIVE, N, numberWord, P, pick, PN, pointIn, refreshLive, rnd, S, weekday, entryPoint } from './state.js';
 
 export function standing(a){const v=LIVE.filter(b=>b!==a&&isAdult(b));return v.reduce((s,b)=>s+op(b,a),0)/Math.max(1,v.length);}
 export function ambition(a){return a.tr.diligence*.4+(1-a.tr.warmth)*.25+a.tr.temper*.15+(a.coins>40?.15:0);}
@@ -150,12 +150,16 @@ export function decideCase(c,jurors){
   }
   const swayed=votes.filter(v=>!confessed&&Math.abs(v.bias)>.3&&v.g===(v.bias>0)).sort((x,y)=>Math.abs(y.bias)-Math.abs(x.bias))[0];
   if(swayed)line+=` ${N(swayed.j)}, who ${swayed.bias>0?'has no love for':'is fond of'} ${N(acc)}, voted ${swayed.g?'guilty':'to acquit'}.`;
-  log(line+(sentence?' '+sentence:''),guilty?'bad':'good','court',{ids:[acc.id],guilty});
+  log(line+(sentence?' '+sentence:''),guilty?'bad':'good','court',{ids:[acc.id],guilty,place:'hall'});
   S.verdicts.unshift({t:S.tick,acc:acc.id,plf:plf?plf.id:null,charge:c.charge,guilty,score:[g,votes.length-g],truth:c.truth});
   if(S.verdicts.length>12)S.verdicts.length=12;
 }
 export function exile(a,reason){
   a.dead={t:S.tick,cause:reason,age:a.age,exiled:true};refreshLive();
+  // Banishment or desertion ends a marriage: the one left behind is free to marry again.
+  const sp=a.spouse>=0?S.agents[a.spouse]:null;
+  if(sp&&!sp.dead&&sp.spouse===a.id){sp.spouse=-1;sp.formerSpouse=a.id;
+    log(`With ${N(a)} gone, ${N(sp)} is no longer bound by the marriage and is free to wed again.`,'event','family',{ids:[sp.id,a.id]});}
   for(const id in S.tech){const t=S.tech[id];t.backers=t.backers.filter(i=>i!==a.id);t.opponents=t.opponents.filter(i=>i!==a.id);}
   if(S.election)S.election.cands=S.election.cands.filter(i=>i!==a.id);
   const kin=LIVE.filter(b=>op(b,a)>50);for(const b of kin){b.lonely=Math.min(1,b.lonely+.25);mem(b,a,'misses');}
@@ -168,7 +172,7 @@ export function eraDay(){
 }
 export function startBuilding(id){
   const t=S.tech[id],T=IDEA[id];
-  t.state='building';t.doneAt=dayStart()+TPD*T.buildDays+60;t.navvies=[];
+  t.state='building';t.doneAt=dayStart()+TPD*T.buildDays+60;t.navvies=[];raiseBuildings(T);
   const inv=S.agents[t.inventor];
   log(`Work begins on the ${T.name.toLowerCase()}, ${N(inv)}'s great scheme. It will take ${T.buildDays} days.`,'good','tech',{tech:id});
   for(let i=0;i<(T.navvies||0);i++){
@@ -176,7 +180,7 @@ export function startBuilding(id){
     const sex=rnd()<.85?'m':'f',name=nameBaby(sex,pick(SURNAMES));
     const tr={temper:.5+rnd()*.4,warmth:.3+rnd()*.5,diligence:.5+rnd()*.4,forgive:.2+rnd()*.5,gossip:.3+rnd()*.5,scruple:.2+rnd()*.45};
     const nid=S.agents.length,n=addAgent(makeAgent(nid,name,'navvy','tavern',tr,{age:19+rnd()*16,sex,hue:20}));
-    n.coins=6;n.navvy=true;n.arrivedAt=S.tick;n.x=n.px=.5;n.y=n.py=13;n.arrived=false;n.act={type:'stroll',place:'tavern',left:2,target:null};const q=pointIn(P.tavern);n.tx=q[0];n.ty=q[1];
+    n.coins=6;n.navvy=true;n.arrivedAt=S.tick;[n.x,n.y]=entryPoint();n.px=n.x;n.py=n.y;n.arrived=false;n.act={type:'stroll',place:'tavern',left:2,target:null};const q=pointIn(P.tavern);n.tx=q[0];n.ty=q[1];
     for(const a of LIVE)if(a!==n){S.op[a.id][nid]=Math.round(-18+a.tr.warmth*20+(rnd()-.5)*10);S.op[nid][a.id]=Math.round((rnd()-.5)*14);}
     t.navvies.push(nid);
   }

@@ -1,7 +1,8 @@
 // Checks the idea records for mistakes that would otherwise only show up mid-game.
 import { EFFECT_BASE, IDEAS } from '../data/ideas.js';
 import { CHARGE_NAMES } from '../data/heraldry.js';
-import { JOBS, P } from '../data/world.js';
+import { JOBS } from '../data/world.js';
+import { BUILDINGS, CROSSINGS, LEGACIES, LINES } from '../data/buildings.js';
 import { SIGNALS, SIGNAL_EVENTS } from './signals.js';
 
 export function validateIdeas(ideas = IDEAS) {
@@ -24,12 +25,14 @@ export function validateIdeas(ideas = IDEAS) {
       if (e.while && !known.has(e.while)) errors.push(`${where}: effect ${name} depends on unknown idea ${e.while}`);
     }
     for (const j of Object.keys(d.threatens || {})) if (!(j in JOBS)) errors.push(`${where}: threatens unknown trade ${j}`);
-    if (d.sabotage && !P[d.sabotage.place]) errors.push(`${where}: sabotage at unknown place ${d.sabotage.place}`);
-    if (d.hires && !P[d.hires.place]) errors.push(`${where}: hires at unknown place ${d.hires.place}`);
+    if (d.sabotage && !BUILDINGS[d.sabotage.place]) errors.push(`${where}: sabotage at unknown place ${d.sabotage.place}`);
+    if (d.hires && !BUILDINGS[d.hires.place]) errors.push(`${where}: hires at unknown place ${d.hires.place}`);
+    for (const b of d.places || []) if (!BUILDINGS[b]) errors.push(`${where}: raises unknown building ${b}`);
+    if (d.line && !LINES[d.line]) errors.push(`${where}: unknown line ${d.line}`);
+    if (d.crossing && !CROSSINGS[d.crossing]) errors.push(`${where}: unknown crossing ${d.crossing}`);
     if (d.emblem && !CHARGE_NAMES[d.emblem]) errors.push(`${where}: emblem ${d.emblem} has no name`);
   }
   // Places that appear with an idea must name a real one.
-  if (ideas === IDEAS) for (const [pid, p] of Object.entries(P)) if (p.tech && !known.has(p.tech)) errors.push(`place ${pid}: appears with unknown idea ${p.tech}`);
   // Every idea must be reachable: requirements form no cycle and lead back to ideas needing nothing.
   const state = {};
   const visit = (id, path) => {
@@ -45,4 +48,14 @@ export function validateIdeas(ideas = IDEAS) {
   const eras = ideas.filter(d => d.opensEra).map(d => d.opensEra).sort((a, b) => a - b);
   eras.forEach((e, i) => { if (e !== i + 1) errors.push(`eras are not opened 1, 2, 3...: found ${eras.join(', ')}`); });
   return [...new Set(errors)];
+}
+
+/** Checks the building records: every one needs a footprint and a known legacy. */
+export function validateBuildings(buildings = BUILDINGS) {
+  const errors = [];
+  for (const [id, b] of Object.entries(buildings)) {
+    if (!LEGACIES.includes(b.legacy)) errors.push(`building ${id}: legacy must be one of ${LEGACIES.join(', ')}`);
+    if (!(b.w > 0 && b.h > 0)) errors.push(`building ${id}: needs a footprint`);
+  }
+  return errors;
 }

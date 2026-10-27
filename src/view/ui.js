@@ -3,14 +3,14 @@ import { ERAS } from '../data/eras.js';
 import { STRANGERS } from '../data/folk.js';
 import { IDEA, IDEAS } from '../data/ideas.js';
 import { effect } from '../sim/effects.js';
-import { MAXPOP, P, SEASONS, TPD } from '../data/world.js';
+import { MAXPOP, SEASONS, TPD } from '../data/world.js';
 import { autosave, decode, encode } from '../save/codec.js';
 import { favourite, voters } from '../sim/civic.js';
 import { armsOf, blazon, familyCards, familyKey, familyPlural } from '../sim/heraldry.js';
 import { nudgeFair, nudgePurse, nudgeRumour, nudgeShort, nudgeStorm, nudgeStranger } from '../sim/nudges.js';
 import { newTown } from '../sim/setup.js';
 import { op } from '../sim/social.js';
-import { LIVE, N, PN, S, byJob, childrenOf, clamp, dayInSeason, dayOf, fairOn, fmtTime, isAdult, isSunday, jobLabel, listNames, moodOf, refreshLive, seasonName, seasonOf, setState, surname, techBuilt, weekday } from '../sim/state.js';
+import { byJob, childrenOf, clamp, dayInSeason, dayOf, fairOn, fmtTime, isAdult, isSunday, jobLabel, listNames, LIVE, moodOf, N, P, PN, refreshLive, S, seasonName, seasonOf, setState, surname, techBuilt, weekday } from '../sim/state.js';
 import { armsSVG, portraitSVG } from './portraits.js';
 import { G } from './three.js';
 import { V } from './vstate.js';
@@ -73,6 +73,7 @@ export function familyLine(a){
   const parts=[];
   if(a.spouse>=0){const s=S.agents[a.spouse];parts.push(`${a.sex==='f'?'Wife':'Husband'} of ${N(s)}${s.dead?' (late)':''}`);}
   else if(a.widowOf!=null)parts.push(`${a.sex==='f'?'Widow':'Widower'} of ${N(S.agents[a.widowOf])}`);
+  else if(a.formerSpouse!=null)parts.push(`Once married to ${N(S.agents[a.formerSpouse])}`);
   if(a.parents.length)parts.push(`${a.sex==='f'?'Daughter':'Son'} of ${listNames(a.parents.map(i=>S.agents[i]))}`);
   const kids=childrenOf(a);if(kids.length)parts.push(`${a.sex==='f'?'Mother':'Father'} of ${listNames(kids)}`);
   return parts.join(' · ');
@@ -141,12 +142,14 @@ export function renderFamilies(){
   if(sig!==renderFamilies.sig){renderFamilies.sig=sig;$('fams').innerHTML=html;}
 }
 export let logLen=-1, logFirst=null;
+/** A small button after a chronicle entry that shows where it happened. */
+export function showBtn(id){const nm=id==='crossing'?'the river crossing':(P[id]?P[id].name:'');return nm?` <button class="show" data-place="${id}" aria-label="Show ${nm} in the valley" title="Show ${nm}">Show</button>`:'';}
 export function renderLog(){
   if(S.log.length===logLen&&S.log[0]===logFirst)return;logLen=S.log.length;logFirst=S.log[0];
   let html='',day=-1;
   for(let i=S.log.length-1;i>=Math.max(0,S.log.length-220);i--){const e=S.log[i],d=dayOf(e.t);
     if(d!==day){day=d;html+=`<h3 class="dayhead">${weekday(e.t)}, day ${dayInSeason(e.t)} of ${seasonName(e.t)}</h3>`;}
-    html+=`<div class="entry k-${e.k}"><time>${fmtTime(e.t)}</time><i></i><p>${e.h}</p></div>`;}
+    html+=`<div class="entry k-${e.k}"><time>${fmtTime(e.t)}</time><i></i><p>${e.h}${e.p?showBtn(e.p):''}</p></div>`;}
   $('log').innerHTML=html||'<p class="empty">Nothing has happened yet.</p>';
 }
 export function render(force){

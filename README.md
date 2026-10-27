@@ -24,9 +24,9 @@ Needs Node 22 or later (`.nvmrc` pins 22).
 ```sh
 npm install
 npm run build        # writes dist/ashwood-fold.html, one self-contained page
-npm test             # parity with v5, save codes, invariants over long runs
+npm test             # valley and placement, old saves (v5 included), save codes, invariants over long runs
 npm run harness      # balance report: 5 seeds x 30 years (--seeds 1,2,3 --years 50)
-npm run parity       # full comparison with the v5 prototype (--seeds, --years)
+npm run diversity    # how different the histories are: ideas, eras, layouts, families (--seeds 20)
 node harness/compare.mjs --base ../other-checkout   # behaviour report against another branch
 ```
 
@@ -36,14 +36,17 @@ Open `dist/ashwood-fold.html` in a browser to play. Three.js r128 loads from cdn
 
 | Path | What lives there |
 | --- | --- |
-| `src/data/` | Plain data: places, jobs, founding families, names, eras, heraldry, and `ideas.js`, one record per idea |
+| `src/data/` | Plain data: jobs, founding families, names, eras, heraldry; `ideas.js` (one record per idea), `buildings.js` (footprints, archetypes, placement rules), `styles.js` (how each era builds) |
 | `src/sim/` | The simulation. Never touches the DOM or Three.js, so it runs the same in Node |
+| `src/sim/valley.js` | The valley grown from the run's seed: terrain, river, soil, woods. Rebuilt on demand, never saved |
+| `src/sim/placement.js` | Scores plots and places every building, cottage, canal and railway |
+| `src/sim/paths.js` | Footfall: paths wear where people walk |
 | `src/sim/hooks.js` | The only way the simulation reaches the page (redraw after a nudge, autosave) |
 | `src/save/` | Save codes (`AF1:` prefix) and browser autosave |
-| `src/view/` | 3D view, panels, portraits and arms, the annals book |
+| `src/view/` | 3D view (`terrain.js`, `archetypes.js`, `lines.js`, `three.js`), panels, portraits and arms, the annals book |
 | `src/main.js` | Boot and game loop |
 | `index.html`, `src/view/styles.css` | Page shell and styles, inlined by the build |
-| `harness/` | Headless runner, balance report, invariants, v5 reference and parity check, behaviour comparison between branches |
+| `harness/` | Headless runner, balance report, invariants, the v5 reference (for loading old saves in tests), behaviour comparison between branches |
 | `tests/` | Vitest tests |
 | `tools/build.mjs` | esbuild bundle, inlined into one HTML file |
 | `tools/port-v5.mjs` | One-off tool that split the prototype into modules (kept as a record) |

@@ -1,11 +1,11 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { effect } from './effects.js';
 import { raisePressure } from './signals.js';
-import { P, TPD } from '../data/world.js';
+import { TPD } from '../data/world.js';
 import { bringCase, canvass } from './civic.js';
 import { pitch } from './ideas.js';
 import { log } from './log.js';
-import { LIVE, N, PN, S, clamp, dayOf, fairOn, isAdult, isKin, listNames, pantryOf, pick, rnd, takePantry } from './state.js';
+import { clamp, dayOf, fairOn, isAdult, isKin, listNames, LIVE, N, P, pantryOf, pick, PN, rnd, S, takePantry } from './state.js';
 
 export function op(a,b){return (S.op[a.id][b.id]);}
 export function adj(a,b,d){if(a===b||a.dead||b.dead)return;S.op[a.id][b.id]=clamp(S.op[a.id][b.id]+d,-100,100);checkPair(a,b);}
@@ -94,7 +94,7 @@ export function quarrel(a,b,host,place,confront){
     else if(wit.length)line+=` ${listNames(wit.slice(0,3))} pulled them apart.`;
     S.fightCase=S.fightCase||{};
     if(!reeve&&op(b,a)<-60&&S.tick-(S.fightCase[pk]||-1e9)>TPD*12&&rnd()<.3&&(S.fightCase[pk]=S.tick))bringCase(a,b,`starting a fight at ${PN(place)}`,.5,true);
-    log(line,'bad',again?null:'fight',{ids:[a.id,b.id]});
+    log(line,'bad',again?null:'fight',{ids:[a.id,b.id],place});
   }else if(!adults){
     if(rnd()<.15)log(`${N(a)} and ${N(b)} squabbled at ${PN(place)}, ${cause}.`,'event');
   }else if(confront){

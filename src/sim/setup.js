@@ -1,22 +1,24 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { FOLK, STRANGERS } from '../data/folk.js';
 import { IDEAS } from '../data/ideas.js';
-import { HUES, JOBS, P, TPD, YEAR_DAYS } from '../data/world.js';
+import { JOBS, TPD, YEAR_DAYS } from '../data/world.js';
 import { armsOf, familyKey } from './heraldry.js';
 import { log } from './log.js';
 import { checkPair } from './social.js';
-import { N, S, pointIn, refreshLive, rnd, setState } from './state.js';
+import { N, P, pointIn, refreshLive, rnd, S, setState } from './state.js';
+import { addPlace, buildCottage, placeFounding, routeLine } from './placement.js';
+import { BUILDINGS } from '../data/buildings.js';
 
 export function makeAgent(id,name,job,home,tr,o){
   o=o||{};const pt=pointIn(P[home]||P.tavern);
-  return {id,name,first:name.split(' ')[0],job,home,work:JOBS[job]||null,hue:o.hue??HUES[home]??330,
+  return {id,name,first:name.split(' ')[0],job,home,work:JOBS[job]||null,hue:o.hue??(P[home]&&P[home].hue)??330,
     x:pt[0],y:pt[1],px:pt[0],py:pt[1],tx:pt[0],ty:pt[1],arrived:true,at:home,
     act:{type:'sleep',place:home,left:0,target:null},
     hunger:.25+rnd()*.25,tired:.12,lonely:.25+rnd()*.2,coins:job==='child'?0:4+Math.floor(rnd()*6),tipsy:0,
     tr,mem:[],knows:[],glyph:null,age:o.age??30,sex:o.sex||'f',spouse:-1,parents:o.parents||[],born:o.born??null,dead:null,prevJob:null};
 }
 export function blankState(seed){
-  const s={v:2,seed,rng:seed|0,tick:6*6,agents:[],op:[],pair:{},grudge:{},cool:{},
+  const s={v:3,seed,rng:seed|0,valley:{seed},places:{},lines:{},crossing:null,foot:{},cottages:0,tick:6*6,agents:[],op:[],pair:{},grudge:{},cool:{},
      stores:{grain:160,flour:30,bread:30,missing:0},pantry:{},storm:0,fair:null,rumours:[],rid:0,log:[],annals:[],lastThief:-1,bareLogged:0,spoil:0,
      tech:{},gathers:[],gid:0,vacant:[],built:{},years:{},arms:{},election:null,nextElection:(YEAR_DAYS+2)*TPD,cases:[],cid:0,verdicts:[],era:0,reeveSince:null,lastElection:null,brawls:{},harvest:0,yearQ:.8+(((seed>>>3)%40)/100)};
   for(const {id} of IDEAS)s.tech[id]={state:'none',pressure:0,backers:[],opponents:[],adopters:[]};
@@ -24,6 +26,7 @@ export function blankState(seed){
 }
 export function newTown(seed){
   setState(blankState(seed));
+  placeFounding();
   FOLK.forEach((f,i)=>S.agents.push(makeAgent(i,f[0],f[1],f[2],{...f[3]},{age:f[4],sex:f[5]})));
   const A=i=>S.agents[i];
   A(0).spouse=1;A(1).spouse=0;A(2).spouse=3;A(3).spouse=2;
@@ -57,7 +60,21 @@ export function ensureState(o){
   for(const k in fresh)if(o[k]===undefined)o[k]=fresh[k];
   for(const {id} of IDEAS)if(!o.tech[id])o.tech[id]={state:'none',pressure:0,backers:[],opponents:[],adopters:[]};
   if(o.nextElection<o.tick)o.nextElection=o.tick+3*TPD+TPD;
+  if(!Object.keys(o.places).length)layOutOldSave(o);
+  o.v=3;
   return o;
+}
+/** Saves from before Phase 2 had fixed coordinates. Their village is laid out afresh in a valley
+ *  grown from the save's seed, keeping everything that had been built. */
+function layOutOldSave(o){
+  const was=S;setState(o);
+  placeFounding();
+  for(const [plot,n] of [['plot1',0],['plot2',1]])if(o.built&&o.built[plot]){
+    const id=buildCottage();if(id&&id!==plot){P[plot]={...P[id],id:plot};delete P[id];}o.cottages=Math.max(o.cottages,n+1);}
+  for(const d of IDEAS){const t=o.tech[d.id];if(!t||(t.state!=='built'&&t.state!=='building'))continue;if(d.line)routeLine(d.line);for(const b of d.places||[])addPlace(b);}
+  // Everyone stands where they were going.
+  for(const a of o.agents){const p=P[a.at]||P[a.act&&a.act.place]||P[a.home]||P.tavern;const c=[p.x+p.w/2,p.y+p.h/2];a.x=a.px=a.tx=c[0];a.y=a.py=a.ty=c[1];}
+  setState(was);
 }
 export function migrate(o){
   if(o.v>=2)return ensureState(o);

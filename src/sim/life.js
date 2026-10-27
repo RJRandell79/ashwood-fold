@@ -1,11 +1,12 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { effect, employerOf } from './effects.js';
 import { raisePressure } from './signals.js';
-import { FARM, P, SPEED, TPD } from '../data/world.js';
+import { setVia, wear } from './paths.js';
+import { FARM, SPEED, TPD } from '../data/world.js';
 import { bringCase, campaignRound } from './civic.js';
 import { log } from './log.js';
 import { addRumour, adj, avoid, glyph, interact, mem, op, pull, worstFoe } from './social.js';
-import { LIVE, N, S, byJob, dayOf, fairOn, hourOf, household, isAdult, isKin, isSunday, listNames, pantryOf, pick, pointIn, rnd, seasonOf, stage, takePantry } from './state.js';
+import { byJob, dayOf, fairOn, hourOf, household, isAdult, isKin, isSunday, listNames, LIVE, N, P, pantryOf, pick, pointIn, rnd, S, seasonOf, stage, takePantry } from './state.js';
 
 export function activeGathers(){return S.gathers.filter(g=>S.tick>=g.start&&S.tick<g.end);}
 export function gatherPull(a,g){
@@ -55,7 +56,7 @@ export function plan(a){
     if(fairOn())add('fair','square',.55+a.tr.warmth*.4+a.lonely*.3);
     for(const g of activeGathers()){const u=gatherPull(a,g);if(u!=null)add('gather',g.place,u,g.id);}
     const foe=st==='adult'?worstFoe(a):null;
-    if(foe&&!night&&op(a,foe)<-55&&a.tr.temper>.5&&foe.act.type!=='sleep'&&S.tick>(a.vented||0)&&!foe.dead)add('confront',foe.act.place,a.tr.temper*.5+(-op(a,foe)/100)*.45-a.tr.forgive*.3,foe.id);
+    if(foe&&!night&&op(a,foe)<-55&&a.tr.temper>.5&&foe.act.type!=='sleep'&&S.tick>(a.vented||0)&&!foe.dead)add('confront',foe.act.place,a.tr.temper*.5+(-op(a,foe)/100)*.45-a.tr.forgive*.3-Math.hypot(foe.x-a.x,foe.y-a.y)/60,foe.id);
     add('stroll',pick(['square','garden','market','chapel']),.15-(winter?.05:0));
   }
   if(!opts.length)opts.push({type:'stroll',place:a.home,u:0});
@@ -67,7 +68,7 @@ export function setAct(a,o){
   const dur={sleep:999,eat:2,buy:1,meal:4,steal:1,work:20+rnd()*14,social:6+rnd()*8,play:6+rnd()*8,lessons:Math.max(2,(12.5-hourOf())*6),help:8+rnd()*8,
     chapel:Math.max(2,(11.5-hourOf())*6),fair:8+rnd()*6,gather:g?Math.max(1,g.end-S.tick):6,confront:2,stroll:2+rnd()*3}[o.type];
   a.act={type:o.type,place:o.place,target:o.target??null,left:Math.round(dur)};
-  const pt=pointIn(P[o.place]);a.tx=pt[0];a.ty=pt[1];a.arrived=false;a.at=null;
+  const pt=pointIn(P[o.place]);a.tx=pt[0];a.ty=pt[1];a.arrived=false;a.at=null;setVia(a);
 }
 export function purseOf(a){return household(a.home).filter(isAdult).reduce((m,x)=>Math.max(m,x.coins),0);}
 export const SOCIAL_ACTS=['social','fair','chapel','meal','play','gather','lessons'];
@@ -81,9 +82,11 @@ export function step(a){
   a.tipsy=Math.max(0,a.tipsy-.04);
   if(a.glyph&&a.glyph.until<S.tick)a.glyph=null;
   if(!a.arrived){
-    const dx=a.tx-a.x,dy=a.ty-a.y,d=Math.hypot(dx,dy),sp=SPEED*(st==='infant'?.6:a.age>70?.75:1);
-    if(d<=sp){a.x=a.tx;a.y=a.ty;a.arrived=true;a.at=a.act.place;onArrive(a);}
-    else{a.x+=dx/d*sp;a.y+=dy/d*sp;}
+    const w=a.via&&a.via[0],gx=w?w[0]:a.tx,gy=w?w[1]:a.ty;
+    const dx=gx-a.x,dy=gy-a.y,d=Math.hypot(dx,dy),sp=SPEED*(st==='infant'?.6:a.age>70?.75:1);
+    if(d<=sp&&w){wear(a.x,a.y,gx,gy);a.x=gx;a.y=gy;a.via.shift();if(!a.via.length)delete a.via;}
+    else if(d<=sp){a.x=a.tx;a.y=a.ty;a.arrived=true;a.at=a.act.place;onArrive(a);}
+    else{const x0=a.x,y0=a.y;a.x+=dx/d*sp;a.y+=dy/d*sp;wear(x0,y0,a.x,a.y);}
     return;
   }
   perform(a);
@@ -163,7 +166,7 @@ export function steal(a){
   if(wit.length){
     for(const w of wit){adj(w,a,kid?-8:-24);mem(w,a,'caught stealing bread','bakery');}
     adj(a,wit[0],-6);glyph(a,'!','bad');
-    log(kid?`Young ${N(a)} was caught slipping a loaf from the Bakehouse by ${listNames(wit)}.`:`${N(a)}, hungry and without a penny, was caught taking bread from the Bakehouse by ${listNames(wit)}.`,'bad','crime',{ids:[a.id]});
+    log(kid?`Young ${N(a)} was caught slipping a loaf from the Bakehouse by ${listNames(wit)}.`:`${N(a)}, hungry and without a penny, was caught taking bread from the Bakehouse by ${listNames(wit)}.`,'bad','crime',{place:'bakery',ids:[a.id]});
     if(!kid){addRumour(a.id,'is a thief',wit[0]);bringCase(a,wit[0],'stealing bread from the Bakehouse',.75,true);}
   }else{
     S.stores.missing+=2;S.lastThief=a.id;mem(a,null,'took bread from the Bakehouse unseen','bakery');
@@ -177,7 +180,7 @@ export function bakerNotices(a){
   if(!sus){log(`${N(a)} finds ${n} loaves missing from the Bakehouse and cannot think who would do such a thing.`,'event');return;}
   adj(a,sus,-14);mem(a,sus,'probably took bread from the Bakehouse','bakery');
   const right=S.lastThief===sus.id;
-  log(`${N(a)} counts the loaves, finds ${n} gone, and suspects ${N(sus)}${right?'. The suspicion happens to be right.':', who had nothing to do with it.'}`,'rumour','crime',{ids:[a.id,sus.id]});
+  log(`${N(a)} counts the loaves, finds ${n} gone, and suspects ${N(sus)}${right?'. The suspicion happens to be right.':', who had nothing to do with it.'}`,'rumour','crime',{ids:[a.id,sus.id],place:'bakery'});
   addRumour(sus.id,'has been helping themselves at the Bakehouse',a);
   bringCase(sus,a,'stealing bread from the Bakehouse',.15,right);
 }

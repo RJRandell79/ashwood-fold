@@ -7,6 +7,7 @@ import { SEASON_DAYS, TPD } from '../data/world.js';
 import { bringCase, startBuilding } from './civic.js';
 import { effect, invalidateEffects } from './effects.js';
 import { armsOf, familyKey } from './heraldry.js';
+import { addPlace, routeLine, setCrossing } from './placement.js';
 import { log } from './log.js';
 import { SIGNALS } from './signals.js';
 import { addRumour, adj, glyph, mem, op } from './social.js';
@@ -83,8 +84,15 @@ export function honourInventor(d, inv) {
   }
 }
 
+/** Puts an idea's buildings (and any canal or railway line) into the valley. */
+export function raiseBuildings(d) {
+  if (d.line) routeLine(d.line);
+  if (d.crossing) setCrossing(d.crossing);
+  for (const b of d.places || []) addPlace(b);
+}
+
 function finish(d, t, inv, bk) {
-  t.state = 'built'; t.builtAt = S.tick; invalidateEffects();
+  t.state = 'built'; t.builtAt = S.tick; invalidateEffects(); raiseBuildings(d);
   for (const b of bk) if (b !== inv) adj(b, inv, 6);
   for (const o of t.opponents.map(i => S.agents[i])) adj(o, inv, -4);
   if (d.adoption) t.adopters = bk.filter(b => d.adoption.jobs.includes(b.job)).map(b => b.id);

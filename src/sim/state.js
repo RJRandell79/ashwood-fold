@@ -1,7 +1,12 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
-import { DAYS, HUES, P, SEASONS, SEASON_DAYS, TPD, YEAR_DAYS } from '../data/world.js';
+import { DAYS, SEASONS, SEASON_DAYS, TPD, YEAR_DAYS } from '../data/world.js';
+import { valley } from './valley.js';
 
 export let S=null, LIVE=[];
+/** The places that stand in the valley: S.places, placed by src/sim/placement.js. */
+export let P={};
+/** Where newcomers walk in: the valley road at the western edge. */
+export function entryPoint(){const v=valley(S.valley.seed);return [v.entry.x,v.entry.y];}
 export function rnd(){S.rng=(S.rng+0x6D2B79F5)|0;let t=S.rng;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;}
 export function hourOf(t=S.tick){return ((t%TPD)/6);}
 export function dayOf(t=S.tick){return (Math.floor(t/TPD)+1);}
@@ -24,10 +29,10 @@ export function isAdult(a){return (a.age>=14);}
 export function stage(a){return (a.age<4?'infant':a.age<14?'child':'adult');}
 export function surname(a){return (a.name.split(' ').slice(1).join(' '));}
 export function jobLabel(a){return (a.dead?(a.job==='child'?'child':a.job):a.age<4?'baby':a.job);}
-export function hueOf(a){return ((a.home==='tavern'&&a.job!=='innkeeper')?a.hue:(HUES[a.home]??a.hue));}
+export function hueOf(a){return ((a.home==='tavern'&&a.job!=='innkeeper')?a.hue:((P[a.home]&&P[a.home].hue)??a.hue));}
 export function techOn(id){return (S.tech[id]&&S.tech[id].state==='built'&&!(S.tech[id].brokenUntil>S.tick));}
 export function techBuilt(id){return (S.tech[id]&&S.tech[id].state==='built');}
-export function placeShown(id){const p=P[id];if(p.tech)return techBuilt(p.tech)||(S.tech[p.tech]&&S.tech[p.tech].state==='building');if(p.plot)return !!S.built[id];return true;}
+export function placeShown(id){return !!P[id];}
 export function household(h){return (LIVE.filter(a=>a.home===h));}
 export function childrenOf(a){return (S.agents.filter(c=>c.parents.includes(a.id)));}
 export function isKin(a,b){if(a.parents.includes(b.id)||b.parents.includes(a.id))return true;return a.parents.some(p=>b.parents.includes(p));}
@@ -38,4 +43,4 @@ export function fairOn(){return (S.fair&&S.tick>=S.fair.start&&S.tick<S.fair.end
 export function moodOf(a){return (clamp(1-(a.hunger*.45+a.tired*.3+a.lonely*.25),0,1));}
 export function numberWord(n){return ['no','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'][n]||String(n);}
 
-export function setState(v){S=v;return v;}
+export function setState(v){S=v;P=v?(v.places||(v.places={})):{};return v;}
