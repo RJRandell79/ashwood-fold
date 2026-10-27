@@ -34,7 +34,7 @@ export function describe(a){
     case 'help':return `helping out at ${p}`;
     case 'chapel':return 'at chapel';
     case 'fair':return S.fair&&S.fair.harvest?'at the Harvest Home':'enjoying the fair';
-    case 'gather':{const g=S.gathers.find(x=>x.id===a.act.target);return g?({wedding:'at a wedding',funeral:'at a funeral',election:'voting at the Moot Hall',court:(g.cases.some(c=>c.accused===a.id)?'on trial at the Moot Hall':g.jurors.includes(a.id)?'sitting on the jury':'watching the court')}[g.type]):'at the Chapel';}
+    case 'gather':{const g=S.gathers.find(x=>x.id===a.act.target);return g?({wedding:'at a wedding',funeral:'at a funeral',election:'voting at the Moot Hall',court:((g.cases||[]).some(c=>c.accused===a.id)?'on trial at the Moot Hall':(g.jurors||[]).includes(a.id)?'sitting on the jury':'watching the court')}[g.type]):'at the Chapel';}
     case 'confront':return 'spoiling for a row';
     default:return a.age<4?'at home':`wandering about ${p}`;
   }
