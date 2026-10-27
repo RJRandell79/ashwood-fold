@@ -6,9 +6,10 @@ import { SEASON_CROP, SEASON_LEAF } from '../data/styles.js';
 import { armsOf, familyKey } from '../sim/heraldry.js';
 import { op } from '../sim/social.js';
 import { byJob, clamp, hourOf, household, hueOf, isAdult, LIVE, P, S, seasonOf, techBuilt, techOn } from '../sim/state.js';
+import { crossingEnds } from '../sim/placement.js';
 import { valley } from '../sim/valley.js';
 import { buildPlace, mat, roofMats } from './archetypes.js';
-import { along, buildCanal, buildRailway } from './lines.js';
+import { along, buildCanal, buildCrossing, buildRailway } from './lines.js';
 import { armsSVG } from './portraits.js';
 import { groundAt, leafMaterials, makeGround, makeTrees } from './terrain.js';
 import { $, select } from './ui.js';
@@ -94,14 +95,17 @@ function addPlace3d(id){
   for(const c of b.chimneys){c.id=id;c.puffs=puffsFor(c);}
   let nm=p.name.replace(/^the /,'');if(p.home)nm=nm.split(' ')[0];
   const lb=makeLabel(nm,{h:p.home?.7:.85});lb.position.set(p.x+p.w/2-W.O.x,b.top+.7,p.y+p.h/2-W.O.y);b.group.add(lb);b.label=lb;
-  W.root.add(b.group);W.places[id]=b;
+  b.era=p.era;W.root.add(b.group);W.places[id]=b;
 }
 function removePlace3d(id){const W=G.world,b=W.places[id];W.root.remove(b.group);b.group.traverse(o=>{if(o.geometry)o.geometry.dispose();});
   for(const c of b.chimneys)for(const s of c.puffs){G.scene.remove(s);}delete W.places[id];}
 /** Brings the scene into line with S.places and S.lines: new buildings go up, lost ones come down. */
 function syncPlaces(){
   const W=G.world;
+  for(const id in W.places)if(P[id]&&W.places[id].era!==P[id].era)removePlace3d(id); // rebuilt in a newer style
   for(const id in P)if(!W.places[id])addPlace3d(id);
+  const ck=S.crossing&&S.crossing.kind;
+  if(ck&&(!W.crossing||W.crossing.kind!==ck)){if(W.crossing)W.root.remove(W.crossing.group);W.crossing=buildCrossing(crossingEnds(),ck,W.v,W.O);W.root.add(W.crossing.group);}
   for(const id in W.places)if(!P[id])removePlace3d(id);
   for(const id in (S.lines||{}))if(!W.lines[id]){const L=(id==='canal'?buildCanal:buildRailway)(S.lines[id],W.v,W.O);W.root.add(L.group);W.lines[id]=L;}
   for(const id in W.lines)if(!(S.lines&&S.lines[id])){W.root.remove(W.lines[id].group);delete W.lines[id];}
@@ -220,7 +224,9 @@ export function draw3d(al,dt){
     m.glyph.position.y=1.85*sc+.2;m.tag.position.y=2.45*sc+.2;
     const x=a.px+(a.x-a.px)*al,y=a.py+(a.y-a.py)*al;
     const walking=!a.arrived&&V.speed>0;
-    m.g.position.set(x-O.x,groundAt(v,x,y)+(walking?Math.abs(Math.sin(G.time*11+a.id))*.14:0),y-O.y);
+    let gy=Math.max(groundAt(v,x,y),-.1);const X=W.crossing;
+    if(X&&X.kind==='bridge'&&Math.abs(x-O.x-X.x)<1&&y-O.y>X.z0-.6&&y-O.y<X.z1+.6)gy=Math.max(gy,X.deck);
+    m.g.position.set(x-O.x,gy+(walking?Math.abs(Math.sin(G.time*11+a.id))*.14:0),y-O.y);
     if(!a.arrived){const dx=a.tx-a.px,dz=a.ty-a.py;if(dx||dz)m.g.rotation.y=Math.atan2(dx,dz);}
     m.g.rotation.z=Math.sin(G.time*2.6+a.id)*.16*a.tipsy;
     m.fig.rotation.x=a.age>70?.18:0;

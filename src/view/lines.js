@@ -73,3 +73,23 @@ export function buildRailway(ys, v, O) {
   group.add(train);
   return { group, path, mover: train, speed: 1 / 45, funnel: new THREE.Vector3(0, 1.6, 1.3) };
 }
+
+/** The river crossing: stepping stones at the ford, or a stone bridge of one arch. Returns the deck height for walkers. */
+export function buildCrossing(e, kind, v, O) {
+  const group = new THREE.Group(), x = e.x - O.x, z0 = e.north.y - O.y, z1 = e.south.y - O.y, len = z1 - z0 + 1;
+  const h0 = groundAt(v, e.north.x, e.north.y), h1 = groundAt(v, e.south.x, e.south.y);
+  if (kind === 'bridge') {
+    const deck = Math.max(h0, h1) + 0.45, stone = mat(0x9a9384);
+    const d = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.3, len), stone); d.position.set(x, deck - 0.15, (z0 + z1) / 2); group.add(d);
+    for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.45, len), stone); p.position.set(x + s * 0.85, deck + 0.2, (z0 + z1) / 2); group.add(p); }
+    // the arch: spandrels either side of an opening over the water
+    const arch = new THREE.Mesh(new THREE.TorusGeometry(len * 0.36, 0.28, 6, 16, Math.PI), stone);
+    arch.rotation.y = Math.PI / 2; arch.position.set(x, deck - 0.3 - len * 0.36, (z0 + z1) / 2); arch.scale.set(1, 1, 3); group.add(arch);
+    for (const z of [z0 - 0.3, z1 + 0.3]) { const pier = new THREE.Mesh(new THREE.BoxGeometry(1.8, deck + 0.6, 0.9), stone); pier.position.set(x, (deck - 0.6) / 2, z); group.add(pier); }
+    group.traverse(m => { m.castShadow = true; m.receiveShadow = true; });
+    return { group, kind, deck, x, z0, z1 };
+  }
+  const st = mat(0x8a8577);
+  for (let z = z0 + 0.4; z < z1 - 0.2; z += 0.7) { const s = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 0.25, 7), st); s.position.set(x + Math.sin(z * 3) * 0.15, -0.05, z); s.castShadow = true; group.add(s); }
+  return { group, kind, deck: 0, x, z0, z1 };
+}

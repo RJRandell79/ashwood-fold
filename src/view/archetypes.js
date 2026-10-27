@@ -1,6 +1,6 @@
 // Building shapes. Every place in src/data/buildings.js names one of these archetypes and a
 // few features; the archetype gives the massing, the era style (src/data/styles.js) gives the
-// materials, and the plot the game chose gives the size, the ground height and the facing.
+// materials (the era it was built or last rebuilt in), and the plot gives the size, ground height and facing.
 //
 // A builder returns { group, top, windows, chimneys, homeSpot, wheels, tech, rows }:
 //   group     everything for the place, in world coordinates
