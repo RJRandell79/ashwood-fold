@@ -42,7 +42,7 @@ export const BUILDINGS = {
   weaving:  { name: 'the Weaving Shed', w: 5, h: 4, indoor: true, kind: 'work', archetype: 'long',
               place: { centre: 1, flat: 2, near: { home: 1 } }, founding: 10 },
   garden:   { name: 'the Physic Garden', w: 5, h: 3, indoor: false, kind: 'open', archetype: 'garden', features: ['beds'],
-              place: { fertile: 2, centre: 1, near: { sacred: 2 } }, founding: 11 },
+              place: { fertile: 1, centre: 3, near: { sacred: 3 } }, founding: 11 },
   holt:     { name: 'Holt Cottage', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
               place: { centre: 2, near: { home: 2 }, dry: 2 }, founding: 12, hue: 12 },
   pendle:   { name: 'Pendle Cottage', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
