@@ -1,6 +1,7 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { effect, employerOf } from './effects.js';
 import { raisePressure } from './signals.js';
+import { wear } from './paths.js';
 import { FARM, SPEED, TPD } from '../data/world.js';
 import { bringCase, campaignRound } from './civic.js';
 import { log } from './log.js';
@@ -83,7 +84,7 @@ export function step(a){
   if(!a.arrived){
     const dx=a.tx-a.x,dy=a.ty-a.y,d=Math.hypot(dx,dy),sp=SPEED*(st==='infant'?.6:a.age>70?.75:1);
     if(d<=sp){a.x=a.tx;a.y=a.ty;a.arrived=true;a.at=a.act.place;onArrive(a);}
-    else{a.x+=dx/d*sp;a.y+=dy/d*sp;}
+    else{const x0=a.x,y0=a.y;a.x+=dx/d*sp;a.y+=dy/d*sp;wear(x0,y0,a.x,a.y);}
     return;
   }
   perform(a);
