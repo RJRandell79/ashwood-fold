@@ -93,7 +93,7 @@ function addPlace3d(id){
   const W=G.world,p=P[id],def=BUILDINGS[p.def]||BUILDINGS.cottage;
   const b=buildPlace(p,def,{v:W.v,O:W.O,cropMat:G.cropMat,greenMat:G.greenMat});
   for(const c of b.chimneys){c.id=id;c.puffs=puffsFor(c);}
-  let nm=p.name.replace(/^the /,'');if(p.home)nm=nm.split(' ')[0];
+  let nm=p.name.replace(/^the /,'');if(p.home)nm=nm.replace(/ (Cottage|House|Farmhouse)( \w+)?$/,'');
   const lb=makeLabel(nm,{h:p.home?.7:.85});lb.position.set(p.x+p.w/2-W.O.x,b.top+.7,p.y+p.h/2-W.O.y);b.group.add(lb);b.label=lb;
   b.era=p.era;W.root.add(b.group);W.places[id]=b;
 }
@@ -164,7 +164,7 @@ export function agentMesh(a){
 export function lerpC(a,b,t){return (new THREE.Color(a).lerp(new THREE.Color(b),clamp(t,0,1)));}
 export function applySeason(s){
   G.seasonSeen=s;
-  G.world.ground.colourise(s,S.foot);G.world.footT=G.time;
+  G.world.ground.colourise(s,S.foot,S.roads);G.world.footT=G.time;
   G.leafM.forEach((m,i)=>m.color.set(SEASON_LEAF[s][i]));
   G.cropMat.color.set(SEASON_CROP.colour[s]);
   G.greenMat.color.set(s===3?0xe8edf0:s===2?0xa9b46c:0x9cc177);
@@ -179,7 +179,7 @@ export function draw3d(al,dt){
   const W=G.world,v=W.v,O=W.O;
   syncPlaces();
   const season=seasonOf();if(season!==G.seasonSeen)applySeason(season);
-  if(G.time-W.footT>2){W.footT=G.time;W.ground.colourise(season,S.foot);}
+  if(G.time-W.footT>2){W.footT=G.time;W.ground.colourise(season,S.foot,S.roads);}
   const [rise,set]=LIGHT[season];
   const h=hourOf()+(V.speed?al/6:0),f=(h-rise+.5)/(set-rise+1),day=clamp(Math.sin(Math.PI*f),0,1)*(f>0&&f<1?1:0),storm=S.storm>0;
   const winterDim=season===3?.8:1,T=G.target;

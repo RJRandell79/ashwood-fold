@@ -47,17 +47,18 @@ export function makeGround(v, O) {
     tone[i] = 0.92 + 0.16 * hash(x, y, v.seed + 11);
   }
   const C = k => SEASON_GROUND[k].map(c => new THREE.Color(c));
-  const pal = { grass: C('grass'), lush: C('lush'), moor: C('moor'), bank: C('bank'), path: C('path') };
+  const pal = { grass: C('grass'), lush: C('lush'), moor: C('moor'), bank: C('bank'), path: C('path'), lane: C('lane') };
   const tmp = new THREE.Color(), pc = new THREE.Color();
-  function colourise(season, foot) {
+  function colourise(season, foot, roads) {
     for (let i = 0; i < pos.count; i++) {
-      let m = 0, l = 0, b = 0, t = 0, f = 0;
-      for (let k = 0; k < 4; k++) { const c = cells[i * 4 + k]; m += moor[c]; l += lush[c]; b += bank[c]; t += tone[c]; f += foot ? foot[c] || 0 : 0; }
+      let m = 0, l = 0, b = 0, t = 0, f = 0, r = 0;
+      for (let k = 0; k < 4; k++) { const c = cells[i * 4 + k]; m += moor[c]; l += lush[c]; b += bank[c]; t += tone[c]; f += foot ? foot[c] || 0 : 0; r += roads && roads[c] ? 1 : 0; }
       m /= 4; l /= 4; b /= 4; t /= 4; f /= 4;
       tmp.copy(pal.grass[season]).lerp(pal.lush[season], l).lerp(pal.moor[season], m).lerp(pal.bank[season], b * 0.8);
       if (season !== 3) tmp.multiplyScalar(t);
       const worn = clamp((f - 2) / 30, 0, 0.85);
       if (worn > 0) tmp.lerp(pc.copy(pal.path[season]), worn);
+      if (r) tmp.lerp(pc.copy(pal.lane[season]), 0.55 + r * 0.11);
       col[i * 3] = tmp.r; col[i * 3 + 1] = tmp.g; col[i * 3 + 2] = tmp.b;
     }
     geo.attributes.color.needsUpdate = true;

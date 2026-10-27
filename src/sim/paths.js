@@ -1,12 +1,16 @@
-// Worn paths. Every step people take wears the ground a little; unused ground grows back.
-// S.foot maps a valley cell index to how worn it is. The view draws paths from it and
-// placement prefers well-trodden ground for buildings that want a road.
-import { S } from './state.js';
+// Worn paths and lanes. Every step people take wears the ground a little; unused ground grows back.
+// S.foot maps a valley cell index to how worn it is. Ground that stays heavily worn for long enough
+// becomes a lane (S.roads, cell index -> the tick it formed), which is permanent: later buildings keep
+// clear of it and front onto it, so the old tracks shape the streets. The view draws both.
+import { S, PN, P } from './state.js';
 import { valley, VW, VH } from './valley.js';
-import { crossingEnds } from './placement.js';
+import { crossingEnds, occupancy } from './placement.js';
+import { log } from './log.js';
 
 const DECAY = 0.97;   // the share of wear left after each night
 const FADE = 1;       // wear below this is grass again
+const LANE_WEAR = 40; // wear that, held for LANE_NIGHTS nights running, makes a lane
+const LANE_NIGHTS = 40;
 
 /** Wears the cells along one stride from (x0,y0) to (x1,y1). */
 export function wear(x0, y0, x1, y1) {
@@ -30,6 +34,31 @@ export function footDay() {
   for (const k in foot) {
     const v = Math.round(foot[k] * DECAY * 10) / 10;
     if (v < FADE) delete foot[k]; else foot[k] = v;
+  }
+  laneNight();
+}
+
+/** Ground worn hard night after night hardens into a lane. */
+function laneNight() {
+  const foot = S.foot, held = S.wornFor || (S.wornFor = {}), roads = S.roads || (S.roads = {});
+  let occ = null, fresh = [];
+  for (const k in held) if (!(foot[k] >= LANE_WEAR)) delete held[k];
+  for (const k in foot) {
+    if (foot[k] < LANE_WEAR || roads[k]) continue;
+    held[k] = (held[k] || 0) + 1;
+    if (held[k] < LANE_NIGHTS) continue;
+    delete held[k];
+    occ = occ || occupancy(valley(S.valley.seed));
+    if (occ[k] && occ[k] !== 4) continue; // never under a building or line
+    roads[k] = S.tick;
+    fresh.push(+k);
+  }
+  if (fresh.length && !S.laneLogged) {
+    S.laneLogged = 1;
+    const c = fresh[0], x = c % VW, y = Math.floor(c / VW);
+    let near = null, nd = Infinity;
+    for (const p of Object.values(P)) { const d = Math.hypot(p.x + p.w / 2 - x, p.y + p.h / 2 - y); if (d < nd) { nd = d; near = p.id; } }
+    log(`Feet and carts have worn the old track by ${PN(near)} into a lane. The village will grow along it.`, 'event', 'work', { place: near });
   }
 }
 

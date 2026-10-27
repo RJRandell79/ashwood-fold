@@ -12,9 +12,11 @@ const MARGIN = 1; // clear cells kept around every building, so lanes run betwee
 
 export const theValley = () => valley(S.valley.seed);
 
-/** Cells already taken by buildings or lines. */
+/** Cells already taken: 1 buildings, 2 lines, 3 the crossing's landings, 4 lanes. */
+export { occupancy };
 function occupancy(v) {
   const occ = new Uint8Array(v.W * v.H);
+  for (const k in S.roads || {}) occ[k] = 4; // lanes: kept clear, though buildings may front onto them
   for (const p of Object.values(P)) for (let y = Math.floor(p.y); y < Math.ceil(p.y + p.h); y++) for (let x = Math.floor(p.x); x < Math.ceil(p.x + p.w); x++) if (x >= 0 && y >= 0 && x < v.W && y < v.H) occ[y * v.W + x] = 1;
   for (const [id, ys] of Object.entries(S.lines || {})) { const w = LINES[id].width; ys.forEach((y, x) => { for (let k = 0; k < w; k++) if (y + k < v.H) occ[(y + k) * v.W + x] = 2; }); }
   const e = crossingEnds();
@@ -45,7 +47,14 @@ function lineGap(rect, id) {
 function score(def, x, y, v, occ, centre) {
   const R = def.place || {}, rect = { x, y, w: def.w, h: def.h };
   if (x - MARGIN < 0 || y - MARGIN < 0 || x + def.w + MARGIN > v.W || y + def.h + MARGIN > v.H) return -Infinity;
-  for (let yy = y - MARGIN; yy < y + def.h + MARGIN; yy++) for (let xx = x - MARGIN; xx < x + def.w + MARGIN; xx++) if (occ[yy * v.W + xx]) return -Infinity;
+  let lane = 0;
+  for (let yy = y - MARGIN; yy < y + def.h + MARGIN; yy++) for (let xx = x - MARGIN; xx < x + def.w + MARGIN; xx++) {
+    const o = occ[yy * v.W + xx];
+    if (!o) continue;
+    const inside = xx >= x && xx < x + def.w && yy >= y && yy < y + def.h;
+    if (o !== 4 || inside) return -Infinity;
+    lane++;
+  }
   let slope = 0, flood = 0, fert = 0, dist = 0, wood = 0, maxSlope = 0, maxFlood = 0, minDist = Infinity, n = 0, foot = 0;
   for (let yy = y; yy < y + def.h; yy++) for (let xx = x; xx < x + def.w; xx++) {
     const i = yy * v.W + xx;
@@ -71,7 +80,7 @@ function score(def, x, y, v, occ, centre) {
   if (R.fertile) s += R.fertile * fert;
   if (R.flat) s -= R.flat * slope * 3;
   if (R.dry) s -= R.dry * flood * 3;
-  if (R.road) s += R.road * Math.min(1, foot / 60);
+  if (R.road) s += R.road * (Math.min(1, foot / 60) + Math.min(1, lane / 3));
   for (const [k, w] of Object.entries(R.near || {})) { const d = nearest(rect, k); if (d < Infinity) s += w * (1 - Math.min(1, d / 15)); }
   for (const [k, w] of Object.entries(R.away || {})) { const d = nearest(rect, k); if (d < Infinity) s -= w * (1 - Math.min(1, d / 12)); }
   return s;
@@ -181,7 +190,7 @@ export function routeLine(id) {
     const cur = new Map(), from = new Map();
     for (let y = top; y <= bottom(x); y++) {
       const i = y * W + x;
-      const cost = Math.abs(v.height[i] - target) * 1.5 + v.flood[i] * 4 + v.slope[i] * 2 + (occ[i] ? 500 : near[i]) + (v.water[i] ? 500 : 0);
+      const cost = Math.abs(v.height[i] - target) * 1.5 + v.flood[i] * 4 + v.slope[i] * 2 + (occ[i] === 4 ? 3 + near[i] : occ[i] ? 500 : near[i]) + (v.water[i] ? 500 : 0);
       if (x === 0) { cur.set(y, cost); continue; }
       let best = Infinity, arg = -1;
       for (let dy = -2; dy <= 2; dy++) { const p = prev.get(y + dy); if (p === undefined) continue; const t = p + L.smooth * Math.abs(dy) + L.smooth * 0.1 * dy * dy; if (t < best) { best = t; arg = y + dy; } }
