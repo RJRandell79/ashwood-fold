@@ -19,7 +19,7 @@ A rule-based village simulation of a Lancashire river valley, played from a Ston
 
 ## Getting started
 
-Needs Node 20 or later.
+Needs Node 22 or later (`.nvmrc` pins 22).
 
 ```sh
 npm install
