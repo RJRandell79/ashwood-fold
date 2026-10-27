@@ -18,6 +18,7 @@ const result = await esbuild.build({
 });
 const js = result.outputFiles[0].text;
 if (/<\/script/i.test(js)) throw new Error('bundle contains a closing script tag');
+if (/window\.__(ash|v5)\b/.test(js)) throw new Error('bundle contains a test hook');
 const css = fs.readFileSync(path.join(ROOT, 'src/view/styles.css'), 'utf8');
 const shell = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const html = shell
