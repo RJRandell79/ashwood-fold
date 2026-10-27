@@ -1,0 +1,301 @@
+<title>Ashwood Fold</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: a working map on the left with nudges, works and residents beneath; the parish chronicle runs down the right like a register. */
+:root{
+  --bg:#E8ECE5; --panel:#F4F6F1; --ink:#1D2725; --muted:#5B6863; --line:#C5CEC4;
+  --accent:#2E5C66; --lamp:#B87A12; --good:#36764A; --bad:#A33A2B;
+  --grass:#CFDCC0; --grass2:#C2D3B1; --path:#E3D9C2; --roof:#8C6F5A; --roofhome:#9B7F68;
+  --field:#D8CB98; --water:#8FB3C2; --night:#0B1430; --mapink:#2B2F2A; --agentL:40%; --page:#F7F5EE;
+  --display:"IM Fell English", "Iowan Old Style", Georgia, serif;
+  --body:"Alegreya Sans", "Gill Sans", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141A19; --panel:#1C2322; --ink:#E1E7E0; --muted:#94A29C; --line:#33403C;
+  --accent:#86B7BF; --lamp:#E3A93E; --good:#7DBB89; --bad:#E57E6B;
+  --grass:#34452F; --grass2:#2D3D29; --path:#5A5444; --roof:#6E5444; --roofhome:#7A604E;
+  --field:#5D5636; --water:#2F5263; --night:#02050F; --mapink:#E7E2D4; --agentL:66%; --page:#1A201F; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141A19; --panel:#1C2322; --ink:#E1E7E0; --muted:#94A29C; --line:#33403C;
+  --accent:#86B7BF; --lamp:#E3A93E; --good:#7DBB89; --bad:#E57E6B;
+  --grass:#34452F; --grass2:#2D3D29; --path:#5A5444; --roof:#6E5444; --roofhome:#7A604E;
+  --field:#5D5636; --water:#2F5263; --night:#02050F; --mapink:#E7E2D4; --agentL:66%; --page:#1A201F; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45}
+.wrap{max-width:1260px;margin:0 auto;padding-block:18px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);font-weight:400;text-wrap:balance;margin:0}
+.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+.brand h1{font-size:clamp(30px,5vw,44px);line-height:1}
+.brand p{margin:6px 0 0;color:var(--muted);max-width:56ch}
+.clock{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.when{font-family:var(--display);font-size:20px;font-variant-numeric:tabular-nums;text-align:right}
+.when small{display:block;font-family:var(--body);font-size:13px;color:var(--muted);letter-spacing:.04em}
+.chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;min-height:22px}
+@media (max-width:600px){.clock{align-items:flex-start}.when{text-align:left}.chips{justify-content:flex-start}}
+.chip{font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border:1px solid var(--line);border-radius:3px;color:var(--muted)}
+.chip.storm{color:var(--accent);border-color:var(--accent)}
+.chip.fair{color:var(--lamp);border-color:var(--lamp)}
+.chip.rumour{color:var(--bad);border-color:var(--bad)}
+.seg,.speed{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button,.speed button{border:0;border-right:1px solid var(--line);background:var(--panel);color:var(--ink);padding:5px 11px;font:500 14px var(--body);cursor:pointer;font-variant-numeric:tabular-nums}
+.seg button:last-child,.speed button:last-child{border-right:0}
+.seg button.on,.speed button.on{background:var(--accent);color:var(--bg)}
+.seg button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:22px;align-items:start}
+@media (max-width:940px){.layout{grid-template-columns:1fr}}
+.left{display:flex;flex-direction:column;gap:18px;min-width:0}
+.viewbar{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;margin-bottom:-8px}
+.mapbox{position:relative;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--grass)}
+#map{display:block;width:100%;aspect-ratio:40/26;max-width:100%;cursor:pointer;touch-action:manipulation}
+#map3d{display:block;width:100%;aspect-ratio:40/26;max-width:100%;cursor:grab;touch-action:none}
+#map3d:active{cursor:grabbing}
+@media (max-width:600px){#map3d{aspect-ratio:1/1}}
+.viewnote{margin:-10px 0 0;font-size:13px;color:var(--muted);min-height:1em}
+.stores{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:14px;color:var(--muted);margin-top:-8px}
+.stores span b{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:700}
+h2.sec{font-size:22px;margin-bottom:10px}
+.nudges .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.nudge{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:4px;padding:9px 12px;font:inherit;cursor:pointer}
+.nudge:hover{border-color:var(--accent)}
+.nudge b{font-weight:700;font-size:15px}
+.nudge small{color:var(--muted);font-size:13px;line-height:1.3}
+.nudge.rumour{grid-column:span 2;cursor:default}
+@media (max-width:420px){.nudge.rumour{grid-column:span 1}}
+.nudge .inline{display:flex;gap:6px;width:100%;margin-top:4px}
+.nudge select{flex:1;min-width:0;font:inherit;font-size:14px;padding:4px 6px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:3px}
+.btn{font:500 14px var(--body);padding:5px 12px;border-radius:3px;border:1px solid var(--accent);background:var(--accent);color:var(--bg);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.nudge:disabled{opacity:.5;cursor:not-allowed}
+.techs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.tech{border:1px solid var(--line);border-radius:4px;padding:9px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.tech .tn{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.tech .tn b{font-size:15px}
+.tech .tn span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.tech .ts{font-size:13px;color:var(--muted);line-height:1.35}
+.tech .pm{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:3px}
+.tech .pm span{display:block;height:100%;background:var(--lamp)}
+.tech.st-idea{border-color:var(--lamp)}
+.tech.st-idea .tn span{color:var(--lamp)}
+.tech.st-built{background:var(--panel)}
+.tech.st-built .tn span{color:var(--good)}
+.tech.st-broken .tn span{color:var(--bad)}
+.tech.st-locked{opacity:.6}
+.people{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px}
+@media (max-width:640px){.people{grid-template-columns:1fr}}
+.roster{display:flex;flex-direction:column;border-top:1px solid var(--line);min-width:0}
+.res{display:grid;grid-template-columns:30px minmax(0,1fr) 46px;gap:10px;align-items:center;padding:7px 4px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;width:100%}
+.res:hover{background:var(--panel)}
+.res.sel{background:var(--panel)}
+.res i{width:12px;height:12px;border-radius:50%;display:block}
+.res .thumb{display:block;width:30px;height:36px}
+.res .thumb svg{display:block}
+.portrait.dead{filter:grayscale(.85) sepia(.35)}
+.res i.kid{width:8px;height:8px;margin:2px}
+.res .nm{font-weight:700;font-size:15px}
+.res .nm small{font-weight:400;color:var(--muted);margin-left:6px}
+.res .doing{display:block;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mood{height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.mood span{display:block;height:100%}
+.yard{margin-top:10px;font-size:14px}
+.yard summary{cursor:pointer;color:var(--muted);padding:4px 0}
+.yard .res{grid-template-columns:30px minmax(0,1fr);opacity:.85}
+.detail{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:14px 16px;min-width:0;align-self:start}
+.detail h3{font-size:26px;line-height:1.1}
+.dhead{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;margin-bottom:6px}
+.dhead .dport svg{display:block}
+.dname{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dname .arms{flex:none}
+.fams{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.civicgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:10px}
+.hallbox{border:1px solid var(--line);border-radius:4px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.cand{display:grid;grid-template-columns:30px minmax(0,1fr) minmax(60px,110px) 22px;gap:8px;align-items:center;font-size:14px}
+.cand.one{grid-template-columns:30px minmax(0,1fr)}
+.cand small{color:var(--muted)}
+.cand .thumb svg{display:block}
+.vbar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.vbar span{display:block;height:100%;background:var(--accent)}
+.cand em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.note2{font-size:14px;color:var(--muted);margin:0}
+.verd{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:baseline;font-size:14px}
+.pill{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:1px 7px;border-radius:3px;border:1px solid;white-space:nowrap;font-variant-numeric:tabular-nums}
+.pill.bad{color:var(--bad);border-color:var(--bad)}
+.pill.good{color:var(--good);border-color:var(--good)}
+.chip.era{color:var(--ink);border-color:var(--ink)}
+.story .bookhead{margin-top:64px;text-align:center}
+.story .bookhead h2{font-size:clamp(30px,5vw,40px);font-style:italic;color:var(--accent)}
+.famcard{display:grid;grid-template-columns:62px minmax(0,1fr);gap:12px;align-items:start;border:1px solid var(--line);border-radius:4px;padding:10px 12px;min-width:0}
+.famcard.gone{opacity:.6}
+.famcard h3{font-size:20px;line-height:1.1}
+.famcard .motto{font-family:var(--display);font-style:italic;font-size:15px;margin:1px 0 3px}
+.famcard .blz{font-size:12.5px;color:var(--muted);line-height:1.35;margin:0 0 5px}
+.famcard .faces{display:flex;flex-wrap:wrap;gap:2px}
+.famcard .faces button{border:0;background:none;padding:0;cursor:pointer}
+.famcard .faces svg{display:block}
+.famcard .count{font-size:12px;color:var(--muted);margin-top:4px}
+.detail .role{color:var(--muted);margin:2px 0 4px;font-size:14px}
+.detail .fam{margin:0 0 8px;font-size:14px}
+.detail .now{font-style:italic;font-family:var(--display);font-size:17px;margin:0 0 10px}
+.meters{display:grid;grid-template-columns:auto minmax(0,1fr) 34px;gap:4px 10px;align-items:center;font-size:13px;margin-bottom:10px}
+.meters .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.meters .bar span{display:block;height:100%}
+.meters em{font-style:normal;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.lbl{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:12px 0 4px}
+.traits{display:flex;flex-wrap:wrap;gap:4px}
+.traits span{font-size:13px;padding:1px 7px;border:1px solid var(--line);border-radius:3px}
+.rels{display:grid;grid-template-columns:minmax(0,1fr) 70px 34px;gap:3px 8px;align-items:center;font-size:14px}
+.rels .bar{height:5px;background:var(--line);position:relative;border-radius:3px}
+.rels .bar span{position:absolute;top:0;bottom:0;border-radius:3px}
+.rels em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.mems{margin:0;padding:0;list-style:none;font-size:14px;display:flex;flex-direction:column;gap:3px}
+.mems li time{color:var(--muted);font-size:12px;margin-right:6px;font-variant-numeric:tabular-nums}
+.who{cursor:pointer;font-weight:700;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:2px}
+.who:hover{text-decoration-color:var(--accent)}
+.empty{color:var(--muted);font-style:italic;margin:0}
+.chron{background:var(--panel);border:1px solid var(--line);border-radius:4px;display:flex;flex-direction:column;min-width:0;position:sticky;top:max(12px,env(safe-area-inset-top,0px));max-height:calc(100vh - 24px)}
+@media (max-width:940px){.chron{position:static;max-height:70vh}}
+.chron header{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;justify-content:space-between}
+.chron header h2{font-size:26px}
+.chron header p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+#log{overflow-y:auto;padding:4px 16px 16px;min-height:0}
+.dayhead{font-size:18px;font-style:italic;margin:14px 0 4px;color:var(--accent)}
+.entry{display:grid;grid-template-columns:40px 8px minmax(0,1fr);gap:8px;padding:5px 0;border-bottom:1px dotted var(--line);font-size:15px}
+.entry time{color:var(--muted);font-size:12px;padding-top:3px;font-variant-numeric:tabular-nums}
+.entry i{width:6px;height:6px;margin-top:8px;transform:rotate(45deg);background:var(--muted)}
+.entry p{margin:0}
+.k-good i{background:var(--good)} .k-bad i{background:var(--bad)} .k-rumour i{background:var(--lamp)} .k-nudge i{background:var(--accent);width:8px;height:8px;margin-top:7px}
+.k-life i{background:var(--ink);width:8px;height:8px;margin-top:7px}
+.k-nudge p{font-style:italic}
+.savebox{border-top:1px solid var(--line);padding-top:14px}
+.savebox .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.savebox textarea{width:100%;box-sizing:border-box;margin-top:10px;min-height:90px;font:12px ui-monospace,Menlo,monospace;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:3px;padding:8px;word-break:break-all}
+.savebox .msg{font-size:14px;color:var(--muted)}
+.savebox p.note{font-size:14px;color:var(--muted);margin:6px 0 0;max-width:65ch}
+/* The annals: a book laid over the village */
+.story{position:fixed;inset:0;z-index:50;background:var(--page);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.story .bar{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:var(--page);border-bottom:1px solid var(--line);padding-block:max(10px,env(safe-area-inset-top,0px)) 10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));z-index:2}
+.story .bar span{font-size:13px;color:var(--muted)}
+.story .book{max-width:40rem;margin:0 auto;padding-block:28px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-family:var(--display);font-size:19px;line-height:1.6}
+.story .book h1{font-size:clamp(32px,6vw,46px);text-align:center;line-height:1.1}
+.story .book .sub{text-align:center;font-style:italic;color:var(--muted);margin:8px 0 22px}
+.story figure{margin:0 0 30px}
+.story figure img{display:block;width:100%;border:1px solid var(--line)}
+.story figcaption{font-size:14px;font-style:italic;color:var(--muted);text-align:center;margin-top:6px}
+.story .chapter{margin-top:46px}
+.story .chapter h2{font-size:30px;text-align:center;line-height:1.15}
+.story .bookhead .num,.story .chapter .num{display:block;font-family:var(--body);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:6px}
+.story .intro::first-letter{float:left;font-size:3.4em;line-height:.85;padding:.06em .08em 0 0;color:var(--accent)}
+.story h3{font-family:var(--body);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin:26px 0 6px;text-align:center}
+.story p{margin:0 0 14px;text-wrap:pretty}
+.story .who{text-decoration:none;font-weight:400;font-variant:small-caps;letter-spacing:.03em;cursor:default}
+.story .cast{display:grid;gap:14px;margin-top:10px}
+.story .cast>div{border-top:1px solid var(--line);padding-top:12px;font-size:17px;line-height:1.45;display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;align-items:start}
+.story .cast svg{display:block}
+.story .armorial{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:22px 18px;margin-top:14px;text-align:center}
+.story .armorial div{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:15px;line-height:1.35}
+.story .armorial b{font-weight:400;font-size:19px}
+.story .armorial i{font-size:14px;color:var(--muted)}
+.story .cast b{font-weight:400;font-size:20px}
+.story .cast em{display:block;font-family:var(--body);font-style:normal;font-size:13px;color:var(--muted)}
+.story .orn{text-align:center;color:var(--muted);letter-spacing:.6em;margin:30px 0}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Ashwood Fold</h1>
+      <p>A Lancashire village with needs, routines and long memories. Families grow, ideas take hold or fail, and the years pass. You can nudge the village, but nobody here takes orders.</p>
+    </div>
+    <div class="clock">
+      <div class="when" id="when">Spring, Year 1</div>
+      <div class="chips" id="chips"></div>
+      <div class="speed" role="group" aria-label="Simulation speed">
+        <button data-speed="0">Pause</button>
+        <button data-speed="1" class="on">1×</button>
+        <button data-speed="3">3×</button>
+        <button data-speed="10">10×</button>
+        <button data-speed="30">30×</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main class="left">
+      <div class="viewbar">
+        <div class="seg" role="group" aria-label="View"><button id="v2d">Map</button><button id="v3d" class="on">3D</button></div>
+        <div class="seg" id="cam3d" role="group" aria-label="Camera"><button id="vReset">Reset view</button><button id="vTop">Top down</button><button id="vFollow" aria-pressed="false">Follow</button></div>
+      </div>
+      <div class="mapbox"><canvas id="map" hidden aria-label="Map of Ashwood Fold showing villagers as coloured dots"></canvas><canvas id="map3d" aria-label="3D view of Ashwood Fold. Drag to turn, pinch or scroll to zoom."></canvas></div>
+      <p class="viewnote" id="viewNote"></p>
+      <div class="stores" id="stores"></div>
+
+      <section class="nudges">
+        <h2 class="sec">Nudge the village</h2>
+        <div class="grid">
+          <div class="nudge rumour">
+            <b>Whisper a rumour</b>
+            <small>The village gossip hears it first. Trust decides who believes it.</small>
+            <div class="inline"><select id="rumourSubject" aria-label="Rumour about"></select><button class="btn" id="nRumour">Whisper</button></div>
+          </div>
+          <button class="nudge" id="nShort"><b>Spoil the flour</b><small>Weevils in the granary. Bread runs out within a day or two.</small></button>
+          <button class="nudge" id="nStorm"><b>Send a storm</b><small>Sixteen hours of rain. In autumn it flattens the standing corn.</small></button>
+          <button class="nudge" id="nStranger"><b>A stranger arrives</b><small>A pedlar takes a room at The Plough.</small></button>
+          <button class="nudge" id="nFair"><b>Hold a fair</b><small>A day of trading and merriment on the Green.</small></button>
+          <button class="nudge" id="nPurse"><b>Lose a purse</b><small>The richest villager drops their pennies. Someone finds them.</small></button>
+        </div>
+      </section>
+
+      <section class="works">
+        <h2 class="sec">Works and ideas</h2>
+        <div class="techs" id="techs"></div>
+      </section>
+
+      <section class="civic">
+        <h2 class="sec">The Moot Hall</h2>
+        <div class="civicgrid" id="civic"></div>
+      </section>
+
+      <section class="families">
+        <h2 class="sec">Families and their arms</h2>
+        <div class="fams" id="fams"></div>
+      </section>
+
+      <section class="people">
+        <div>
+          <div class="roster" id="roster"></div>
+          <details class="yard" id="yardBox" hidden><summary id="yardSum">The chapel yard</summary><div class="roster" id="yard"></div></details>
+        </div>
+        <div class="detail" id="detail"></div>
+      </section>
+
+      <section class="savebox">
+        <h2 class="sec">Keep this village</h2>
+        <div class="row">
+          <button class="btn" id="copySave">Copy save code</button>
+          <button class="btn ghost" id="showLoad">Load a save code</button>
+          <button class="btn ghost" id="newTown">Start a new village</button>
+          <span class="msg" id="saveMsg" role="status"></span>
+        </div>
+        <div id="loadArea" hidden>
+          <textarea id="saveText" aria-label="Save code" placeholder="Paste a save code here"></textarea>
+          <div class="row" style="margin-top:8px"><button class="btn" id="loadSave">Load village</button><button class="btn ghost" id="cancelLoad">Cancel</button></div>
+        </div>
+        <p class="note">This browser also keeps your village between visits, but that copy can be lost if site data is cleared. A save code is the reliable way to keep a long-running village. Older save codes still load.</p>
+      </section>
+    </main>
+
+    <aside class="chron">
+      <header><div><h2>Chronicle</h2><p>Newest first. Tap a name to follow that villager.</p></div><button class="btn" id="openStory">Read the annals</button></header>
+      <div id="log"></div>
+    </aside>
+  </div>
+</div>
+
+<div class="story" id="story" hidden role="dialog" aria-modal="true" aria-label="The Annals of Ashwood Fold">
+  <div class="bar"><button class="btn" id="closeStory">Back to the village</button><span id="storyMeta"></span><button class="btn ghost" id="copyStory">Copy as text</button></div>
+  <article class="book" id="book"></article>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>

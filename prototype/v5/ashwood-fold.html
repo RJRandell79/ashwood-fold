@@ -1,0 +1,2421 @@
+<title>Ashwood Fold</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: a working map on the left with nudges, works and residents beneath; the parish chronicle runs down the right like a register. */
+:root{
+  --bg:#E8ECE5; --panel:#F4F6F1; --ink:#1D2725; --muted:#5B6863; --line:#C5CEC4;
+  --accent:#2E5C66; --lamp:#B87A12; --good:#36764A; --bad:#A33A2B;
+  --grass:#CFDCC0; --grass2:#C2D3B1; --path:#E3D9C2; --roof:#8C6F5A; --roofhome:#9B7F68;
+  --field:#D8CB98; --water:#8FB3C2; --night:#0B1430; --mapink:#2B2F2A; --agentL:40%; --page:#F7F5EE;
+  --display:"IM Fell English", "Iowan Old Style", Georgia, serif;
+  --body:"Alegreya Sans", "Gill Sans", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141A19; --panel:#1C2322; --ink:#E1E7E0; --muted:#94A29C; --line:#33403C;
+  --accent:#86B7BF; --lamp:#E3A93E; --good:#7DBB89; --bad:#E57E6B;
+  --grass:#34452F; --grass2:#2D3D29; --path:#5A5444; --roof:#6E5444; --roofhome:#7A604E;
+  --field:#5D5636; --water:#2F5263; --night:#02050F; --mapink:#E7E2D4; --agentL:66%; --page:#1A201F; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141A19; --panel:#1C2322; --ink:#E1E7E0; --muted:#94A29C; --line:#33403C;
+  --accent:#86B7BF; --lamp:#E3A93E; --good:#7DBB89; --bad:#E57E6B;
+  --grass:#34452F; --grass2:#2D3D29; --path:#5A5444; --roof:#6E5444; --roofhome:#7A604E;
+  --field:#5D5636; --water:#2F5263; --night:#02050F; --mapink:#E7E2D4; --agentL:66%; --page:#1A201F; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45}
+.wrap{max-width:1260px;margin:0 auto;padding-block:18px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);font-weight:400;text-wrap:balance;margin:0}
+.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+.brand h1{font-size:clamp(30px,5vw,44px);line-height:1}
+.brand p{margin:6px 0 0;color:var(--muted);max-width:56ch}
+.clock{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.when{font-family:var(--display);font-size:20px;font-variant-numeric:tabular-nums;text-align:right}
+.when small{display:block;font-family:var(--body);font-size:13px;color:var(--muted);letter-spacing:.04em}
+.chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;min-height:22px}
+@media (max-width:600px){.clock{align-items:flex-start}.when{text-align:left}.chips{justify-content:flex-start}}
+.chip{font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border:1px solid var(--line);border-radius:3px;color:var(--muted)}
+.chip.storm{color:var(--accent);border-color:var(--accent)}
+.chip.fair{color:var(--lamp);border-color:var(--lamp)}
+.chip.rumour{color:var(--bad);border-color:var(--bad)}
+.seg,.speed{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button,.speed button{border:0;border-right:1px solid var(--line);background:var(--panel);color:var(--ink);padding:5px 11px;font:500 14px var(--body);cursor:pointer;font-variant-numeric:tabular-nums}
+.seg button:last-child,.speed button:last-child{border-right:0}
+.seg button.on,.speed button.on{background:var(--accent);color:var(--bg)}
+.seg button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:22px;align-items:start}
+@media (max-width:940px){.layout{grid-template-columns:1fr}}
+.left{display:flex;flex-direction:column;gap:18px;min-width:0}
+.viewbar{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;margin-bottom:-8px}
+.mapbox{position:relative;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--grass)}
+#map{display:block;width:100%;aspect-ratio:40/26;max-width:100%;cursor:pointer;touch-action:manipulation}
+#map3d{display:block;width:100%;aspect-ratio:40/26;max-width:100%;cursor:grab;touch-action:none}
+#map3d:active{cursor:grabbing}
+@media (max-width:600px){#map3d{aspect-ratio:1/1}}
+.viewnote{margin:-10px 0 0;font-size:13px;color:var(--muted);min-height:1em}
+.stores{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:14px;color:var(--muted);margin-top:-8px}
+.stores span b{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:700}
+h2.sec{font-size:22px;margin-bottom:10px}
+.nudges .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.nudge{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:4px;padding:9px 12px;font:inherit;cursor:pointer}
+.nudge:hover{border-color:var(--accent)}
+.nudge b{font-weight:700;font-size:15px}
+.nudge small{color:var(--muted);font-size:13px;line-height:1.3}
+.nudge.rumour{grid-column:span 2;cursor:default}
+@media (max-width:420px){.nudge.rumour{grid-column:span 1}}
+.nudge .inline{display:flex;gap:6px;width:100%;margin-top:4px}
+.nudge select{flex:1;min-width:0;font:inherit;font-size:14px;padding:4px 6px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:3px}
+.btn{font:500 14px var(--body);padding:5px 12px;border-radius:3px;border:1px solid var(--accent);background:var(--accent);color:var(--bg);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.nudge:disabled{opacity:.5;cursor:not-allowed}
+.techs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.tech{border:1px solid var(--line);border-radius:4px;padding:9px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.tech .tn{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.tech .tn b{font-size:15px}
+.tech .tn span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.tech .ts{font-size:13px;color:var(--muted);line-height:1.35}
+.tech .pm{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:3px}
+.tech .pm span{display:block;height:100%;background:var(--lamp)}
+.tech.st-idea{border-color:var(--lamp)}
+.tech.st-idea .tn span{color:var(--lamp)}
+.tech.st-built{background:var(--panel)}
+.tech.st-built .tn span{color:var(--good)}
+.tech.st-broken .tn span{color:var(--bad)}
+.tech.st-locked{opacity:.6}
+.people{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px}
+@media (max-width:640px){.people{grid-template-columns:1fr}}
+.roster{display:flex;flex-direction:column;border-top:1px solid var(--line);min-width:0}
+.res{display:grid;grid-template-columns:30px minmax(0,1fr) 46px;gap:10px;align-items:center;padding:7px 4px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;width:100%}
+.res:hover{background:var(--panel)}
+.res.sel{background:var(--panel)}
+.res i{width:12px;height:12px;border-radius:50%;display:block}
+.res .thumb{display:block;width:30px;height:36px}
+.res .thumb svg{display:block}
+.portrait.dead{filter:grayscale(.85) sepia(.35)}
+.res i.kid{width:8px;height:8px;margin:2px}
+.res .nm{font-weight:700;font-size:15px}
+.res .nm small{font-weight:400;color:var(--muted);margin-left:6px}
+.res .doing{display:block;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mood{height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.mood span{display:block;height:100%}
+.yard{margin-top:10px;font-size:14px}
+.yard summary{cursor:pointer;color:var(--muted);padding:4px 0}
+.yard .res{grid-template-columns:30px minmax(0,1fr);opacity:.85}
+.detail{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:14px 16px;min-width:0;align-self:start}
+.detail h3{font-size:26px;line-height:1.1}
+.dhead{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;margin-bottom:6px}
+.dhead .dport svg{display:block}
+.dname{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dname .arms{flex:none}
+.fams{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.civicgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:10px}
+.hallbox{border:1px solid var(--line);border-radius:4px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.cand{display:grid;grid-template-columns:30px minmax(0,1fr) minmax(60px,110px) 22px;gap:8px;align-items:center;font-size:14px}
+.cand.one{grid-template-columns:30px minmax(0,1fr)}
+.cand small{color:var(--muted)}
+.cand .thumb svg{display:block}
+.vbar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.vbar span{display:block;height:100%;background:var(--accent)}
+.cand em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.note2{font-size:14px;color:var(--muted);margin:0}
+.verd{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:baseline;font-size:14px}
+.pill{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:1px 7px;border-radius:3px;border:1px solid;white-space:nowrap;font-variant-numeric:tabular-nums}
+.pill.bad{color:var(--bad);border-color:var(--bad)}
+.pill.good{color:var(--good);border-color:var(--good)}
+.chip.era{color:var(--ink);border-color:var(--ink)}
+.story .bookhead{margin-top:64px;text-align:center}
+.story .bookhead h2{font-size:clamp(30px,5vw,40px);font-style:italic;color:var(--accent)}
+.famcard{display:grid;grid-template-columns:62px minmax(0,1fr);gap:12px;align-items:start;border:1px solid var(--line);border-radius:4px;padding:10px 12px;min-width:0}
+.famcard.gone{opacity:.6}
+.famcard h3{font-size:20px;line-height:1.1}
+.famcard .motto{font-family:var(--display);font-style:italic;font-size:15px;margin:1px 0 3px}
+.famcard .blz{font-size:12.5px;color:var(--muted);line-height:1.35;margin:0 0 5px}
+.famcard .faces{display:flex;flex-wrap:wrap;gap:2px}
+.famcard .faces button{border:0;background:none;padding:0;cursor:pointer}
+.famcard .faces svg{display:block}
+.famcard .count{font-size:12px;color:var(--muted);margin-top:4px}
+.detail .role{color:var(--muted);margin:2px 0 4px;font-size:14px}
+.detail .fam{margin:0 0 8px;font-size:14px}
+.detail .now{font-style:italic;font-family:var(--display);font-size:17px;margin:0 0 10px}
+.meters{display:grid;grid-template-columns:auto minmax(0,1fr) 34px;gap:4px 10px;align-items:center;font-size:13px;margin-bottom:10px}
+.meters .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.meters .bar span{display:block;height:100%}
+.meters em{font-style:normal;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.lbl{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:12px 0 4px}
+.traits{display:flex;flex-wrap:wrap;gap:4px}
+.traits span{font-size:13px;padding:1px 7px;border:1px solid var(--line);border-radius:3px}
+.rels{display:grid;grid-template-columns:minmax(0,1fr) 70px 34px;gap:3px 8px;align-items:center;font-size:14px}
+.rels .bar{height:5px;background:var(--line);position:relative;border-radius:3px}
+.rels .bar span{position:absolute;top:0;bottom:0;border-radius:3px}
+.rels em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.mems{margin:0;padding:0;list-style:none;font-size:14px;display:flex;flex-direction:column;gap:3px}
+.mems li time{color:var(--muted);font-size:12px;margin-right:6px;font-variant-numeric:tabular-nums}
+.who{cursor:pointer;font-weight:700;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:2px}
+.who:hover{text-decoration-color:var(--accent)}
+.empty{color:var(--muted);font-style:italic;margin:0}
+.chron{background:var(--panel);border:1px solid var(--line);border-radius:4px;display:flex;flex-direction:column;min-width:0;position:sticky;top:max(12px,env(safe-area-inset-top,0px));max-height:calc(100vh - 24px)}
+@media (max-width:940px){.chron{position:static;max-height:70vh}}
+.chron header{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;justify-content:space-between}
+.chron header h2{font-size:26px}
+.chron header p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+#log{overflow-y:auto;padding:4px 16px 16px;min-height:0}
+.dayhead{font-size:18px;font-style:italic;margin:14px 0 4px;color:var(--accent)}
+.entry{display:grid;grid-template-columns:40px 8px minmax(0,1fr);gap:8px;padding:5px 0;border-bottom:1px dotted var(--line);font-size:15px}
+.entry time{color:var(--muted);font-size:12px;padding-top:3px;font-variant-numeric:tabular-nums}
+.entry i{width:6px;height:6px;margin-top:8px;transform:rotate(45deg);background:var(--muted)}
+.entry p{margin:0}
+.k-good i{background:var(--good)} .k-bad i{background:var(--bad)} .k-rumour i{background:var(--lamp)} .k-nudge i{background:var(--accent);width:8px;height:8px;margin-top:7px}
+.k-life i{background:var(--ink);width:8px;height:8px;margin-top:7px}
+.k-nudge p{font-style:italic}
+.savebox{border-top:1px solid var(--line);padding-top:14px}
+.savebox .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.savebox textarea{width:100%;box-sizing:border-box;margin-top:10px;min-height:90px;font:12px ui-monospace,Menlo,monospace;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:3px;padding:8px;word-break:break-all}
+.savebox .msg{font-size:14px;color:var(--muted)}
+.savebox p.note{font-size:14px;color:var(--muted);margin:6px 0 0;max-width:65ch}
+/* The annals: a book laid over the village */
+.story{position:fixed;inset:0;z-index:50;background:var(--page);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.story .bar{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:var(--page);border-bottom:1px solid var(--line);padding-block:max(10px,env(safe-area-inset-top,0px)) 10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));z-index:2}
+.story .bar span{font-size:13px;color:var(--muted)}
+.story .book{max-width:40rem;margin:0 auto;padding-block:28px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-family:var(--display);font-size:19px;line-height:1.6}
+.story .book h1{font-size:clamp(32px,6vw,46px);text-align:center;line-height:1.1}
+.story .book .sub{text-align:center;font-style:italic;color:var(--muted);margin:8px 0 22px}
+.story figure{margin:0 0 30px}
+.story figure img{display:block;width:100%;border:1px solid var(--line)}
+.story figcaption{font-size:14px;font-style:italic;color:var(--muted);text-align:center;margin-top:6px}
+.story .chapter{margin-top:46px}
+.story .chapter h2{font-size:30px;text-align:center;line-height:1.15}
+.story .bookhead .num,.story .chapter .num{display:block;font-family:var(--body);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:6px}
+.story .intro::first-letter{float:left;font-size:3.4em;line-height:.85;padding:.06em .08em 0 0;color:var(--accent)}
+.story h3{font-family:var(--body);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin:26px 0 6px;text-align:center}
+.story p{margin:0 0 14px;text-wrap:pretty}
+.story .who{text-decoration:none;font-weight:400;font-variant:small-caps;letter-spacing:.03em;cursor:default}
+.story .cast{display:grid;gap:14px;margin-top:10px}
+.story .cast>div{border-top:1px solid var(--line);padding-top:12px;font-size:17px;line-height:1.45;display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;align-items:start}
+.story .cast svg{display:block}
+.story .armorial{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:22px 18px;margin-top:14px;text-align:center}
+.story .armorial div{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:15px;line-height:1.35}
+.story .armorial b{font-weight:400;font-size:19px}
+.story .armorial i{font-size:14px;color:var(--muted)}
+.story .cast b{font-weight:400;font-size:20px}
+.story .cast em{display:block;font-family:var(--body);font-style:normal;font-size:13px;color:var(--muted)}
+.story .orn{text-align:center;color:var(--muted);letter-spacing:.6em;margin:30px 0}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Ashwood Fold</h1>
+      <p>A Lancashire village with needs, routines and long memories. Families grow, ideas take hold or fail, and the years pass. You can nudge the village, but nobody here takes orders.</p>
+    </div>
+    <div class="clock">
+      <div class="when" id="when">Spring, Year 1</div>
+      <div class="chips" id="chips"></div>
+      <div class="speed" role="group" aria-label="Simulation speed">
+        <button data-speed="0">Pause</button>
+        <button data-speed="1" class="on">1×</button>
+        <button data-speed="3">3×</button>
+        <button data-speed="10">10×</button>
+        <button data-speed="30">30×</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main class="left">
+      <div class="viewbar">
+        <div class="seg" role="group" aria-label="View"><button id="v2d">Map</button><button id="v3d" class="on">3D</button></div>
+        <div class="seg" id="cam3d" role="group" aria-label="Camera"><button id="vReset">Reset view</button><button id="vTop">Top down</button><button id="vFollow" aria-pressed="false">Follow</button></div>
+      </div>
+      <div class="mapbox"><canvas id="map" hidden aria-label="Map of Ashwood Fold showing villagers as coloured dots"></canvas><canvas id="map3d" aria-label="3D view of Ashwood Fold. Drag to turn, pinch or scroll to zoom."></canvas></div>
+      <p class="viewnote" id="viewNote"></p>
+      <div class="stores" id="stores"></div>
+
+      <section class="nudges">
+        <h2 class="sec">Nudge the village</h2>
+        <div class="grid">
+          <div class="nudge rumour">
+            <b>Whisper a rumour</b>
+            <small>The village gossip hears it first. Trust decides who believes it.</small>
+            <div class="inline"><select id="rumourSubject" aria-label="Rumour about"></select><button class="btn" id="nRumour">Whisper</button></div>
+          </div>
+          <button class="nudge" id="nShort"><b>Spoil the flour</b><small>Weevils in the granary. Bread runs out within a day or two.</small></button>
+          <button class="nudge" id="nStorm"><b>Send a storm</b><small>Sixteen hours of rain. In autumn it flattens the standing corn.</small></button>
+          <button class="nudge" id="nStranger"><b>A stranger arrives</b><small>A pedlar takes a room at The Plough.</small></button>
+          <button class="nudge" id="nFair"><b>Hold a fair</b><small>A day of trading and merriment on the Green.</small></button>
+          <button class="nudge" id="nPurse"><b>Lose a purse</b><small>The richest villager drops their pennies. Someone finds them.</small></button>
+        </div>
+      </section>
+
+      <section class="works">
+        <h2 class="sec">Works and ideas</h2>
+        <div class="techs" id="techs"></div>
+      </section>
+
+      <section class="civic">
+        <h2 class="sec">The Moot Hall</h2>
+        <div class="civicgrid" id="civic"></div>
+      </section>
+
+      <section class="families">
+        <h2 class="sec">Families and their arms</h2>
+        <div class="fams" id="fams"></div>
+      </section>
+
+      <section class="people">
+        <div>
+          <div class="roster" id="roster"></div>
+          <details class="yard" id="yardBox" hidden><summary id="yardSum">The chapel yard</summary><div class="roster" id="yard"></div></details>
+        </div>
+        <div class="detail" id="detail"></div>
+      </section>
+
+      <section class="savebox">
+        <h2 class="sec">Keep this village</h2>
+        <div class="row">
+          <button class="btn" id="copySave">Copy save code</button>
+          <button class="btn ghost" id="showLoad">Load a save code</button>
+          <button class="btn ghost" id="newTown">Start a new village</button>
+          <span class="msg" id="saveMsg" role="status"></span>
+        </div>
+        <div id="loadArea" hidden>
+          <textarea id="saveText" aria-label="Save code" placeholder="Paste a save code here"></textarea>
+          <div class="row" style="margin-top:8px"><button class="btn" id="loadSave">Load village</button><button class="btn ghost" id="cancelLoad">Cancel</button></div>
+        </div>
+        <p class="note">This browser also keeps your village between visits, but that copy can be lost if site data is cleared. A save code is the reliable way to keep a long-running village. Older save codes still load.</p>
+      </section>
+    </main>
+
+    <aside class="chron">
+      <header><div><h2>Chronicle</h2><p>Newest first. Tap a name to follow that villager.</p></div><button class="btn" id="openStory">Read the annals</button></header>
+      <div id="log"></div>
+    </aside>
+  </div>
+</div>
+
+<div class="story" id="story" hidden role="dialog" aria-modal="true" aria-label="The Annals of Ashwood Fold">
+  <div class="bar"><button class="btn" id="closeStory">Back to the village</button><span id="storyMeta"></span><button class="btn ghost" id="copyStory">Copy as text</button></div>
+  <article class="book" id="book"></article>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(()=>{
+'use strict';
+const TPD=144, W=40, H=26, SPEED=3.5, SAVEKEY='ashworth-fold-v1', SEASON_DAYS=5, YEAR_DAYS=20, MAXPOP=26;
+const DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const SEASONS=['Spring','Summer','Autumn','Winter'];
+const LIGHT=[[6,20],[5,21.5],[6.5,19.5],[7.5,17.5]];
+const FARM=[.45,.9,2.2,0];
+const P={
+  holt:{name:'Holt Cottage',x:3,y:3,w:4,h:3,indoor:true,home:true},
+  pendle:{name:'Pendle Cottage',x:9,y:3,w:4,h:3,indoor:true,home:true},
+  barrow:{name:'Barrow Cottage',x:3,y:9,w:4,h:3,indoor:true,home:true},
+  fair:{name:'Fairclough Farmhouse',x:29,y:3,w:4,h:3,indoor:true,home:true},
+  calder:{name:'Calder Cottage',x:34,y:3,w:4,h:3,indoor:true,home:true},
+  greaves:{name:'Greaves House',x:34,y:9,w:4,h:3,indoor:true,home:true},
+  plot1:{name:'Market Row Cottage',x:19,y:20.6,w:4,h:3,indoor:true,home:true,plot:true},
+  plot2:{name:'Lane End Cottage',x:.2,y:14.2,w:2.5,h:3,indoor:true,home:true,plot:true},
+  tavern:{name:'The Plough',x:16,y:3,w:6,h:4,indoor:true},
+  bakery:{name:'the Bakehouse',x:24,y:4,w:4,h:3,indoor:true},
+  hall:{name:'the Moot Hall',x:28,y:8,w:4,h:3,indoor:true},
+  square:{name:'the Green',x:16,y:10,w:8,h:6,indoor:false},
+  forge:{name:'the Forge',x:10,y:9,w:4,h:3,indoor:true},
+  weaving:{name:'the Weaving Shed',x:26,y:12,w:5,h:4,indoor:true},
+  chapel:{name:'the Chapel',x:3,y:14,w:4,h:4,indoor:true},
+  garden:{name:'the Physic Garden',x:9,y:15,w:5,h:3,indoor:false},
+  market:{name:'the Market Cross',x:16,y:17,w:6,h:3,indoor:false},
+  mill:{name:'the Watermill',x:3,y:19,w:5,h:4,indoor:true},
+  fields:{name:'the South Fields',x:24,y:18,w:12,h:5,indoor:false},
+  wharf:{name:'the Canal Wharf',x:12.8,y:.9,w:4,h:2.1,indoor:false,tech:'canal'},
+  school:{name:'the School',x:33,y:14,w:4,h:3,indoor:true,tech:'school'},
+  cottonmill:{name:'the Cotton Mill',x:11.5,y:20.2,w:6,h:3.4,indoor:true,tech:'cottonmill'}
+};
+const BARN={x:36.4,y:18,w:3.3,h:4.2};
+const JOBS={baker:'bakery',miller:'mill',labourer:'mill',weaver:'weaving',smith:'forge',farmhand:'fields',farmer:'fields',herbalist:'garden',reeve:'hall',carter:'market',innkeeper:'tavern',pedlar:'market',millhand:'cottonmill',navvy:'wharf',child:null};
+const ESSENTIAL=['baker','miller','smith','innkeeper','reeve','herbalist'];
+const HUES={holt:12,pendle:208,barrow:36,fair:128,calder:285,greaves:172,tavern:52,plot1:240,plot2:95,stranger:330};
+const FOLK=[
+ ['Ada Holt','baker','holt',{temper:.35,warmth:.6,diligence:.85,forgive:.5,gossip:.4,scruple:.8},34,'f'],
+ ['Sam Holt','labourer','holt',{temper:.6,warmth:.45,diligence:.4,forgive:.4,gossip:.3,scruple:.35},37,'m'],
+ ['Tom Pendle','miller','pendle',{temper:.75,warmth:.3,diligence:.7,forgive:.2,gossip:.35,scruple:.55},52,'m'],
+ ['Martha Pendle','weaver','pendle',{temper:.4,warmth:.5,diligence:.6,forgive:.4,gossip:.85,scruple:.6},48,'f'],
+ ['Eli Barrow','smith','barrow',{temper:.55,warmth:.4,diligence:.8,forgive:.6,gossip:.15,scruple:.75},46,'m'],
+ ['Ned Barrow','farmhand','barrow',{temper:.3,warmth:.75,diligence:.35,forgive:.7,gossip:.5,scruple:.4},19,'m'],
+ ['Jonas Fairclough','farmer','fair',{temper:.65,warmth:.35,diligence:.75,forgive:.25,gossip:.3,scruple:.7},51,'m'],
+ ['Ruth Fairclough','farmer','fair',{temper:.3,warmth:.7,diligence:.65,forgive:.65,gossip:.55,scruple:.7},18,'f'],
+ ['Bess Calder','weaver','calder',{temper:.5,warmth:.4,diligence:.7,forgive:.3,gossip:.7,scruple:.5},39,'f'],
+ ['Agnes Calder','herbalist','calder',{temper:.15,warmth:.85,diligence:.55,forgive:.85,gossip:.25,scruple:.9},68,'f'],
+ ['Walter Greaves','reeve','greaves',{temper:.45,warmth:.3,diligence:.6,forgive:.35,gossip:.45,scruple:.85},61,'m'],
+ ['Silas Wren','carter','greaves',{temper:.4,warmth:.6,diligence:.45,forgive:.55,gossip:.65,scruple:.45},42,'m'],
+ ['Nell Hesketh','innkeeper','tavern',{temper:.35,warmth:.7,diligence:.7,forgive:.5,gossip:.9,scruple:.6},45,'f'],
+ ['Kit Holt','child','holt',{temper:.5,warmth:.6,diligence:.45,forgive:.5,gossip:.5,scruple:.5},9,'m'],
+ ['Lottie Pendle','child','pendle',{temper:.55,warmth:.45,diligence:.7,forgive:.3,gossip:.6,scruple:.6},13.7,'f']
+];
+const STRANGERS=[['Mercy Ogden','f'],['Caleb Thorne','m'],['Ivo Lark','m'],['Hester Quayle','f'],['Abel Royle','m']];
+const GIRLS=['Hannah','Alice','Mary','Jane','Ellen','Grace','Betty','Ann','Peggy','Lydia','Sarah','Esther','Nancy','Kitty','Rose','Dolly','Harriet','Molly','Susan','Martha'];
+const BOYS=['John','William','James','Thomas','Joseph','Richard','Henry','George','Robert','Edward','Samuel','Peter','Isaac','Matthew','Daniel','Luke','Jacob','Edwin','Walter','Arthur'];
+const SURNAMES=['Haworth','Entwistle','Birtwistle','Pilling','Cottam','Sumner','Gregson','Whiteside','Rigby','Duckworth','Ashcroft','Seddon'];
+const RUMOURS=['has been watering the ale','was seen leaving the Bakehouse after dark with a full sack','owes money all over the village','has been speaking ill of the reeve','cheats with false weights at market','was heard cursing the chapel'];
+const TECH={
+  plough:{name:'Heavy plough',what:'turns the clay deeper so the South Fields yield more',jobs:['farmer','farmhand','smith'],need:5,cost:30,req:[],hint:'Talk of thin harvests'},
+  millstone:{name:'Second millstone',what:'lets the Watermill grind twice the corn',jobs:['miller','labourer','smith'],need:5,cost:35,req:[],hint:'Grumbling about bare shelves'},
+  barn:{name:'Tithe barn',what:'keeps a whole harvest dry through the winter',jobs:['farmer','reeve','carter'],need:6,cost:45,req:[],hint:'Worry about where to store the corn'},
+  shuttle:{name:'Flying shuttle',what:'lets one weaver do the work of two',jobs:['weaver','smith'],need:3,cost:16,req:[],hint:'The cloth merchant wants more cloth'},
+  school:{name:'Village school',what:'teaches the children their letters, and the village to question idle talk',jobs:['herbalist','reeve','innkeeper'],need:6,cost:40,req:[],hint:'Concern about idle talk and idle children'},
+  canal:{name:'Canal',what:'links the valley to the towns, bringing coal and corn by boat',jobs:['carter','reeve','miller','smith'],need:9,cost:140,req:['cottonmill'],hint:'Talk of a canal cut through the next valley',build:10,navvies:3},
+  steam:{name:'Steam engine',what:'drives the cotton mill with coal instead of the river',jobs:['smith','millhand','miller'],need:7,cost:120,req:['canal'],hint:'The mill wants more power than the river gives',build:3},
+  railway:{name:'Railway',what:'puts Ashwood Fold an hour from Manchester',jobs:['reeve','smith','carter','miller'],need:10,cost:180,req:['steam'],hint:'Surveyors have been seen on the fells',build:10,navvies:4},
+  cottonmill:{name:'Cotton mill',what:'spins thread by water power down by the river',jobs:['miller','weaver','smith'],need:8,cost:90,req:['shuttle','millstone'],hint:'Talk of the new mills in the next valley'}
+};
+
+let S=null, sel=-1, LIVE=[];
+
+// ---------- RNG & time ----------
+function rnd(){S.rng=(S.rng+0x6D2B79F5)|0;let t=S.rng;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;}
+const hourOf=(t=S.tick)=>(t%TPD)/6;
+const dayOf=(t=S.tick)=>Math.floor(t/TPD)+1;
+const yearOf=(t=S.tick)=>Math.floor((dayOf(t)-1)/YEAR_DAYS)+1;
+const seasonOf=(t=S.tick)=>Math.floor(((dayOf(t)-1)%YEAR_DAYS)/SEASON_DAYS);
+const dayInSeason=(t=S.tick)=>((dayOf(t)-1)%SEASON_DAYS)+1;
+const seasonName=(t=S.tick)=>`${SEASONS[seasonOf(t)]}, Year ${yearOf(t)}`;
+const weekday=(t=S.tick)=>DAYS[(dayOf(t)-1)%7];
+const isSunday=()=>(dayOf()-1)%7===6;
+const dayStart=(t=S.tick)=>t-(t%TPD);
+function fmtTime(t){const m=(t%TPD)*10;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const pick=arr=>arr[Math.floor(rnd()*arr.length)];
+const N=a=>`<span class="who" data-id="${a.id}">${a.first}</span>`;
+const PN=id=>P[id].name;
+function listNames(arr){const n=arr.map(N);return n.length<2?n.join(''):n.slice(0,-1).join(', ')+' and '+n[n.length-1];}
+function pointIn(p){return [p.x+0.7+rnd()*(p.w-1.4), p.y+0.7+rnd()*(p.h-1.4)];}
+function refreshLive(){LIVE=S.agents.filter(a=>!a.dead);}
+const isAdult=a=>a.age>=14;
+const stage=a=>a.age<4?'infant':a.age<14?'child':'adult';
+const surname=a=>a.name.split(' ').slice(1).join(' ');
+const jobLabel=a=>a.dead?(a.job==='child'?'child':a.job):a.age<4?'baby':a.job;
+const hueOf=a=>(a.home==='tavern'&&a.job!=='innkeeper')?a.hue:(HUES[a.home]??a.hue);
+const techOn=id=>S.tech[id]&&S.tech[id].state==='built'&&!(S.tech[id].brokenUntil>S.tick);
+const techBuilt=id=>S.tech[id]&&S.tech[id].state==='built';
+const placeShown=id=>{const p=P[id];if(p.tech)return techBuilt(p.tech)||(S.tech[p.tech]&&S.tech[p.tech].state==='building');if(p.plot)return !!S.built[id];return true;};
+const household=h=>LIVE.filter(a=>a.home===h);
+const childrenOf=a=>S.agents.filter(c=>c.parents.includes(a.id));
+function isKin(a,b){if(a.parents.includes(b.id)||b.parents.includes(a.id))return true;return a.parents.some(p=>b.parents.includes(p));}
+
+// ---------- setup ----------
+function makeAgent(id,name,job,home,tr,o){
+  o=o||{};const pt=pointIn(P[home]||P.tavern);
+  return {id,name,first:name.split(' ')[0],job,home,work:JOBS[job]||null,hue:o.hue??HUES[home]??330,
+    x:pt[0],y:pt[1],px:pt[0],py:pt[1],tx:pt[0],ty:pt[1],arrived:true,at:home,
+    act:{type:'sleep',place:home,left:0,target:null},
+    hunger:.25+rnd()*.25,tired:.12,lonely:.25+rnd()*.2,coins:job==='child'?0:4+Math.floor(rnd()*6),tipsy:0,
+    tr,mem:[],knows:[],glyph:null,age:o.age??30,sex:o.sex||'f',spouse:-1,parents:o.parents||[],born:o.born??null,dead:null,prevJob:null};
+}
+function blankState(seed){
+  const s={v:2,seed,rng:seed|0,tick:6*6,agents:[],op:[],pair:{},grudge:{},cool:{},
+     stores:{grain:160,flour:30,bread:30,missing:0},pantry:{},storm:0,fair:null,rumours:[],rid:0,log:[],annals:[],lastThief:-1,bareLogged:0,spoil:0,
+     tech:{},gathers:[],gid:0,vacant:[],built:{},years:{},arms:{},election:null,nextElection:(YEAR_DAYS+2)*TPD,cases:[],cid:0,verdicts:[],era:0,reeveSince:null,lastElection:null,brawls:{},harvest:0,yearQ:.8+(((seed>>>3)%40)/100)};
+  for(const id in TECH)s.tech[id]={state:'none',pressure:0,backers:[],opponents:[],adopters:[]};
+  return s;
+}
+function newTown(seed){
+  S=blankState(seed);
+  FOLK.forEach((f,i)=>S.agents.push(makeAgent(i,f[0],f[1],f[2],{...f[3]},{age:f[4],sex:f[5]})));
+  const A=i=>S.agents[i];
+  A(0).spouse=1;A(1).spouse=0;A(2).spouse=3;A(3).spouse=2;
+  A(5).parents=[4];A(7).parents=[6];A(13).parents=[0,1];A(14).parents=[2,3];
+  const n=S.agents.length;
+  for(let i=0;i<n;i++){S.op.push([]);for(let j=0;j<n;j++)S.op[i].push(i===j?0:Math.round((rnd()-.5)*16));}
+  for(const a of S.agents)for(const b of S.agents)if(a!==b&&a.home===b.home)S.op[a.id][b.id]=45+Math.round(rnd()*15);
+  Object.keys(P).filter(k=>P[k].home).forEach(k=>S.pantry[k]=3);
+  const set=(i,j,v)=>{S.op[i][j]=v;};
+  set(2,6,-48);set(6,2,-52);           // Tom the miller and Jonas the farmer: grain prices
+  set(3,8,-32);set(8,3,-38);           // Martha and Bess, rival weavers
+  set(5,7,66);set(7,5,64);             // Ned and Ruth, sweethearts
+  set(11,12,58);set(12,11,60);         // Silas and Nell, old friends
+  for(let j=0;j<n;j++)if(j!==9)S.op[9][j]=Math.max(S.op[9][j],20);
+  set(1,10,-30);                       // Sam resents the reeve
+  for(const c of [A(13),A(14)])for(const x of S.agents)if(x!==c&&!c.parents.includes(x.id)&&x.home!==c.home){
+    S.op[c.id][x.id]=Math.round(c.parents.reduce((s,p)=>s+S.op[p][x.id],0)/c.parents.length*.5);}
+  S.years[1]={startPop:n,births:0,deaths:0,weddings:0,era:0};
+  refreshLive();
+  for(const a of S.agents)for(const b of S.agents)if(a.id<b.id)checkPair(a,b,true);
+  for(const a of S.agents)for(const b of S.agents)if(a!==b&&S.op[a.id][b.id]<-50)S.grudge[a.id+'-'+b.id]=1;
+  S.pair['5-7']='friends';S.pair['11-12']='friends';S.pair['2-6']='feud';
+  for(const a of S.agents)armsOf(familyKey(a));
+  log(`Spring, and the first year of this chronicle. ${N(A(2))} the miller and ${N(A(6))} the farmer have not spoken civilly since the argument over grain prices last harvest.`,'event','prologue');
+  log(`${N(A(3))} and ${N(A(8))} both weave for the same cloth merchant, and neither forgets it.`,'event','prologue');
+  log(`Everyone knows ${N(A(5))} is sweet on ${N(A(7))}. Nobody has said so to ${N(A(6))}.`,'event','prologue');
+  log(`Old ${N(A(9))} has delivered most of the children in Ashwood Fold. ${N(A(14))} will be fourteen soon and wants a trade.`,'event','prologue');
+}
+function ensureState(o){
+  const fresh=blankState(o.seed||1);
+  for(const k in fresh)if(o[k]===undefined)o[k]=fresh[k];
+  for(const id in TECH)if(!o.tech[id])o.tech[id]={state:'none',pressure:0,backers:[],opponents:[],adopters:[]};
+  if(o.nextElection<o.tick)o.nextElection=o.tick+3*TPD+TPD;
+  return o;
+}
+function migrate(o){
+  if(o.v>=2)return ensureState(o);
+  const fresh=blankState(o.seed||1);
+  for(const k in fresh)if(o[k]===undefined)o[k]=fresh[k];
+  const byName={};FOLK.forEach(f=>byName[f[0]]=f);
+  const sx={};STRANGERS.forEach(s=>sx[s[0]]=s[1]);
+  for(const a of o.agents){
+    const f=byName[a.name];
+    a.age=f?f[4]+(Math.floor((o.tick||0)/TPD)/YEAR_DAYS):25+((a.id*7)%20);
+    a.sex=f?f[5]:(sx[a.name]||'f');a.spouse=-1;a.parents=[];a.born=null;a.dead=null;a.prevJob=null;
+  }
+  const by=n=>o.agents.find(a=>a.name===n);
+  const link=(x,y)=>{const a=by(x),b=by(y);if(a&&b){a.spouse=b.id;b.spouse=a.id;}};
+  link('Ada Holt','Sam Holt');link('Tom Pendle','Martha Pendle');
+  const par=(c,ps)=>{const a=by(c);if(a)a.parents=ps.map(by).filter(Boolean).map(p=>p.id);};
+  par('Ned Barrow',['Eli Barrow']);par('Ruth Fairclough',['Jonas Fairclough']);
+  o.annals=o.log.filter(e=>e.k!=='event').slice(-60).map(e=>({...e,c:'event'}));
+  const y=Math.floor((Math.floor(o.tick/TPD))/YEAR_DAYS)+1;o.years[y]={startPop:o.agents.length,births:0,deaths:0,weddings:0};
+  o.stores.grain=Math.max(o.stores.grain,120);
+  o.v=2;if(!o.arms)o.arms={};return ensureState(o);
+}
+
+// ---------- log ----------
+function log(h,k,cat,extra){
+  S.log.push({t:S.tick,k:k||'event',h});if(S.log.length>400)S.log.splice(0,S.log.length-400);
+  if(cat){S.annals.push(Object.assign({t:S.tick,k:k||'event',h,c:cat},extra||{}));if(S.annals.length>2500)S.annals.splice(0,S.annals.length-2500);}
+}
+
+// ---------- relationships ----------
+const op=(a,b)=>S.op[a.id][b.id];
+function adj(a,b,d){if(a===b||a.dead||b.dead)return;S.op[a.id][b.id]=clamp(S.op[a.id][b.id]+d,-100,100);checkPair(a,b);}
+function mem(a,b,text,place){a.mem.unshift({w:b?b.id:-1,t:text,d:dayOf(),p:place||null});if(a.mem.length>8)a.mem.length=8;}
+function glyph(a,c,k){a.glyph={c,k,until:S.tick+5};}
+function canCourt(x,y){return isAdult(x)&&isAdult(y)&&x.age>=16&&y.age>=16&&Math.abs(x.age-y.age)<=18&&x.spouse<0&&y.spouse<0&&!isKin(x,y)&&x.home!==y.home;}
+function checkPair(a,b,quiet){
+  const lo=Math.min(a.id,b.id),hi=Math.max(a.id,b.id),key=lo+'-'+hi;
+  const x=S.agents[lo],y=S.agents[hi];if(x.dead||y.dead)return;
+  const oxy=S.op[lo][hi],oyx=S.op[hi][lo],st=S.pair[key]||'none';
+  const kids=!isAdult(x)||!isAdult(y);
+  if(st!=='friends'&&oxy>60&&oyx>60){S.pair[key]='friends';if(!quiet&&x.home!==y.home&&!(kids&&rnd()<.6))log(pick([`${N(x)} and ${N(y)} have become fast friends.`,`It is plain to everyone that ${N(x)} and ${N(y)} are thick as thieves now.`,`${N(x)} and ${N(y)} are seldom seen apart these days.`]),'good',kids?null:'friend',{ids:[lo,hi]});}
+  else if(st==='friends'&&oxy>85&&oyx>85&&!S.pair[key+'c']&&canCourt(x,y)){S.pair[key+'c']=1;if(!quiet)log(`${N(x)} and ${N(y)} have been seen walking out together along the river.`,'good','love',{ids:[lo,hi]});}
+  else if(st==='friends'&&(oxy<15||oyx<15)){S.pair[key]='none';if(S.pair[key+'c']&&!S.pair[key+'w'])delete S.pair[key+'c'];if(!quiet)log(pick([`The friendship between ${N(x)} and ${N(y)} has gone sour.`,`${N(x)} and ${N(y)} were friends once. Not any more.`]),'bad',kids?null:'feud',{ids:[lo,hi]});}
+  else if(st!=='feud'&&oxy<-50&&oyx<-50){S.pair[key]='feud';if(!quiet)log(pick([`Bad blood: ${N(x)} and ${N(y)} are openly at odds.`,`${N(x)} and ${N(y)} can no longer stand to be in the same room.`,`A feud has opened between ${N(x)} and ${N(y)}.`]),'bad','feud',{ids:[lo,hi],feud:1});}
+  else if(st==='feud'&&oxy>-10&&oyx>-10){S.pair[key]='none';if(!quiet)log(pick([`${N(x)} and ${N(y)} have patched things up.`,`The feud between ${N(x)} and ${N(y)} is over, for now.`]),'good','feud',{ids:[lo,hi]});}
+  for(const [p,q] of [[a,b],[b,a]]){
+    const gk=p.id+'-'+q.id,o=S.op[p.id][q.id];
+    if(!S.grudge[gk]&&o<-50){S.grudge[gk]=1;if(!quiet&&S.pair[key]!=='feud')log(`${N(p)} now holds a grudge against ${N(q)}.`,'bad');}
+    else if(S.grudge[gk]&&o>-20){delete S.grudge[gk];if(!quiet&&rnd()<.6)log(`${N(p)} has let go of an old grievance with ${N(q)}.`,'good');}
+  }
+}
+function worstFoe(a){let w=null,lo=-40;for(const b of LIVE)if(b!==a&&op(a,b)<lo){lo=op(a,b);w=b;}return w;}
+function avoid(a,place){let s=0;for(const b of LIVE)if(b!==a&&b.act.place===place&&b.act.type!=='sleep'){const o=op(a,b);if(o<-40)s+=(-o/100)*.55*(1-a.tr.temper);}return s;}
+function pull(a,place){let s=0;for(const b of LIVE)if(b!==a&&b.act.place===place&&b.act.type!=='sleep'&&op(a,b)>40)s+=.12;return Math.min(.35,s);}
+const byJob=j=>LIVE.find(a=>a.job===j);
+function pantryOf(a){return a.home==='tavern'?Math.floor(S.stores.bread):(S.pantry[a.home]||0);}
+function takePantry(a){if(a.home==='tavern'){if(S.stores.bread>=1){S.stores.bread-=1;return true;}return false;}if((S.pantry[a.home]||0)>=1){S.pantry[a.home]--;return true;}return false;}
+const fairOn=()=>S.fair&&S.tick>=S.fair.start&&S.tick<S.fair.end;
+const grainCap=()=>techOn('barn')?750:400;
+
+// ---------- decision making ----------
+function activeGathers(){return S.gathers.filter(g=>S.tick>=g.start&&S.tick<g.end);}
+function gatherPull(a,g){
+  if(g.type==='wedding'){
+    if(g.ids.includes(a.id))return 5;
+    const [x,y]=g.ids.map(i=>S.agents[i]);const aff=Math.max(op(a,x),op(a,y)),kin=isKin(a,x)||isKin(a,y)||a.home===x.home||a.home===y.home;
+    if(Math.min(op(a,x),op(a,y))<-30&&!kin)return null;
+    if(kin&&Math.min(op(a,x),op(a,y))<-35)return null;
+    return .55+aff/100*.6+a.tr.warmth*.2+(kin?.6:0);
+  }
+  if(g.type==='election'){if(a.age<18)return null;return S.election&&S.election.cands.includes(a.id)?5:.5+a.tr.gossip*.2+a.tr.diligence*.1;}
+  if(g.type==='court'){if(g.cases.some(c=>c.accused===a.id||c.accuser===a.id)||g.jurors.includes(a.id))return 5;if(a.age<12)return null;return .2+a.tr.gossip*.4;}
+  const d=S.agents[g.who],aff=op(a,d),kin=isKin(a,d)||a.spouse===d.id||a.home===d.home;
+  if(aff<-20&&!kin)return null;
+  return .5+aff/100*.7+(kin?.8:0);
+}
+function plan(a){
+  const h=hourOf(),night=h<6||h>=22,storm=S.storm>0,sun=isSunday(),st=stage(a),winter=seasonOf()===3,opts=[];
+  const add=(type,place,u,target)=>{if(!P[place])return;if(storm&&!P[place].indoor)return;opts.push({type,place,u:u+rnd()*.15,target});};
+  add('sleep',a.home,a.tired*1.3+(night?.75:0)-(h>=8&&h<20?.55:0)+(st==='infant'?.25:0)+(winter&&h>=18?.1:0));
+  const pan=pantryOf(a);
+  if(pan>=1)add('eat',a.home,a.hunger*1.5);
+  if(st==='infant'){add('stroll',a.home,.2);}
+  else{
+    if(pan<1&&(isAdult(a)?a.coins>=1:(a.age>=6&&purseOf(a)>=1))&&S.stores.bread>=1&&h>=6&&h<20)add('buy','bakery',a.hunger*1.45+.03);
+    if(isAdult(a)&&a.home!=='tavern'&&a.coins>=2&&S.stores.bread>=1&&h>=11&&h<23)add('meal','tavern',a.hunger*1.25+a.tr.warmth*.1-avoid(a,'tavern'));
+    if(a.hunger>.72&&a.coins<1&&purseOf(a)<1&&pan<1&&S.stores.bread>=1&&h>=5)add('steal','bakery',a.hunger*(1.25-a.tr.scruple)+.1);
+    if(st==='adult'&&a.work){
+      const workH=a.job==='innkeeper'?(h>=10&&h<23):(h>=7&&h<18);
+      const elder=Math.max(0,a.age-62)*.02;
+      add('work',a.work,(workH?.55:-.9)+a.tr.diligence*.45+(a.coins<3?.3:0)-a.tired*.45-(sun&&a.job!=='innkeeper'?.5:0)-avoid(a,a.work)*.5-elder-(winter&&!P[a.work].indoor?.15:0));
+    }
+    if(st==='child'){
+      const day=h>=8&&h<19;
+      if(day)for(const pl of ['square','garden','market'])add('play',pl,a.lonely*.9+.35+(pl==='square'?.1:0)-(winter?.2:0)+pull(a,pl)-avoid(a,pl));
+      if(techBuilt('school')&&!sun&&h>=8.5&&h<12.5)add('lessons','school',.8+a.tr.diligence*.2);
+      const par=a.parents.map(i=>S.agents[i]).find(p=>!p.dead&&p.work);
+      if(par&&h>=9&&h<17&&a.age>=8)add('help',par.work,.2+a.tr.diligence*.35);
+    }
+    if(st==='adult')for(const pl of ['tavern','square']){
+      if(pl==='square'&&(h<8||h>=20))continue;
+      if(pl==='tavern'&&h<11)continue;
+      add('social',pl,a.lonely*1.1+a.tr.warmth*.2+(pl==='tavern'&&h>=17?.35:0)+(pl==='square'?(winter?-.25:.1):0)+(pl==='tavern'&&winter?.15:0)-avoid(a,pl)+pull(a,pl)-(pl==='tavern'&&a.coins<1&&a.home!=='tavern'?.3:0));
+    }
+    if(sun&&h>=8.5&&h<11)add('chapel','chapel',.8+a.tr.forgive*.2-avoid(a,'chapel')*.5);
+    if(fairOn())add('fair','square',.55+a.tr.warmth*.4+a.lonely*.3);
+    for(const g of activeGathers()){const u=gatherPull(a,g);if(u!=null)add('gather',g.place,u,g.id);}
+    const foe=st==='adult'?worstFoe(a):null;
+    if(foe&&!night&&op(a,foe)<-55&&a.tr.temper>.5&&foe.act.type!=='sleep'&&S.tick>(a.vented||0)&&!foe.dead)add('confront',foe.act.place,a.tr.temper*.5+(-op(a,foe)/100)*.45-a.tr.forgive*.3,foe.id);
+    add('stroll',pick(['square','garden','market','chapel']),.15-(winter?.05:0));
+  }
+  if(!opts.length)opts.push({type:'stroll',place:a.home,u:0});
+  let best=opts[0];for(const o of opts)if(o.u>best.u)best=o;
+  setAct(a,best);
+}
+function setAct(a,o){
+  const g=o.type==='gather'?S.gathers.find(x=>x.id===o.target):null;
+  const dur={sleep:999,eat:2,buy:1,meal:4,steal:1,work:20+rnd()*14,social:6+rnd()*8,play:6+rnd()*8,lessons:Math.max(2,(12.5-hourOf())*6),help:8+rnd()*8,
+    chapel:Math.max(2,(11.5-hourOf())*6),fair:8+rnd()*6,gather:g?Math.max(1,g.end-S.tick):6,confront:2,stroll:2+rnd()*3}[o.type];
+  a.act={type:o.type,place:o.place,target:o.target??null,left:Math.round(dur)};
+  const pt=pointIn(P[o.place]);a.tx=pt[0];a.ty=pt[1];a.arrived=false;a.at=null;
+}
+
+function purseOf(a){return household(a.home).filter(isAdult).reduce((m,x)=>Math.max(m,x.coins),0);}
+// ---------- per-tick life ----------
+const SOCIAL_ACTS=['social','fair','chapel','meal','play','gather','lessons'];
+function step(a){
+  const asleep=a.act.type==='sleep'&&a.arrived,st=stage(a),winter=seasonOf()===3;
+  const hr=(asleep?.003:.0065)*(st==='infant'?.6:st==='child'?.85:1)*(winter?1.15:1);
+  a.hunger=Math.min(1,a.hunger+hr);
+  if(!asleep)a.tired=Math.min(1,a.tired+.0058*(st==='infant'?1.4:1));
+  const soc=a.arrived&&SOCIAL_ACTS.includes(a.act.type);
+  if(!soc&&!asleep)a.lonely=Math.min(1,a.lonely+.0035*(.6+a.tr.warmth));
+  a.tipsy=Math.max(0,a.tipsy-.04);
+  if(a.glyph&&a.glyph.until<S.tick)a.glyph=null;
+  if(!a.arrived){
+    const dx=a.tx-a.x,dy=a.ty-a.y,d=Math.hypot(dx,dy),sp=SPEED*(st==='infant'?.6:a.age>70?.75:1);
+    if(d<=sp){a.x=a.tx;a.y=a.ty;a.arrived=true;a.at=a.act.place;onArrive(a);}
+    else{a.x+=dx/d*sp;a.y+=dy/d*sp;}
+    return;
+  }
+  perform(a);
+  if(a.act.left<=0)plan(a);
+}
+function perform(a){
+  const h=hourOf(),t=a.act.type;
+  if(t==='sleep'){
+    a.tired=Math.max(0,a.tired-.022);
+    const day=h>=5.5&&h<21;
+    if((day&&a.tired<.08)||(h>=9.5&&h<21&&a.tired<.4)||a.hunger>.97)a.act.left=0;
+    return;
+  }
+  if(t==='work'){produce(a);if((a.job!=='innkeeper'&&h>=19)||(S.storm>0&&!P[a.work].indoor))a.act.left=0;}
+  if(SOCIAL_ACTS.includes(t))a.lonely=Math.max(0,a.lonely-.016);
+  a.act.left--;
+}
+function weaverWage(a){
+  let w=.07;
+  if(techOn('shuttle'))w=S.tech.shuttle.adopters.includes(a.id)?.11:.035;
+  if(techOn('cottonmill'))w*=.55;
+  if(techOn('steam'))w*=.6;
+  if(techOn('canal'))w*=1.1;
+  return w;
+}
+function produce(a){
+  const st=S.stores,eff=.6+a.tr.diligence*.6-a.tired*.3-Math.max(0,a.age-62)*.015,season=seasonOf();
+  switch(a.job){
+    case 'farmer':case 'farmhand':{
+      const g=.45*eff*FARM[season]*S.yearQ*(techOn('plough')?1.45:1);
+      const room=Math.max(0,grainCap()-st.grain),add=Math.min(room,g);st.grain+=add;if(season===2)S.harvest+=g;
+      if(g>0&&room<=0&&rnd()<.02)S.tech.barn.pressure+=3;
+      a.coins+=season===3?.04:.06;break;}
+    case 'miller':case 'labourer':{
+      const c=Math.min(st.grain,1*eff*(techOn('millstone')?1.7:1),Math.max(0,100-st.flour));st.grain-=c;if(!(S.spoil>0))st.flour+=c;a.coins+=.06;break;}
+    case 'baker':{const c=Math.min(st.flour,1.2*eff,Math.max(0,60-st.bread));st.flour-=c;st.bread+=c;
+      const pay=c*.5;if(a.coins>=pay){a.coins-=pay;const mill=LIVE.filter(b=>b.work==='mill'),farm=LIVE.filter(b=>b.work==='fields');
+        if(mill.length)pick(mill).coins+=pay*.5;if(farm.length)pick(farm).coins+=pay*.5;}break;}
+    case 'innkeeper':break;
+    case 'weaver':a.coins+=weaverWage(a);break;
+    case 'millhand':{if(techOn('cottonmill')){const st=techOn('steam');a.coins+=st?.11:.1;const own=S.agents[S.tech.cottonmill.inventor];if(own&&!own.dead&&own!==a)own.coins+=st?.07:.05;}else a.coins+=.015;break;}
+    default:a.coins+=a.job==='carter'?(techOn('railway')?.025:techOn('canal')?.045:.07):.07;
+  }
+}
+function onArrive(a){
+  const t=a.act.type;
+  if(t==='eat'){if(takePantry(a))a.hunger=Math.max(0,a.hunger-.6);else a.act.left=0;}
+  else if(t==='buy'){
+    const hs=household(a.home).length,payer=a.coins>=1?a:household(a.home).filter(isAdult).sort((x,y)=>y.coins-x.coins)[0]||a;
+    const n=Math.min(1+hs,5,Math.floor(payer.coins),Math.floor(S.stores.bread));
+    if(n<1){glyph(a,'?','bad');if(S.bareLogged!==dayOf()){S.bareLogged=dayOf();S.tech.millstone.pressure+=30;log(`The shelves at the Bakehouse are bare. ${N(a)} goes away empty-handed.`,'bad');}a.act.left=0;return;}
+    payer.coins-=n;S.stores.bread-=n;const baker=byJob('baker');if(baker&&baker!==payer)baker.coins+=n;
+    a.hunger=Math.max(0,a.hunger-.6);if(a.home!=='tavern')S.pantry[a.home]=(S.pantry[a.home]||0)+n-1;
+  }
+  else if(t==='meal'){
+    if(S.stores.bread>=1&&a.coins>=2){a.coins-=2;S.stores.bread-=1;const k=byJob('innkeeper'),bk=byJob('baker');if(k&&k!==a){k.coins+=1;if(bk)bk.coins+=1;}a.hunger=Math.max(0,a.hunger-.65);}
+    else a.act.left=0;
+  }
+  else if(t==='steal')steal(a);
+  else if(t==='social'&&a.act.place==='tavern'&&campaignRound(a)){}
+  else if(t==='social'&&a.act.place==='tavern'&&a.coins>=30&&rnd()<.15&&S.tick>(a.roundAt||0)){a.roundAt=S.tick+TPD*4;
+    const here=LIVE.filter(b=>b!==a&&b.at==='tavern'&&b.arrived&&b.act.type!=='sleep'&&isAdult(b));
+    if(here.length>=2){a.coins-=here.length;const k=byJob('innkeeper');if(k&&k!==a)k.coins+=here.length;for(const b of here){adj(b,a,6);b.tipsy=1;b.lonely=Math.max(0,b.lonely-.2);}a.tipsy=1;glyph(a,'♥','good');
+      if(rnd()<.25)log(`${N(a)} stands a round for everyone at The Plough.`,'good');}
+  }
+  else if(t==='social'&&a.act.place==='tavern'&&a.home!=='tavern'&&a.coins>=1&&isAdult(a)&&rnd()<.65){a.coins-=1;const k=byJob('innkeeper');if(k){k.coins+=.4;const f=LIVE.filter(b=>b.work==='fields'||b.work==='mill');if(f.length)pick(f).coins+=.6;}a.tipsy=1;}
+  else if(t==='confront'){
+    const b=S.agents[a.act.target];
+    if(b&&!b.dead&&b.at===a.at&&b.arrived&&b.act.type!=='sleep')interact(a,b,.35,true);
+    else glyph(a,'?','muted');
+    a.act.left=0;
+  }
+  else if(t==='work'&&a.job==='baker'&&S.stores.missing>0)bakerNotices(a);
+}
+function steal(a){
+  const wit=LIVE.filter(b=>b!==a&&b.at==='bakery'&&b.arrived&&b.act.type!=='sleep'&&isAdult(b));
+  S.stores.bread=Math.max(0,S.stores.bread-2);a.hunger=Math.max(0,a.hunger-.6);
+  if(a.home!=='tavern')S.pantry[a.home]=(S.pantry[a.home]||0)+1;
+  const kid=!isAdult(a);
+  if(wit.length){
+    for(const w of wit){adj(w,a,kid?-8:-24);mem(w,a,'caught stealing bread','bakery');}
+    adj(a,wit[0],-6);glyph(a,'!','bad');
+    log(kid?`Young ${N(a)} was caught slipping a loaf from the Bakehouse by ${listNames(wit)}.`:`${N(a)}, hungry and without a penny, was caught taking bread from the Bakehouse by ${listNames(wit)}.`,'bad','crime',{ids:[a.id]});
+    if(!kid){addRumour(a.id,'is a thief',wit[0]);bringCase(a,wit[0],'stealing bread from the Bakehouse',.75,true);}
+  }else{
+    S.stores.missing+=2;S.lastThief=a.id;mem(a,null,'took bread from the Bakehouse unseen','bakery');
+    log(`Two loaves vanish from the Bakehouse. Nobody saw who took them.`,'event');
+  }
+  a.act.left=0;
+}
+function bakerNotices(a){
+  const n=Math.round(S.stores.missing);S.stores.missing=0;
+  let sus=null,low=15;for(const b of LIVE)if(b!==a&&b.home!==a.home&&isAdult(b)&&op(a,b)<low){low=op(a,b);sus=b;}
+  if(!sus){log(`${N(a)} finds ${n} loaves missing from the Bakehouse and cannot think who would do such a thing.`,'event');return;}
+  adj(a,sus,-14);mem(a,sus,'probably took bread from the Bakehouse','bakery');
+  const right=S.lastThief===sus.id;
+  log(`${N(a)} counts the loaves, finds ${n} gone, and suspects ${N(sus)}${right?'. The suspicion happens to be right.':', who had nothing to do with it.'}`,'rumour','crime',{ids:[a.id,sus.id]});
+  addRumour(sus.id,'has been helping themselves at the Bakehouse',a);
+  bringCase(sus,a,'stealing bread from the Bakehouse',.15,right);
+}
+function addRumour(subject,text,seeder){const r={id:S.rid++,subject,text,reach:1,doubt:0,born:S.tick};S.rumours.push(r);seeder.knows.push(r.id);return r;}
+
+// ---------- encounters ----------
+function encounters(){
+  const by={};
+  for(const a of LIVE)if(a.arrived&&a.at&&a.act.type!=='sleep'&&a.age>=3)(by[a.at]||(by[a.at]=[])).push(a);
+  for(const place in by){
+    const list=by[place];if(list.length<2)continue;
+    const busy=list.length>6?.7:1;
+    for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){
+      const a=list[i],b=list[j],key=Math.min(a.id,b.id)+'-'+Math.max(a.id,b.id);
+      if((S.cool[key]||0)>S.tick)continue;
+      const p=.06*busy*(.5+(a.tr.warmth+b.tr.warmth)/2)*(a.act.type==='work'?.6:1);
+      if(rnd()<p){
+        const first=rnd()<.5+(a.lonely-b.lonely)*.5?a:b;
+        interact(first,first===a?b:a,0,false);
+        S.cool[key]=Math.max(S.cool[key]||0,S.tick+10);
+      }
+    }
+  }
+}
+function interact(a,b,bonus,confront){
+  const place=a.at,o=op(a,b),mood=1-(a.hunger*.6+a.tired*.4),kids=!isAdult(a)||!isAdult(b);
+  let host=(-o/100)*.6+a.tr.temper*.35+(1-mood)*.4+a.tipsy*.18+rnd()*.45+bonus+(S.storm>0&&P[place].indoor?.06:0)-(kids?.12:0);
+  if(place==='chapel')host-=.25;
+  if(fairOn()&&place==='square')host-=.12;
+  if(a.act.type==='gather')host-=.2;
+  if(host>.85)return quarrel(a,b,host,place,confront);
+  if(canvass(a,b)||pitch(a,b))return;
+  if(rnd()<a.tr.gossip*.7&&gossip(a,b,place))return;
+  friendly(a,b,place);
+}
+function causeOf(a,b){
+  if(a.hunger>.7)return 'short-tempered with hunger';
+  if(a.tipsy>.5)return 'with the ale talking';
+  if(a.tired>.75)return 'worn out and touchy';
+  const m=a.mem.find(m=>m.w===b.id);
+  if(m&&op(a,b)<-20){const why={'argued with':'still sore from their last argument','came to blows with':'still smarting from their last fight','caught stealing bread':'over the stolen bread','probably took bread from the Bakehouse':'over the missing loaves','took my purse':'over the lost purse','spread talk about me':'over the talk going round','could not pay their dues to':'over the unpaid dues','demanded dues I could not pay':'over the dues','is taking my living':'over the new machine','smashed the machine':'over the wrecked machine'}[m.t];if(why)return why;}
+  const fam=a.parents.map(i=>S.agents[i]).find(p=>op(p,b)<-45);
+  if(fam&&op(a,b)<-20)return `carrying on ${N(fam)}'s old quarrel`;
+  if(op(a,b)<-40)return 'over old bad blood';
+  return pick(['over nothing much','over a borrowed tool','about whose turn it was','over a careless word']);
+}
+function quarrel(a,b,host,place,confront){
+  const adults=isAdult(a)&&isAdult(b);
+  const brawl=adults&&host>1.12&&b.tr.temper>.45&&op(b,a)<-35;
+  const before=op(b,a),cause=causeOf(a,b);
+  adj(a,b,-(5+rnd()*7));
+  adj(b,a,-(8+rnd()*10)*(brawl?2:1)*(1.3-b.tr.forgive*.6));
+  mem(a,b,brawl?'came to blows with':'argued with',place);
+  mem(b,a,brawl?'came to blows with':'argued with',place);
+  glyph(a,'!','bad');glyph(b,'!','bad');
+  const wit=LIVE.filter(w=>w!==a&&w!==b&&w.at===place&&w.arrived&&w.act.type!=='sleep');
+  for(const w of wit){adj(w,a,brawl?-6:-2);if(brawl)adj(w,b,-4);}
+  const pk=Math.min(a.id,b.id)+'-'+Math.max(a.id,b.id);
+  S.cool[pk]=S.tick+(brawl?72:30);a.vented=S.tick+TPD;if(brawl)b.vented=S.tick+TPD/2;
+  const again=brawl&&S.brawls[pk]&&S.tick-S.brawls[pk]<TPD*3;if(brawl)S.brawls[pk]=S.tick;
+  if(brawl){
+    a.tired=Math.min(1,a.tired+.2);b.tired=Math.min(1,b.tired+.2);
+    let line=again?`${N(a)} and ${N(b)} are at it again, fists flying at ${PN(place)}.`:`${N(a)} and ${N(b)} came to blows at ${PN(place)}, ${cause}.`;
+    const reeve=wit.find(w=>w.job==='reeve');
+    if(reeve){a.coins=Math.max(0,a.coins-2);b.coins=Math.max(0,b.coins-2);line+=` ${N(reeve)} fined them both two pennies.`;}
+    else if(wit.length)line+=` ${listNames(wit.slice(0,3))} pulled them apart.`;
+    S.fightCase=S.fightCase||{};
+    if(!reeve&&op(b,a)<-60&&S.tick-(S.fightCase[pk]||-1e9)>TPD*12&&rnd()<.3&&(S.fightCase[pk]=S.tick))bringCase(a,b,`starting a fight at ${PN(place)}`,.5,true);
+    log(line,'bad',again?null:'fight',{ids:[a.id,b.id]});
+  }else if(!adults){
+    if(rnd()<.15)log(`${N(a)} and ${N(b)} squabbled at ${PN(place)}, ${cause}.`,'event');
+  }else if(confront){
+    log(`${N(a)} sought out ${N(b)} at ${PN(place)} to have it out, ${cause}.`,'bad');
+  }else if(before>35){
+    log(`${N(a)} and ${N(b)}, usually on good terms, had sharp words at ${PN(place)}, ${cause}.`,'bad');
+  }else if(rnd()<(cause.startsWith('with the ale')?.1:.3)){
+    log(`${N(a)} and ${N(b)} had words at ${PN(place)}, ${cause}.`,'event');
+  }
+}
+function gossip(a,b,place){
+  const r=S.rumours.find(r=>a.knows.includes(r.id)&&!b.knows.includes(r.id)&&r.subject!==a.id&&!S.agents[r.subject].dead);
+  if(r&&rnd()<.75){
+    b.knows.push(r.id);const subj=S.agents[r.subject];glyph(a,'…','rumour');
+    if(b.id===r.subject){
+      adj(b,a,-25);mem(b,a,'spread talk about me',place);glyph(b,'!','bad');
+      log(`${N(b)} hears from ${N(a)} what folk have been saying: that ${N(b)} ${r.text}. ${N(b)} is not pleased.`,'rumour','rumour',{ids:[a.id,b.id]});
+    }else{
+      const school=techOn('school');
+      const trust=(op(b,a)+100)/200*(school?.6:1);
+      if((op(b,subj)>50&&rnd()<.6)||(school&&rnd()<.25)){
+        adj(b,a,-4);r.doubt++;
+        if(r.doubt===1)log(`${N(b)} won't hear a word of it when ${N(a)} repeats that ${N(subj)} ${r.text}.`,'good');
+      }else{
+        r.reach++;adj(b,subj,-(8+18*trust));mem(b,subj,`was said to have ${r.text.replace(/^is /,'been ').replace(/^has /,'')}`.replace('have been been','have been'),place);
+        if(r.reach===2)log(`${N(a)} passes it on to ${N(b)}: ${N(subj)} ${r.text}.`,'rumour');
+        else if(r.reach===5||r.reach===9){log(`By now ${r.reach} people have heard that ${N(subj)} ${r.text}.`,'rumour',r.reach===5?'rumour':null,{ids:[subj.id]});if(r.reach===5)S.tech.school.pressure+=20;}
+      }
+    }
+    return true;
+  }
+  const cands=LIVE.filter(c=>c!==a&&c!==b&&Math.abs(op(a,c))>35);
+  if(!cands.length)return false;
+  const c=pick(cands),trust=(op(b,a)+100)/200,shift=(op(a,c)-op(b,c))*.2*trust;
+  adj(b,c,shift);a.lonely=Math.max(0,a.lonely-.12);b.lonely=Math.max(0,b.lonely-.12);glyph(a,'…','muted');
+  if(Math.abs(shift)>7&&rnd()<.25)log(`${N(a)} has been telling ${N(b)} ${op(a,c)>0?'good things':'unflattering things'} about ${N(c)}.`,'event');
+  return true;
+}
+function friendly(a,b,place){
+  const d=1+a.tr.warmth*3+rnd()*1.5;
+  adj(a,b,d*.7);adj(b,a,d);
+  a.lonely=Math.max(0,a.lonely-.25);b.lonely=Math.max(0,b.lonely-.25);
+  if(b.hunger>.65&&pantryOf(a)>=1&&a.tr.warmth>.45&&rnd()<.6){
+    const before=op(b,a);takePantry(a);b.hunger=Math.max(0,b.hunger-.5);adj(b,a,16);mem(b,a,'shared bread with me',place);
+    glyph(a,'♥','good');glyph(b,'♥','good');
+    if(before<30||rnd()<.4)log(`${N(a)} saw that ${N(b)} was hungry and shared a loaf.`,'good');
+    return;
+  }
+  if(isAdult(b)&&b.coins<1&&a.coins>6&&a.tr.warmth>.5&&rnd()<.5){
+    a.coins-=2;b.coins+=2;adj(b,a,12);mem(b,a,'lent me two pennies',place);glyph(b,'♥','good');
+    if(rnd()<.5)log(`${N(a)} pressed two pennies into ${N(b)}'s hand at ${PN(place)}.`,'good');
+    return;
+  }
+  glyph(a,d>3.6?'♥':'·',d>3.6?'good':'muted');
+}
+
+// ---------- works and ideas ----------
+function threatOf(b,id){
+  const t=S.tech[id];
+  if(id==='shuttle')return b.job==='weaver'&&b.id!==t.inventor?1:0;
+  if(id==='cottonmill')return b.job==='weaver'&&b.id!==t.inventor?1:b.job==='carter'?.3:0;
+  if(id==='plough')return b.job==='farmhand'?.35:0;
+  if(id==='canal')return b.job==='carter'?.6:0;
+  if(id==='steam')return b.job==='weaver'?1:b.job==='millhand'?.3:0;
+  if(id==='railway')return b.job==='carter'?1:0;
+  return 0;
+}
+function pitch(a,b){
+  if(!isAdult(a)||!isAdult(b))return false;
+  for(const id in S.tech){
+    const t=S.tech[id];if(t.state!=='idea')continue;
+    const stance=t.backers.includes(a.id)?1:t.opponents.includes(a.id)?-1:0;if(!stance)continue;
+    if(t.backers.includes(b.id)||t.opponents.includes(b.id))continue;
+    if(rnd()>.28)continue;
+    const inv=S.agents[t.inventor],T=TECH[id],threat=threatOf(b,id);
+    glyph(a,'…','rumour');
+    if(stance>0){
+      let sc=(op(b,inv)*.45+op(b,a)*.35)/100+(T.jobs.includes(b.job)?.2:0)+(b.tr.diligence-.5)*.4+rnd()*.5-.35-threat*.8-(b.coins<10?.15:0);
+      if(op(b,inv)<-40)sc-=.5;
+      if(sc>.12){t.backers.push(b.id);adj(b,inv,3);
+        if(t.backers.length===T.need)log(`${N(inv)} has enough backers for the ${T.name.toLowerCase()}. Now for the money.`,'good','tech',{tech:id});
+        else if(rnd()<.3)log(`${N(a)} talks ${N(b)} round to ${N(inv)}'s ${T.name.toLowerCase()}.`,'event');}
+      else if(sc<-.2){t.opponents.push(b.id);
+        if(threat>=1){mem(b,inv,'is taking my living');adj(b,inv,-8);log(`${N(b)} wants nothing to do with ${N(inv)}'s ${T.name.toLowerCase()}. It would cost ${N(b)} a living.`,'bad','tech',{tech:id,ids:[b.id]});}
+        else if(op(b,inv)<-40)log(`${N(b)} won't back anything of ${N(inv)}'s, least of all a ${T.name.toLowerCase()}.`,'bad','tech',{tech:id,ids:[b.id]});}
+    }else{
+      const sc=op(b,a)/100*.6+threat*.6-op(b,inv)/100*.4+rnd()*.4-.3;
+      if(sc>.15){t.opponents.push(b.id);if(rnd()<.35)log(`${N(a)} has turned ${N(b)} against the ${T.name.toLowerCase()}.`,'bad');}
+    }
+    return true;
+  }
+  return false;
+}
+function techDay(){
+  const pop=LIVE.length,weavers=LIVE.filter(a=>a.job==='weaver');
+  const bump=(id,v)=>{const t=S.tech[id];if(t.state==='none')t.pressure=Math.min(140,t.pressure+v);};
+  const autumn=seasonOf()===2;
+  bump('plough',.6+(S.stores.grain<pop*4?5:0));
+  bump('millstone',.6+(S.stores.flour<10?4:0));
+  bump('barn',.6+(autumn&&S.stores.grain>=grainCap()*.95?6:0));
+  bump('shuttle',.6+(weavers.length&&weavers.reduce((s,w)=>s+w.coins,0)/weavers.length<8?3:0));
+  bump('school',.6+(LIVE.filter(a=>a.age>=5&&a.age<14).length>=4?2:0));
+  if(techBuilt('shuttle')&&techBuilt('millstone'))bump('cottonmill',1.5+(weavers.length?1:0));
+  if(techBuilt('cottonmill'))bump('canal',1.4);if(techBuilt('canal'))bump('steam',1.5);if(techBuilt('steam'))bump('railway',1.2);
+  for(const id in TECH){
+    const t=S.tech[id],T=TECH[id];
+    if(t.state==='none'&&t.pressure>=100&&T.req.every(techBuilt)){
+      const cands=LIVE.filter(a=>isAdult(a)&&T.jobs.includes(a.job));
+      if(!cands.length)continue;
+      let inv=null,best=-9;for(const a of cands){const s=a.tr.diligence*.6+rnd()*.4+(id==='cottonmill'?(1-a.tr.warmth)*.25:0);if(s>best){best=s;inv=a;}}
+      Object.assign(t,{state:'idea',inventor:inv.id,backers:[inv.id],opponents:[],since:S.tick,short:false});
+      log(`${N(inv)} has an idea: a ${T.name.toLowerCase()} that ${T.what}. It will need ${T.need} backers and ${T.cost} pennies.`,'good','tech',{tech:id,ids:[inv.id],idea:1});
+    }else if(t.state==='idea'){
+      const inv=S.agents[t.inventor];
+      t.backers=t.backers.filter(i=>!S.agents[i].dead);t.opponents=t.opponents.filter(i=>!S.agents[i].dead);
+      if(inv.dead){t.state='none';t.pressure=50;log(`With ${N(inv)} gone, nobody takes up the ${T.name.toLowerCase()}.`,'event','tech',{tech:id});continue;}
+      const reeve=byJob('reeve'),need=T.need+(reeve&&t.opponents.includes(reeve.id)?2:0);
+      if(t.backers.length-t.opponents.length*.5>=need){
+        const bk=t.backers.map(i=>S.agents[i]);let avail=bk.reduce((s,b)=>s+Math.floor(b.coins*.6),0);
+        if(avail>=T.cost){
+          let left=T.cost;for(const b of bk.sort((x,y)=>y.coins-x.coins)){const g=Math.min(Math.floor(b.coins*.6),Math.ceil(left));b.coins-=g;left-=g;if(left<=0)break;}
+          if(T.build){for(const b of bk)if(b!==inv)adj(b,inv,6);startBuilding(id);continue;}
+          t.state='built';t.builtAt=S.tick;
+          for(const b of bk)if(b!==inv)adj(b,inv,6);
+          for(const o of t.opponents.map(i=>S.agents[i]))adj(o,inv,-4);
+          if(id==='shuttle')t.adopters=bk.filter(b=>b.job==='weaver').map(b=>b.id);
+          log(`The ${T.name.toLowerCase()} is finished: ${N(inv)}'s idea, paid for by ${listNames(bk.filter(b=>b!==inv).slice(0,5))}${bk.length>6?' and others':''}.`,'good','tech',{tech:id,ids:[inv.id],built:1});
+          if(id==='cottonmill')log(`A tall chimney now stands by the river. Some call it progress.`,'event');
+          const fam=familyKey(inv),ar=armsOf(fam);
+          if(ar.aug.length<3&&!ar.aug.includes(id)){ar.aug.push(id);log(`The ${fam} family add ${CHARGE_NAMES[AUG[id]]} to their arms, in honour of ${N(inv)}'s ${T.name.toLowerCase()}.`,'good','arms',{fam});}
+        }else if(!t.short){t.short=true;log(`${N(inv)} has the backers for the ${T.name.toLowerCase()} but not yet the money.`,'event');}
+      }
+      if(t.state==='idea'&&S.tick-t.since>TPD*15){
+        const opp=t.opponents.map(i=>S.agents[i]);
+        log(`Nothing comes of ${N(inv)}'s ${T.name.toLowerCase()}. ${opp.length?`${listNames(opp.slice(0,3))} saw to that.`:'The village never quite took to it.'}`,'bad','tech',{tech:id,fizzle:1});
+        Object.assign(t,{state:'none',pressure:40,backers:[],opponents:[]});
+      }
+    }else if(t.state==='built'&&t.brokenUntil&&t.brokenUntil<=S.tick){
+      t.brokenUntil=0;const inv=S.agents[t.inventor];if(inv&&!inv.dead)inv.coins=Math.max(0,inv.coins-4);
+      log(`The ${T.name.toLowerCase()} is mended and working again.`,'event');
+    }
+  }
+  // the shuttle wins converts, or makes enemies
+  if(techOn('shuttle')){const t=S.tech.shuttle,inv=S.agents[t.inventor];
+    for(const w of weavers){if(t.adopters.includes(w.id))continue;
+      const par=w.parents.find(p=>t.adopters.includes(p));
+      if(par!=null||(op(w,inv)>-20&&w.coins>=4&&rnd()<.12)){t.adopters.push(w.id);if(par==null){w.coins-=4;log(`${N(w)} gives in and buys a flying shuttle.`,'event','tech',{tech:'shuttle',ids:[w.id]});}}
+      else if(!inv.dead){adj(w,inv,-2);if(!w.mem.some(m=>m.t==='is taking my living'))mem(w,inv,'is taking my living');}}
+  }
+  // the mill takes on hands
+  if(techOn('cottonmill')){const t=S.tech.cottonmill,own=S.agents[t.inventor];
+    const hands=LIVE.filter(a=>a.job==='millhand').length;
+    if(hands<(techOn('steam')?12:7)){for(const a of LIVE){
+      const poorKid=a.job==='child'&&a.age>=12&&household(a.home).reduce((s,x)=>s+x.coins,0)<6;
+      const thinFields=LIVE.filter(b=>b.work==='fields').length<4;
+      if(!(poorKid||(isAdult(a)&&['weaver','labourer','carter','pedlar'].concat(thinFields?[]:['farmhand']).includes(a.job))))continue;
+      if(own&&!own.dead&&op(a,own)<-35)continue;
+      if(!poorKid&&a.coins>=5)continue;
+      if(rnd()<.25){const prev=a.job;a.prevJob=prev;a.job='millhand';a.work='cottonmill';
+        log(poorKid?`At ${Math.floor(a.age)}, ${N(a)} goes to work at the cotton mill. The family needs the pennies.`:`${N(a)} gives up ${prev} work and takes a place at ${own&&!own.dead?N(own)+"'s":'the'} cotton mill.`,'event','work',{ids:[a.id]});break;}}}
+    if(own&&!own.dead)for(const w of weavers)adj(w,own,-1.5);
+  }
+  // machine breaking
+  for(const id of ['shuttle','cottonmill','steam','railway']){
+    if(!techOn(id)||rnd()>.5)continue;
+    const t=S.tech[id],inv=S.agents[t.inventor];if(!inv||inv.dead)continue;
+    if(S.tick-(t.lastWreck||-1e9)<TPD*SEASON_DAYS*(1+(t.wrecks||0)))continue;
+    const angry=LIVE.filter(a=>isAdult(a)&&a!==inv&&op(a,inv)<-50&&a.tr.scruple<.65&&a.tr.temper>.4&&(threatOf(a,id)>0||op(a,inv)<-70)&&!(a.banned>S.tick));
+    if(!angry.length)continue;
+    const culprit=pick(angry);if(rnd()>.35)continue;
+    t.brokenUntil=S.tick+TPD*2;t.lastWreck=S.tick;t.wrecks=(t.wrecks||0)+1;mem(culprit,inv,'smashed the machine');
+    const place=id==='shuttle'?'weaving':id==='railway'?'wharf':'cottonmill';
+    let sus=null,low=0;for(const b of LIVE)if(b!==inv&&isAdult(b)&&op(inv,b)<low){low=op(inv,b);sus=b;}
+    let line=`In the night someone broke into ${PN(place)} and wrecked ${{shuttle:'the flying shuttle',cottonmill:'the spinning frames',steam:'the engine',railway:'a stretch of the line'}[id]}.`;
+    if(sus){adj(inv,sus,-18);mem(inv,sus,'smashed the machine');addRumour(sus.id,'smashed the '+TECH[id].name.toLowerCase(),inv);
+      line+=` ${N(inv)} blames ${N(sus)}${sus===culprit?', rightly.':`. It was ${N(culprit)}.`}`;
+      bringCase(sus,inv,`wrecking the ${TECH[id].name.toLowerCase()}`,.25,sus===culprit);}
+    else line+=` It was ${N(culprit)}, though nobody suspects it.`;
+    log(line,'bad','crime',{tech:id,ids:[culprit.id],sabotage:1});
+    break;
+  }
+}
+
+// ---------- life and death ----------
+function yr(){const y=yearOf();return S.years[y]||(S.years[y]={startPop:LIVE.length,births:0,deaths:0,weddings:0});}
+function freeHome(){
+  const homes=Object.keys(P).filter(k=>P[k].home);
+  const empty=homes.filter(k=>household(k).length===0);
+  return empty.find(k=>!P[k].plot||S.built[k])||empty[0]||null;
+}
+function setHome(a,home){
+  a.home=home;
+  if(P[home].plot&&!S.built[home]){S.built[home]=true;log(`A new cottage goes up: ${PN(home)}.`,'event','work');}
+}
+function nameBaby(sex,sur){
+  const pool=sex==='f'?GIRLS:BOYS,taken=new Set(LIVE.map(a=>a.first));
+  const free=pool.filter(n=>!taken.has(n));return (free.length?pick(free):pick(pool))+' '+sur;
+}
+function addAgent(a,warmFrom){
+  const id=a.id;S.op.forEach(r=>r.push(0));S.op.push(new Array(id+1).fill(0));S.agents.push(a);refreshLive();
+  return a;
+}
+function birth(mother,father){
+  const sex=rnd()<.5?'f':'m',sur=surname(father)||surname(mother);
+  const tr={};for(const k of ['temper','warmth','diligence','forgive','gossip','scruple'])tr[k]=clamp((mother.tr[k]+father.tr[k])/2+(rnd()-.5)*.35,.05,.95);
+  const id=S.agents.length;
+  const b=addAgent(makeAgent(id,nameBaby(sex,sur),'child',mother.home,tr,{age:0,sex,parents:[mother.id,father.id],born:S.tick}));
+  b.hunger=.2;b.coins=0;
+  for(const x of LIVE){if(x===b)continue;
+    const fam=b.parents.includes(x.id)?75:x.home===b.home?45:Math.round((op(x,mother)+op(x,father))*.25);
+    S.op[x.id][id]=fam;}
+  mother.lastBirth=S.tick;yr().births++;faceOf(b);
+  const mid=LIVE.find(a=>a.job==='herbalist'&&a!==mother);
+  log(`${N(mother)} and ${N(father)} have a ${sex==='f'?'daughter':'son'}, ${N(b)}.${mid?` ${N(mid)} saw ${sex==='f'?'her':'him'} safely into the world.`:''}`,'life','birth',{ids:[b.id,mother.id,father.id]});
+}
+function die(a,cause){
+  cause=cause.replace('their',a.sex==='f'?'her':'his');
+  a.dead={t:S.tick,cause,age:a.age};yr().deaths++;
+  refreshLive();
+  const sp=a.spouse>=0?S.agents[a.spouse]:null;
+  if(sp&&!sp.dead){sp.spouse=-1;sp.widowOf=a.id;}
+  // inheritance
+  const heirs=sp&&!sp.dead?[sp]:childrenOf(a).filter(c=>!c.dead);
+  const fallback=household(a.home);const to=heirs.length?heirs:fallback.length?fallback:[byJob('reeve')].filter(Boolean);
+  if(to.length&&a.coins>0){const share=a.coins/to.length;for(const h of to)h.coins+=share;}a.coins=0;
+  // mourning
+  const mourners=LIVE.filter(b=>op(b,a)>40).sort((x,y)=>op(y,a)-op(x,a));
+  for(const b of mourners){b.lonely=Math.min(1,b.lonely+.35);mem(b,a,'mourns');}
+  const glad=LIVE.filter(b=>isAdult(b)&&op(b,a)<-55);
+  const ageTxt=a.age<1?'in infancy':a.age<14?`aged only ${Math.floor(a.age)}`:`at the age of ${Math.floor(a.age)}`;
+  let line=`${N(a)} the ${a.job==='child'?'child':a.job} died ${cause} ${ageTxt}.`;
+  if(mourners[0])line+=` ${N(mourners[0])} is heartbroken.`;
+  if(glad[0])line+=` ${N(glad[0])} sheds no tears.`;
+  log(line,'life','death',{ids:[a.id]});
+  // funeral tomorrow
+  S.gathers.push({id:S.gid++,type:'funeral',who:a.id,place:'chapel',start:dayStart()+TPD+66,end:dayStart()+TPD+84});
+  // rumours and ideas move on
+  for(const id in S.tech){const t=S.tech[id];t.backers=t.backers.filter(i=>i!==a.id);t.opponents=t.opponents.filter(i=>i!==a.id);}
+  succeed(a);
+}
+function succeed(dead){
+  const job=dead.job;if(!ESSENTIAL.includes(job))return;
+  if(LIVE.some(a=>a.job===job))return;
+  if(job==='reeve'){callElection(2,true);return;}
+  const fieldsThin=LIVE.filter(a=>a.work==='fields').length<4;
+  const kin=LIVE.filter(a=>isAdult(a)&&(a.parents.includes(dead.id)||a.home===dead.home)&&!ESSENTIAL.includes(a.job)&&!(fieldsThin&&a.work==='fields'));
+  const loose=LIVE.filter(a=>isAdult(a)&&['labourer','farmhand','carter','pedlar','millhand'].includes(a.job));
+  const heir=kin.sort((x,y)=>(y.parents.includes(dead.id)-x.parents.includes(dead.id))||(y.tr.diligence-x.tr.diligence))[0]||(rnd()<.6?loose.sort((x,y)=>y.tr.diligence-x.tr.diligence)[0]:null);
+  if(heir){heir.prevJob=heir.job;heir.job=job;heir.work=JOBS[job];
+    log(`${N(heir)} takes on ${PN(JOBS[job])} after ${N(dead)}.`,'event','work',{ids:[heir.id]});}
+  else{S.vacant.push({job,since:S.tick});log(`With ${N(dead)} gone, nobody in the village can take on ${PN(JOBS[job])}.`,'bad','work');}
+}
+function arrive(job,reason){
+  if(LIVE.length>=MAXPOP)return null;
+  const sex=rnd()<.5?'f':'m',name=nameBaby(sex,pick(SURNAMES));
+  const tr={temper:.2+rnd()*.6,warmth:.2+rnd()*.7,diligence:.35+rnd()*.6,forgive:.2+rnd()*.7,gossip:.2+rnd()*.7,scruple:.3+rnd()*.65};
+  const home=job==='innkeeper'?'tavern':(freeHome()||'tavern');
+  const id=S.agents.length;
+  const s=addAgent(makeAgent(id,name,job,'tavern',tr,{age:20+rnd()*22,sex,hue:330}));
+  setHome(s,home);s.coins=8;s.arrivedAt=S.tick;
+  s.x=s.px=.5;s.y=s.py=13;s.arrived=false;s.act={type:'stroll',place:home,left:2,target:null};const q=pointIn(P[home]);s.tx=q[0];s.ty=q[1];
+  for(const a of LIVE)if(a!==s){S.op[a.id][id]=Math.round(-10+a.tr.warmth*20+(rnd()-.5)*10);S.op[id][a.id]=Math.round((rnd()-.4)*14);}
+  log(`${N(s)} arrives along the carters' road ${reason}, and settles at ${PN(home)}.`,'event','arrival',{ids:[id]});
+  return s;
+}
+function comeOfAge(a){
+  const pars=a.parents.map(i=>S.agents[i]);
+  const crafts=['baker','miller','smith','innkeeper','weaver','farmer','herbalist','carter'];
+  const par=pars.filter(p=>crafts.includes(p.job)).sort((x,y)=>LIVE.filter(b=>b.job===x.job).length-LIVE.filter(b=>b.job===y.job).length)[0];
+  let job;
+  if(techOn('cottonmill')&&household(a.home).reduce((s,x)=>s+x.coins,0)<8&&rnd()<.6)job='millhand';
+  else if(par)job=par.job==='farmer'?'farmer':par.job;
+  else job=pick(['labourer','farmhand','carter']);
+  a.job=job;a.work=JOBS[job];a.coins=2;
+  if(job==='weaver'&&par&&S.tech.shuttle.adopters.includes(par.id))S.tech.shuttle.adopters.push(a.id);
+  log(`${N(a)} turns fourteen and starts work as a ${job}${par&&job===par.job?`, alongside ${par.dead?'the memory of ':''}${N(par)}`:''}.`,'event','work',{ids:[a.id]});
+}
+function lifeDay(){
+  const winter=seasonOf()===3;
+  for(const a of [...LIVE]){
+    const before=a.age;a.age+=1/YEAR_DAYS;
+    if(before<14&&a.age>=14&&a.job==='child')comeOfAge(a);
+    if(techOn('steam')){const ex=a.job==='millhand'?.0012*(1+Math.max(0,a.age-30)/20):.00025;if(rnd()<ex){die(a,'of the mill cough');continue;}}
+    let hz=.004+Math.pow(Math.max(0,a.age-58),2)*.0025;if(winter&&a.age>60)hz*=1.6;
+    let p=hz/YEAR_DAYS,cause=winter&&a.age>55?'of the winter cold':a.age>75?'peacefully in their sleep':pick(['after a short illness','of a fever','in their sleep']);
+    a.starve=a.hunger>=.98?(a.starve||0)+1:0;
+    if(a.starve>=2){p+=(a.age<5||a.age>60?.012:.005)*a.starve;cause='of want';}
+    if(rnd()<p)die(a,cause);
+  }
+  // births
+  if(LIVE.length<MAXPOP)for(const m of LIVE){
+    if(m.sex!=='f'||m.age<18||m.age>42||m.spouse<0)continue;
+    const f=S.agents[m.spouse];if(f.dead||f.sex!=='m')continue;
+    if(S.tick-(m.lastBirth||-1e9)<TPD*YEAR_DAYS)continue;
+    if(household(m.home).length>=6)continue;
+    if(rnd()<.03*(op(m,f)>40?1:.4))birth(m,f);
+  }
+  // weddings
+  for(const k in S.pair){
+    if(!k.endsWith('c')||S.pair[k.slice(0,-1)+'w'])continue;
+    const [i,j]=k.slice(0,-1).split('-').map(Number),x=S.agents[i],y=S.agents[j];
+    if(!x||!y||x.dead||y.dead||x.spouse>=0||y.spouse>=0){delete S.pair[k];continue;}
+    if(op(x,y)>70&&op(y,x)>70&&rnd()<.18){
+      S.pair[k.slice(0,-1)+'w']=1;
+      S.gathers.push({id:S.gid++,type:'wedding',ids:[i,j],place:'chapel',start:dayStart()+TPD+66,end:dayStart()+TPD+84});
+      log(`The banns are read: ${N(x)} and ${N(y)} will marry at the Chapel tomorrow.`,'good');
+    }
+  }
+  // vacancies and newcomers
+  for(const v of [...S.vacant]){
+    if(LIVE.some(a=>a.job===v.job)){S.vacant.splice(S.vacant.indexOf(v),1);continue;}
+    if(S.tick-v.since>=TPD*2&&arrive(v.job,`to take on ${PN(JOBS[v.job])}`))S.vacant.splice(S.vacant.indexOf(v),1);
+  }
+}
+function gatherTick(){
+  for(const g of [...S.gathers]){
+    if(S.tick===g.start){
+      if(g.type==='wedding'){const [x,y]=g.ids.map(i=>S.agents[i]);if(x.dead||y.dead){S.gathers.splice(S.gathers.indexOf(g),1);continue;}log(`The chapel bell rings for ${N(x)} and ${N(y)}.`,'good');}
+      else if(g.type==='funeral')log(`The chapel bell tolls for ${N(S.agents[g.who])}.`,'life');
+      else if(g.type==='court')log('The court is in session at the Moot Hall.','event');
+      else log('The doors of the Moot Hall open for the vote.','event');
+      for(const a of LIVE)if(!(a.act.type==='sleep'&&a.arrived)&&a.act.type!=='gather')plan(a);
+    }
+    if(S.tick===g.end){
+      const came=LIVE.filter(a=>a.act.type==='gather'&&a.act.target===g.id);
+      if(g.type==='wedding'){
+        const [x,y]=g.ids.map(i=>S.agents[i]);
+        if(!x.dead&&!y.dead){
+          x.spouse=y.id;y.spouse=x.id;adj(x,y,10);adj(y,x,10);yr().weddings++;
+          const fh=freeHome(),xs=household(x.home).length,ys=household(y.home).length;
+          let home;
+          if((x.home==='tavern'||y.home==='tavern'||Math.min(xs,ys)>=3)&&fh)home=fh;
+          else home=xs<=ys?x.home:y.home;
+          if(home==='tavern'&&fh)home=fh;
+          setHome(x,home);setHome(y,home);
+          const away=LIVE.filter(a=>isAdult(a)&&!came.includes(a)&&(isKin(a,x)||isKin(a,y)||Math.min(op(a,x),op(a,y))<-35)).slice(0,3);
+          log(`${N(x)} and ${N(y)} were married at the Chapel, with ${came.length>LIVE.length*.6?'most of the village':came.length>3?`${came.length} people`:'only a handful'} looking on.${away.length?` ${listNames(away)} stayed away.`:''} They will live at ${PN(home)}.`,'good','wedding',{ids:[x.id,y.id]});
+        }
+      }else if(g.type==='election'){tallyElection();
+      }else if(g.type==='court'){const js=g.jurors.map(i=>S.agents[i]).filter(j=>!j.dead);for(const c of g.cases)decideCase(c,js);
+      }else{
+        const d=S.agents[g.who];
+        const away=LIVE.filter(a=>isAdult(a)&&!came.includes(a)&&(isKin(a,d)||op(a,d)<-40)).slice(0,3);
+        log(`${N(d)} was buried in the chapel yard. ${came.length>LIVE.length*.6?'Nearly the whole village came.':came.length>2?`${came.length} mourners stood at the graveside.`:'Few came.'}${away.length?` ${listNames(away)} did not.`:''}`,'life','funeral',{ids:[d.id]});
+      }
+      S.gathers.splice(S.gathers.indexOf(g),1);
+    }
+  }
+}
+
+// ---------- seasons ----------
+function seasonStart(){
+  const s=seasonOf(),y=yearOf(),pop=LIVE.length;
+  if(s===0){
+    S.years[y]={startPop:pop,births:0,deaths:0,weddings:0,era:S.era};S.yearQ=.65+rnd()*.6;
+    log(`Spring comes to Ashwood Fold. Year ${y} begins with ${pop} souls in the village.`,'event','season',{season:0});
+    if(LIVE.filter(isAdult).length<12)arrive(pick(['labourer','farmhand','weaver']),'looking for work');
+    const extra=techOn('railway')?2:techOn('steam')?1:0;
+    for(let i=0;i<extra&&LIVE.length<MAXPOP-2;i++)arrive(techOn('cottonmill')?'millhand':'labourer',techOn('railway')?'on the train, looking for work':'looking for work at the mill');
+  }else if(s===1)log(`Summer. The corn stands green in the South Fields.`,'event');
+  else if(s===2){S.harvest=0;log(`Autumn, and the harvest begins.`,'event');}
+  else{
+    const ratio=S.harvest/Math.max(1,pop*22),verdict=ratio<.8?'thin':ratio<1.15?'fair':'fine';
+    S.years[y].harvest=verdict;
+    if(verdict==='thin'){S.tech.plough.pressure+=50;}
+    log(`Winter sets in. The harvest was ${verdict}: ${Math.round(S.harvest)} sheaves brought in for ${pop} mouths${verdict==='thin'?'. It will be a hungry winter.':'.'}`,verdict==='thin'?'bad':'event','season',{season:3,harvest:verdict});
+  }
+}
+function weatherDay(){
+  if(S.storm>0)return;
+  const s=seasonOf(),p=[.04,.05,.12,.09][s];
+  if(rnd()<p){S.storm=60+Math.floor(rnd()*36);stormHits(true);}
+}
+function stormHits(natural){
+  const s=seasonOf();
+  if(s===3)log(natural?'A blizzard sweeps down off the fells. The lanes fill with snow.':'Snow and wind lash Ashwood Fold.','event',natural?'season':null);
+  else if(natural)log('Black clouds roll in over the fells and a storm breaks over Ashwood Fold.','event');
+  if(s===2&&!techOn('barn')&&S.stores.grain>20){const lost=Math.round(S.stores.grain*.08);S.stores.grain-=lost;S.harvest=Math.max(0,S.harvest-lost);S.tech.barn.pressure+=30;
+    log(`The rain lays the standing corn flat. ${lost} sheaves are spoiled in the field.`,'bad','season');}
+  for(const a of LIVE)if(!P[a.act.place].indoor)plan(a);
+}
+
+// ---------- the day turns ----------
+function midnight(){
+  refreshLive();
+  for(const a of LIVE)for(const b of S.agents){if(a===b)continue;const o=S.op[a.id][b.id];
+    if(o<0)S.op[a.id][b.id]=Math.min(0,o+(.5+a.tr.forgive*2.5)*(1-a.tr.temper*.5));
+    else if(o>25&&!b.dead)S.op[a.id][b.id]=o-.6;}
+  // children take on their parents' loves and hates
+  const school=techOn('school');
+  for(const c of LIVE){if(c.age>=18||!c.parents.length)continue;const ps=c.parents.map(i=>S.agents[i]);
+    for(const x of LIVE){if(x===c||ps.includes(x))continue;const tgt=ps.reduce((s,p)=>s+S.op[p.id][x.id],0)/ps.length*(school?.35:.6);
+      S.op[c.id][x.id]+=(tgt-S.op[c.id][x.id])*.06;}}
+  for(const a of LIVE)for(const b of LIVE)if(a.id<b.id)checkPair(a,b);
+  if((dayOf()-1)%7===0)collectDues();
+  spendDay();
+  upkeepDay();
+  const hungry=LIVE.filter(a=>a.hunger>.85);
+  if(hungry.length)log(`${listNames(hungry)} went to bed hungry.`,'bad');
+  lifeDay();
+  foodDay();
+  techDay();
+  civicDay();
+  if(dayInSeason()===1)seasonStart();
+  if(seasonOf()===2&&dayInSeason()===5&&!S.fair){S.fair={start:dayStart()+72,end:dayStart()+126,harvest:true};}
+  weatherDay();
+  for(const k in S.cool)if(S.cool[k]<S.tick)delete S.cool[k];
+  refreshLive();
+}
+function upkeepDay(){
+  const cost=seasonOf()===3?(techOn('canal')?.8:1):.7;
+  for(const h of new Set(LIVE.map(a=>a.home))){
+    const folk=household(h),adults=folk.filter(isAdult);if(!adults.length)continue;
+    for(const a of adults)if(a.coins>10)a.coins-=(a.coins-10)*.012;
+    if(h==='tavern'){for(const a of adults)a.coins=Math.max(0,a.coins-cost);continue;}
+    let bill=cost*adults.length+cost*.5*(folk.length-adults.length);
+    for(const a of adults.sort((x,y)=>y.coins-x.coins)){const p=Math.min(a.coins,bill);a.coins-=p;bill-=p;if(bill<=0)break;}
+  }
+}
+function spendDay(){
+  const adults=LIVE.filter(isAdult);if(adults.length<2)return;
+  const med=[...adults].sort((x,y)=>x.coins-y.coins)[Math.floor(adults.length/2)].coins;
+  const poor=adults.filter(a=>a.coins<=Math.max(10,med));
+  for(const a of adults){if(a.coins<=30)continue;
+    const spend=(a.coins-30)*.12;a.coins-=spend;
+    const per=spend/Math.min(3,poor.length);
+    for(let i=0;i<Math.min(3,poor.length);i++){const b=pick(poor);b.coins+=per;if(per>=1.5&&b!==a)adj(b,a,1.5);}
+    if(spend>4&&rnd()<.08){const b=pick(poor);if(b!==a)log(`${N(a)} pays ${N(b)} to ${pick(['mend a roof','dig a drain','fetch coal from the next valley','whitewash a wall','mind the cellar'])}.`,'event');}}
+}
+function foodDay(){
+  const pop=LIVE.length,food=S.stores.grain+S.stores.flour+S.stores.bread,season=seasonOf();
+  // hands turn to the fields when the fields are short of them
+  const field=LIVE.filter(a=>a.work==='fields').length;
+  if(season!==3&&(field<3||food<pop*8)&&field<6){
+    const c=LIVE.filter(a=>isAdult(a)&&a.age<60&&['labourer','carter','pedlar','millhand','weaver'].includes(a.job)&&S.tick-(a.switched||-1e9)>TPD*YEAR_DAYS).sort((x,y)=>x.coins-y.coins)[0];
+    if(c&&rnd()<.35){c.switched=S.tick;c.prevJob=c.job;c.job='farmhand';c.work='fields';log(`${N(c)} leaves ${c.prevJob} work for the South Fields. There are too few hands at the harvest.`,'event','work',{ids:[c.id]});}
+  }
+  // a cartload of corn from the next valley, if anyone will pay for it
+  const canal=techOn('canal'),cost=canal?15:35;
+  if(S.stores.grain+S.stores.flour<pop*(canal?7:4)&&S.tick-(S.lastCart||-1e9)>TPD*2){
+    const rich=LIVE.filter(a=>isAdult(a)&&a.coins>=cost).sort((x,y)=>y.coins*y.tr.warmth-x.coins*x.tr.warmth);
+    const buyer=rich.find(a=>rnd()<.25+a.tr.warmth*.6);
+    if(buyer){buyer.coins-=cost;S.stores.grain+=70;S.lastCart=S.tick;for(const b of LIVE)if(b!==buyer)adj(b,buyer,4);
+      log(canal?`${N(buyer)} pays for a boatload of corn to come up the canal.`:`${N(buyer)} pays for a cartload of corn from the next valley. There will be bread a while longer.`,'good','work',{ids:[buyer.id],cart:1});}
+    else if(rich.length&&!S.cartRefused){S.cartRefused=dayOf();const r=rich[0];for(const b of LIVE)if(b!==r&&b.hunger>.6)adj(b,r,-6);
+      log(`The granary is nearly empty. ${N(r)} has the money for corn from the next valley, and keeps it.`,'bad','crime',{ids:[r.id]});}
+  }
+  if(S.cartRefused&&dayOf()-S.cartRefused>5)S.cartRefused=0;
+}
+function collectDues(){
+  const reeve=byJob('reeve');if(!reeve)return;const short=[];
+  const homes=[...new Set(LIVE.map(a=>a.home))].filter(h=>h!=='tavern'&&h!==reeve.home);
+  for(const h of homes){const adults=household(h).filter(isAdult).sort((x,y)=>y.coins-x.coins);if(!adults.length)continue;const payer=adults[0];
+    const due=2+Math.max(0,payer.coins-20)*.05;if(payer.coins>=2){payer.coins-=due;reeve.coins+=Math.min(2,due);}
+    else{short.push(payer);adj(reeve,payer,-10);adj(payer,reeve,-12);mem(payer,reeve,'demanded dues I could not pay');mem(reeve,payer,'could not pay their dues to');}}
+  if(short.length)log(`Dues day. ${listNames(short)} could not pay ${N(reeve)} the two pennies owed to the manor.`,'bad');
+  else log(`Dues day. Every household paid ${N(reeve)} in full, with varying grace.`,'event');
+}
+function tick(){
+  S.tick++;
+  refreshLive();
+  if(S.tick%TPD===0)midnight();
+  if(S.spoil>0){S.spoil--;if(S.spoil===0)log('The weevils are finally smoked out of the Watermill. Good flour again.','event');}
+  if(S.storm>0){S.storm--;if(S.storm===0)log(seasonOf()===3?'The snow stops falling. Children are out on the Green within the hour.':'The storm blows itself out. The lanes steam in the sun.','event');}
+  if(S.fair){
+    if(S.tick===S.fair.start)log(S.fair.harvest?'Harvest Home on the Green: the last sheaf is carried in, and the fiddler strikes up.':'The fair opens on the Green: ribbons, a fiddler, and a pie stall.','good',S.fair.harvest?null:'event');
+    if(S.tick===S.fair.end){log(S.fair.harvest?'Harvest Home is over for another year.':'The fair packs up for another year.','event');S.fair=null;}
+  }
+  gatherTick();
+  for(const a of LIVE){a.px=a.x;a.py=a.y;step(a);}
+  encounters();
+  if(S.tick%36===0)autosave();
+}
+
+// ---------- nudges ----------
+function nudgeRumour(){
+  const id=+document.getElementById('rumourSubject').value,subj=S.agents[id];if(!subj||subj.dead)return;
+  let seeder=null;for(const a of LIVE)if(a!==subj&&isAdult(a)&&(!seeder||a.tr.gossip>seeder.tr.gossip))seeder=a;
+  const text=pick(RUMOURS);addRumour(subj.id,text,seeder);adj(seeder,subj,-8);
+  log(`A whisper starts with ${N(seeder)}: that ${N(subj)} ${text}.`,'nudge','rumour',{ids:[subj.id]});render(true);
+}
+function nudgeShort(){S.stores.flour=0;S.spoil=TPD*2;log('Weevils have got into the granary at the Watermill. The flour is spoiled, and whatever is milled in the next two days will be too.','nudge','event');render(true);}
+function nudgeStorm(){S.storm=96;if(seasonOf()!==3)log('Black clouds roll in over the fells and a storm breaks over Ashwood Fold.','nudge');stormHits(false);render(true);}
+function nudgeStranger(){
+  const used=new Set(S.agents.map(a=>a.name)),st=STRANGERS.find(n=>!used.has(n[0]));if(!st||LIVE.length>=MAXPOP)return;
+  const tr={temper:.2+rnd()*.6,warmth:.2+rnd()*.7,diligence:.3+rnd()*.6,forgive:.2+rnd()*.7,gossip:.2+rnd()*.7,scruple:.25+rnd()*.7};
+  const id=S.agents.length,s=addAgent(makeAgent(id,st[0],'pedlar','tavern',tr,{age:24+rnd()*20,sex:st[1],hue:330}));
+  s.coins=10;s.hunger=.5;s.arrivedAt=S.tick;
+  s.x=s.px=.5;s.y=s.py=13;s.arrived=false;s.act={type:'stroll',place:'tavern',left:2,target:null};const q=pointIn(P.tavern);s.tx=q[0];s.ty=q[1];
+  for(const a of LIVE)if(a!==s){S.op[a.id][id]=Math.round(-12+a.tr.warmth*22+(rnd()-.5)*10);S.op[id][a.id]=Math.round((rnd()-.4)*14);}
+  log(`A stranger walks in along the carters' road. ${N(s)}, a pedlar, takes a room at The Plough.`,'nudge','arrival',{ids:[id]});buildRoster();render(true);
+}
+function nudgeFair(){
+  if(S.fair)return;
+  const h=hourOf(),start=h<9?dayStart()+60:dayStart()+TPD+60;
+  S.fair={start,end:start+60};
+  log(`The reeve's crier announces a fair on the Green ${h<9?'this morning':'tomorrow'}.`,'nudge');render(true);
+}
+function nudgePurse(){
+  const pool=LIVE.filter(a=>a.coins>=3);if(!pool.length){log('Nobody in Ashwood Fold has enough in their purse to lose.','nudge');render(true);return;}
+  const owner=pool.reduce((m,a)=>a.coins>m.coins?a:m),loss=Math.max(2,Math.floor(owner.coins*.7));
+  owner.coins-=loss;const finder=pick(LIVE.filter(a=>a!==owner&&a.age>=6));
+  if(rnd()<finder.tr.scruple*.9){
+    owner.coins+=loss;adj(owner,finder,20);mem(owner,finder,'returned my lost purse');
+    log(`${N(owner)} drops a purse of ${loss} pennies near the well. ${N(finder)} finds it and hands it straight back.`,'nudge','event',{ids:[owner.id,finder.id]});
+  }else{
+    finder.coins+=loss;mem(finder,null,'kept a purse found by the well');
+    let sus=null,low=100;for(const b of LIVE)if(b!==owner&&isAdult(b)&&op(owner,b)<low){low=op(owner,b);sus=b;}
+    adj(owner,sus,-20);mem(owner,sus,'took my purse');bringCase(sus,owner,`taking a purse of ${loss} pennies`,.15,sus===finder);
+    log(`${N(owner)} has lost a purse of ${loss} pennies and blames ${N(sus)}.${sus===finder?' Rightly, as it happens.':` In fact ${N(finder)} found it and kept quiet.`}`,'nudge','crime',{ids:[owner.id,sus.id]});
+  }
+  render(true);
+}
+
+// ---------- save ----------
+function encode(){const copy={...S,log:S.log.slice(-150)};return 'AF1:'+btoa(unescape(encodeURIComponent(JSON.stringify(copy))));}
+function decode(code){code=code.trim();if(!code.startsWith('AF1:'))throw new Error('That code does not start with AF1:, so it is not an Ashwood Fold save.');const o=JSON.parse(decodeURIComponent(escape(atob(code.slice(4)))));if(!o.agents||!o.op)throw new Error('The code is incomplete. Copy the whole thing and try again.');return migrate(o);}
+function autosave(){try{localStorage.setItem(SAVEKEY,JSON.stringify(S));}catch(e){}}
+
+// ---------- portraits and heraldry ----------
+// Faces and arms use their own seeded dice, so the village's story is unchanged by them.
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function lrng(seed){let t=seed>>>0;return()=>{t=(t+0x6D2B79F5)|0;let r=Math.imul(t^t>>>15,t|1);r^=r+Math.imul(r^r>>>7,r|61);return((r^r>>>14)>>>0)/4294967296;};}
+const SKIN=['#f2d5bd','#ebc7a6','#ddb18c','#c99470','#a8724e','#7d5236'];
+const HAIR=['#2a1c13','#47301f','#6a4429','#8b5a2e','#a9773d','#c9a25e','#9e3b1f','#d6c07d'];
+const EYES=['#4a3324','#6e4c2c','#3e6e8e','#5d7c48','#7c8792'];
+const CLOTH={farmer:'#7b6a45',farmhand:'#857550',baker:'#7d5a44',miller:'#a89e88',labourer:'#6a6050',weaver:'#4f6684',smith:'#4a3a30',herbalist:'#5f7b52',reeve:'#26262e',carter:'#6e4b33',innkeeper:'#8a3b2e',millhand:'#56565e',pedlar:'#74557f',child:'#7f96ad'};
+let pid=0;
+function mixHex(a,b,t){const p=x=>[1,3,5].map(i=>parseInt(x.slice(i,i+2),16));const A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('');}
+const shade=(hex,t)=>mixHex(hex,'#000000',t);
+function rollFace(r,sex,local){
+  return {skin:local?Math.floor(r()*3):Math.floor(r()*6),hair:Math.floor(r()*8),eye:Math.floor(r()*5),fw:.86+r()*.22,fh:.93+r()*.14,jaw:Math.floor(r()*3),nose:Math.floor(r()*3),
+    brow:1.2+r()*1.4,curly:r()<.2,freck:r()<.25,ear:.9+r()*.25,bald:sex==='m'&&r()<.35,beard:sex==='m'?Math.floor(r()*4):0,style:Math.floor(r()*3),hat:Math.floor(r()*3)};
+}
+function inheritFace(ps,sex,r){
+  const f={},base=rollFace(r,sex,false),pf=ps.map(faceOf);
+  for(const k in base){
+    if(k==='beard'||k==='style'||k==='hat'){f[k]=base[k];continue;}
+    if(k==='bald'){const dad=ps.find(p=>p.sex==='m');f[k]=sex==='m'&&(dad?faceOf(dad).bald&&r()<.65:base.bald);continue;}
+    if(r()<.08){f[k]=base[k];continue;}
+    const src=pf[Math.floor(r()*pf.length)][k];
+    f[k]=typeof src==='number'&&!Number.isInteger(src)?src+(r()-.5)*.06:src;
+  }
+  return f;
+}
+function faceOf(a){
+  if(a.face)return a.face;
+  const r=lrng(hashStr(a.name+'#'+a.id)),ps=a.parents.map(i=>S.agents[i]).filter(Boolean);
+  a.face=ps.length?inheritFace(ps,a.sex,r):rollFace(r,a.sex,a.arrivedAt==null&&a.hue!==330);
+  return a.face;
+}
+function portraitSVG(a,px){
+  const f=faceOf(a),id='p'+(pid++),age=a.dead?a.dead.age:a.age,st=age<4?'infant':age<14?'child':'adult',female=a.sex==='f';
+  const skin=SKIN[f.skin],dk=shade(skin,.28),grey=clamp((age-45)/30,0,1),hair=mixHex(HAIR[f.hair],'#d9d5cc',grey*.85);
+  const m=a.dead?0:(moodOf(a)-.5)*2,sc=st==='infant'?1.18:st==='child'?1.07:1;
+  const rx=19*f.fw,ry=23*f.fh*(st==='adult'?1:.95),cx=50,cy=st==='adult'?52:54;
+  const jw=[.38,.55,.78][f.jaw]*(st==='adult'?1:.8)+(st==='adult'?0:.18);
+  const head=`M${cx-rx},${cy} C${cx-rx},${cy-ry*1.35} ${cx+rx},${cy-ry*1.35} ${cx+rx},${cy} C${cx+rx},${cy+ry*.62} ${cx+rx*jw},${cy+ry} ${cx},${cy+ry*1.05} C${cx-rx*jw},${cy+ry} ${cx-rx},${cy+ry*.62} ${cx-rx},${cy} Z`;
+  const hue=hueOf(a),cloth=CLOTH[a.job]||'#6a6050';
+  let o=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="${px}" height="${Math.round(px*1.2)}" role="img" aria-label="Portrait of ${a.name}" class="portrait${a.dead?' dead':''}"><defs><clipPath id="${id}"><ellipse cx="50" cy="60" rx="46" ry="56"/></clipPath><radialGradient id="${id}g" cx="50%" cy="35%" r="70%"><stop offset="0" stop-color="hsl(${hue} 30% 82%)"/><stop offset="1" stop-color="hsl(${hue} 26% 66%)"/></radialGradient></defs><g clip-path="url(#${id})"><rect width="100" height="120" fill="url(#${id}g)"/>`;
+  o+=`<g transform="translate(50 ${st==='adult'?0:6}) scale(${sc}) translate(-50 0)">`;
+  if(st!=='infant'&&female&&f.style!==0&&!f.curly)o+=`<path d="M${cx-rx-3},${cy-4} C${cx-rx-6},${cy+30} ${cx-rx+2},${cy+40} ${cx-rx+6},${cy+42} L${cx+rx-6},${cy+42} C${cx+rx-2},${cy+40} ${cx+rx+6},${cy+30} ${cx+rx+3},${cy-4} Z" fill="${shade(hair,.12)}"/>`;
+  o+=`<path d="M6,124 C8,${cy+ry+16} 30,${cy+ry+8} 50,${cy+ry+8} C70,${cy+ry+8} 92,${cy+ry+16} 94,124 Z" fill="${cloth}"/>`;
+  if(a.job==='baker'||a.job==='innkeeper')o+=`<path d="M38,124 L40,${cy+ry+14} L60,${cy+ry+14} L62,124 Z" fill="#efe9dc"/>`;
+  if(a.job==='reeve'||(female&&st==='adult'&&f.hat!==2))o+=`<path d="M41,${cy+ry+7} L50,${cy+ry+15} L59,${cy+ry+7}" fill="#f2efe8" stroke="#ddd6c8" stroke-width=".6"/>`;
+  if(a.job==='smith')o+=`<path d="M36,124 L37,${cy+ry+13} L63,${cy+ry+13} L64,124Z" fill="#6b4a33"/>`;
+  o+=`<rect x="${cx-6}" y="${cy+ry*.7}" width="12" height="${(ry*.55+6).toFixed(1)}" fill="${dk}"/>`;
+  for(const s of [-1,1])o+=`<ellipse cx="${(cx+s*rx*.98).toFixed(1)}" cy="${cy+3}" rx="${(3.4*f.ear).toFixed(1)}" ry="${(5*f.ear).toFixed(1)}" fill="${shade(skin,.1)}"/>`;
+  o+=`<path d="${head}" fill="${skin}"/>`;
+  const blush=(.12+a.tr.warmth*.25).toFixed(2);
+  for(const s of [-1,1])o+=`<circle cx="${(cx+s*rx*.55).toFixed(1)}" cy="${cy+9}" r="4.5" fill="#e07a68" opacity="${blush}"/>`;
+  if(f.freck)for(let i=0;i<8;i++){const s=i%2?1:-1;o+=`<circle cx="${(cx+s*(rx*.28+(i*2.3)%6)).toFixed(1)}" cy="${(cy+5+(i*1.7)%4).toFixed(1)}" r=".7" fill="${shade(skin,.35)}" opacity=".75"/>`;}
+  const es=st==='adult'?1:1.25,ey=cy+(st==='adult'?0:1),ex=rx*.42;
+  for(const s of [-1,1]){const x=(cx+s*ex).toFixed(1);
+    o+=`<ellipse cx="${x}" cy="${ey}" rx="${3.6*es}" ry="${2.3*es}" fill="#f7f4ee"/><circle cx="${x}" cy="${ey+.2}" r="${1.7*es}" fill="${EYES[f.eye]}"/><circle cx="${x}" cy="${ey+.2}" r="${.8*es}" fill="#1a1410"/>`;
+    if(age>55)o+=`<path d="M${(cx+s*(ex-3.8)).toFixed(1)},${ey-1.4} Q${x},${ey-3.4} ${(cx+s*(ex+3.8)).toFixed(1)},${ey-1.4}" fill="none" stroke="${dk}" stroke-width=".7"/>`;}
+  if(st!=='infant'){const tilt=(a.tr.temper-.45)*4,by=ey-5.5-a.tr.warmth*1.2,bc=shade(hair,.1);
+    for(const s of [-1,1])o+=`<path d="M${(cx+s*(ex-4.2)).toFixed(1)},${(by+tilt).toFixed(1)} L${(cx+s*(ex+4)).toFixed(1)},${(by-tilt*.4).toFixed(1)}" stroke="${bc}" stroke-width="${f.brow.toFixed(2)}" stroke-linecap="round"/>`;}
+  const ny=cy+(st==='adult'?11:9);
+  o+=[`<path d="M${cx-.5},${cy+3} Q${cx-2.8},${ny} ${cx},${ny+.6} Q${cx+2.2},${ny+.6} ${cx+2.6},${ny-.6}" fill="none" stroke="${dk}" stroke-width="1.1" stroke-linecap="round"/>`,
+      `<path d="M${cx},${cy+1} L${cx-2.2},${ny+1} Q${cx},${ny+2.2} ${cx+2.4},${ny+.8}" fill="none" stroke="${dk}" stroke-width="1.1" stroke-linecap="round"/>`,
+      `<path d="M${cx-1},${cy+4} Q${cx-4.5},${ny+1} ${cx},${ny+1.4} Q${cx+4.5},${ny+1} ${cx+1},${cy+4}" fill="${shade(skin,.08)}" stroke="${dk}" stroke-width="1"/>`][f.nose];
+  const my=(cy+ry*.62).toFixed(1),mw=st==='adult'?6:4.5;
+  o+=`<path d="M${cx-mw},${my} Q${cx},${(+my+m*4).toFixed(1)} ${cx+mw},${my}" fill="none" stroke="#8d4636" stroke-width="1.6" stroke-linecap="round"/>`;
+  if(age>48){const k=clamp((age-48)/25,0,1).toFixed(2);
+    for(const s of [-1,1])o+=`<path d="M${(cx+s*(ex+5)).toFixed(1)},${ey-1} l${s*2.5},-1.4 M${(cx+s*(ex+5)).toFixed(1)},${ey+1} l${s*2.5},1.2" stroke="${dk}" stroke-width=".6" opacity="${k}"/>`;
+    if(age>58)o+=`<path d="M${cx-8},${(cy-ry*.55).toFixed(1)} q8,-1.5 16,0 M${cx-6},${(cy-ry*.45).toFixed(1)} q6,-1 12,0" fill="none" stroke="${dk}" stroke-width=".55" opacity="${k}"/>`;
+    o+=`<path d="M${cx-mw-2},${+my-5} q-1,3 0,5 M${cx+mw+2},${+my-5} q1,3 0,5" fill="none" stroke="${dk}" stroke-width=".55" opacity="${k}"/>`;}
+  if(!female&&age>=17&&f.beard){const bh=mixHex(hair,'#d9d5cc',grey*.3),y=+my;
+    if(f.beard===1)o+=`<path d="M${cx-7},${y-2.5} Q${cx},${y-6} ${cx+7},${y-2.5} Q${cx},${y-3.5} ${cx-7},${y-2.5}Z" fill="${bh}"/>`;
+    if(f.beard===2)for(const s of [-1,1])o+=`<path d="M${(cx+s*rx*.98).toFixed(1)},${cy+2} L${(cx+s*rx*.95).toFixed(1)},${(cy+ry*.55).toFixed(1)} Q${(cx+s*rx*.6).toFixed(1)},${(cy+ry*.8).toFixed(1)} ${(cx+s*rx*.55).toFixed(1)},${(cy+ry*.4).toFixed(1)} L${(cx+s*rx*.7).toFixed(1)},${cy+2}Z" fill="${bh}"/>`;
+    if(f.beard===3)o+=`<path d="M${(cx-rx*.98).toFixed(1)},${cy+2} C${cx-rx},${(cy+ry*1.2).toFixed(1)} ${cx+rx},${(cy+ry*1.2).toFixed(1)} ${(cx+rx*.98).toFixed(1)},${cy+2} L${(cx+rx*.7).toFixed(1)},${cy+3} C${(cx+rx*.6).toFixed(1)},${y-2} ${cx+5},${y-1} ${cx},${y-3} C${cx-5},${y-1} ${(cx-rx*.6).toFixed(1)},${y-2} ${(cx-rx*.7).toFixed(1)},${cy+3}Z" fill="${bh}"/><path d="M${cx-mw+1},${y+.5} Q${cx},${(y+m*3+1).toFixed(1)} ${cx+mw-1},${y+.5}" fill="none" stroke="#6d3a2c" stroke-width="1.2"/>`;}
+  if(st==='infant')o+=`<path d="M${cx-3},${(cy-ry).toFixed(1)} q3,-4 6,-1" fill="none" stroke="${hair}" stroke-width="1.6" stroke-linecap="round"/>`;
+  else if(f.bald&&age>35)for(const s of [-1,1])o+=`<path d="M${(cx+s*rx*1.02).toFixed(1)},${cy+1} C${(cx+s*rx*1.05).toFixed(1)},${(cy-ry*.6).toFixed(1)} ${(cx+s*rx*.6).toFixed(1)},${(cy-ry*.75).toFixed(1)} ${(cx+s*rx*.45).toFixed(1)},${(cy-ry*.7).toFixed(1)} C${(cx+s*rx*.75).toFixed(1)},${(cy-ry*.4).toFixed(1)} ${(cx+s*rx*.85).toFixed(1)},${(cy-ry*.2).toFixed(1)} ${(cx+s*rx*.82).toFixed(1)},${cy+1}Z" fill="${hair}"/>`;
+  else if(f.curly){for(let i=0;i<11;i++){const t=Math.PI*(1.05+i*.09);o+=`<circle cx="${(cx+Math.cos(t)*rx*.98).toFixed(1)}" cy="${(cy-4+Math.sin(t)*ry).toFixed(1)}" r="5.2" fill="${hair}"/>`;}
+    if(female&&st==='adult')for(const s of [-1,1])o+=`<circle cx="${(cx+s*rx*1.05).toFixed(1)}" cy="${cy+8}" r="5" fill="${hair}"/><circle cx="${(cx+s*rx).toFixed(1)}" cy="${cy+16}" r="4.6" fill="${hair}"/>`;}
+  else{
+    const L=(v)=>v.toFixed(1);
+    const top=female?`M${L(cx-rx-1.5)},${cy+4} C${L(cx-rx-2)},${L(cy-ry*1.5)} ${L(cx+rx+2)},${L(cy-ry*1.5)} ${L(cx+rx+1.5)},${cy+4} C${L(cx+rx*.9)},${L(cy-ry*.35)} ${cx+3},${L(cy-ry*.75)} ${cx},${L(cy-ry*.62)} C${cx-3},${L(cy-ry*.75)} ${L(cx-rx*.9)},${L(cy-ry*.35)} ${L(cx-rx-1.5)},${cy+4}Z`
+      :f.style===1?`M${L(cx-rx-1)},${cy-1} C${L(cx-rx-1.5)},${L(cy-ry*1.5)} ${L(cx+rx+1.5)},${L(cy-ry*1.5)} ${L(cx+rx+1)},${cy-1} C${L(cx+rx*.85)},${L(cy-ry*.55)} ${L(cx-rx*.2)},${L(cy-ry*.85)} ${L(cx-rx*.55)},${L(cy-ry*.45)} C${L(cx-rx*.8)},${L(cy-ry*.3)} ${L(cx-rx*.9)},${L(cy-ry*.2)} ${L(cx-rx-1)},${cy-1}Z`
+      :`M${L(cx-rx-1)},${cy-2} C${L(cx-rx-1.5)},${L(cy-ry*1.48)} ${L(cx+rx+1.5)},${L(cy-ry*1.48)} ${L(cx+rx+1)},${cy-2} C${L(cx+rx*.8)},${L(cy-ry*.6)} ${L(cx-rx*.8)},${L(cy-ry*.6)} ${L(cx-rx-1)},${cy-2}Z`;
+    o+=`<path d="${top}" fill="${hair}"/>`;
+    if(female&&f.style===2&&st==='adult')o+=`<circle cx="${cx}" cy="${L(cy-ry*1.12)}" r="6" fill="${shade(hair,.08)}"/>`;
+  }
+  if(st==='adult'){
+    const L=(v)=>v.toFixed(1);
+    if(a.job==='reeve')o+=`<rect x="${L(cx-rx*.85)}" y="${L(cy-ry*1.75)}" width="${L(rx*1.7)}" height="${L(ry*.8)}" rx="1.5" fill="#1e1e24"/><rect x="${L(cx-rx*1.25)}" y="${L(cy-ry)}" width="${L(rx*2.5)}" height="3" rx="1.5" fill="#1e1e24"/><rect x="${L(cx-rx*.85)}" y="${L(cy-ry*1.12)}" width="${L(rx*1.7)}" height="2" fill="#6b3a2e"/>`;
+    else if(female&&f.hat===1)o+=`<path d="M${L(cx-rx-4)},${L(cy-ry*.45)} C${L(cx-rx-6)},${L(cy-ry*1.75)} ${L(cx+rx+6)},${L(cy-ry*1.75)} ${L(cx+rx+4)},${L(cy-ry*.45)} C${L(cx+rx)},${L(cy-ry*.75)} ${L(cx-rx)},${L(cy-ry*.75)} ${L(cx-rx-4)},${L(cy-ry*.45)}Z" fill="#f4f1ea" stroke="#d6cfc0" stroke-width=".8"/>`;
+    else if(female&&f.hat===2)o+=`<path d="M${L(cx-rx-7)},${L(cy-ry*.1)} C${L(cx-rx-6)},${L(cy-ry*1.7)} ${L(cx+rx+6)},${L(cy-ry*1.7)} ${L(cx+rx+7)},${L(cy-ry*.1)} C${L(cx+rx+2)},${L(cy-ry*.9)} ${L(cx-rx-2)},${L(cy-ry*.9)} ${L(cx-rx-7)},${L(cy-ry*.1)}Z" fill="#d8b46a"/><path d="M${L(cx-rx-2)},${L(cy-ry*.55)} Q${cx},${L(cy-ry*.4)} ${L(cx+rx+2)},${L(cy-ry*.55)}" stroke="hsl(${hue} 50% 42%)" stroke-width="2" fill="none"/>`;
+    else if(!female&&(f.hat===1||a.job==='millhand'||a.job==='carter'))o+=`<path d="M${L(cx-rx-2)},${L(cy-ry*.62)} C${L(cx-rx-1)},${L(cy-ry*1.55)} ${L(cx+rx+1)},${L(cy-ry*1.55)} ${L(cx+rx+3)},${L(cy-ry*.7)} L${L(cx+rx+8)},${L(cy-ry*.55)} C${L(cx+rx)},${L(cy-ry*.42)} ${L(cx-rx)},${L(cy-ry*.45)} ${L(cx-rx-2)},${L(cy-ry*.62)}Z" fill="${shade(cloth,.25)}"/>`;
+  }
+  o+=`</g></g><ellipse cx="50" cy="60" rx="46" ry="56" fill="none" stroke="#a8843c" stroke-width="2.6"/><ellipse cx="50" cy="60" rx="43.4" ry="53.4" fill="none" stroke="#e2c98a" stroke-width=".8" opacity=".8"/></svg>`;
+  return o;
+}
+
+const TINCT={or:['Or','#d4a93a'],argent:['Argent','#eceae2'],gules:['Gules','#b0302a'],azure:['Azure','#2d5a9a'],vert:['Vert','#3f7d47'],sable:['Sable','#2b2b2b'],purpure:['Purpure','#6d3f86']};
+const COLOURS=['gules','azure','vert','sable','purpure'],METALS=['or','argent'];
+const CHARGE_BY_JOB={farmer:'garb',farmhand:'garb',miller:'millwheel',labourer:'millwheel',baker:'loaf',smith:'hammer',weaver:'shuttle',innkeeper:'tankard',reeve:'key',herbalist:'sprig',carter:'cartwheel',pedlar:'star',millhand:'cog'};
+const CHARGE_NAMES={garb:'a garb',millwheel:'a mill-wheel',loaf:'three loaves',hammer:'a hammer',shuttle:'a shuttle',tankard:'a tankard',key:'a key',sprig:'a sprig of rue',cartwheel:'a cart-wheel',star:'a mullet',cog:'a cog-wheel',rose:'a rose',crescent:'a crescent',book:'an open book',plough:'a ploughshare',spindle:'a spinning wheel',millstone:'a millstone',garb2:'a garb'};
+const AUG={plough:'plough',millstone:'millstone',barn:'garb2',shuttle:'shuttle',school:'book',cottonmill:'spindle'};
+const DIVS=['plain','pale','fess','bend','chevron','quarterly'];
+const DIVNAME={pale:'Per pale',fess:'Per fess',bend:'Per bend',quarterly:'Quarterly',chevron:'Per chevron'};
+const VIRTUE={temper:'Never Yield',warmth:'Hearth and Kin',diligence:'By Toil',forgive:'Mercy Endures',gossip:'Ever Watchful',scruple:'Honest and True'};
+const TRADEWORD={farmer:'and Harvest',farmhand:'and Harvest',miller:'and the Stone',labourer:'and Sweat',baker:'and Bread',smith:'and Iron',weaver:'and Thread',innkeeper:'and Ale',reeve:'and Law',herbalist:'and Healing',carter:'and the Road',pedlar:'and the Road',millhand:'and the Mill'};
+const familyKey=a=>surname(a)||a.first;
+const familyPlural=f=>/(s|x|sh|ch)$/.test(f)?f+'es':f+'s';
+function armsOf(fam){
+  if(!S.arms)S.arms={};
+  if(S.arms[fam])return S.arms[fam];
+  const founder=S.agents.filter(a=>familyKey(a)===fam).sort((x,y)=>(x.born??-1e9)-(y.born??-1e9)||y.age-x.age)[0];
+  const r=lrng(hashStr('arms:'+fam));
+  const div=DIVS[Math.floor(r()*DIVS.length)],c1=COLOURS[Math.floor(r()*5)];
+  let c2=COLOURS[Math.floor(r()*5)];if(c2===c1)c2=COLOURS[(COLOURS.indexOf(c1)+2)%5];
+  const metal=METALS[Math.floor(r()*2)],job=founder?(founder.job==='child'?'pedlar':founder.job):'pedlar';
+  const charge=CHARGE_BY_JOB[job]||['rose','star','crescent'][Math.floor(r()*3)];
+  const tr=founder?founder.tr:{},best=Object.keys(VIRTUE).sort((x,y)=>(tr[y]||0)-(tr[x]||0))[0];
+  const motto=best==='diligence'?`${VIRTUE.diligence} ${TRADEWORD[job]||'and Patience'}`:VIRTUE[best];
+  S.arms[fam]={div,c1,c2,metal,charge,motto,aug:[],founded:founder?founder.id:null};
+  return S.arms[fam];
+}
+function blazon(ar){
+  const T=k=>TINCT[k][0];
+  let s=ar.div==='plain'?T(ar.c1):`${DIVNAME[ar.div]} ${T(ar.c1)} and ${T(ar.c2)}`;
+  s+=`, ${CHARGE_NAMES[ar.charge]} ${T(ar.metal)}`;
+  if(ar.aug.length){const cm=ar.metal==='or'?'argent':'or';const names=ar.aug.map(t=>CHARGE_NAMES[AUG[t]]);
+    s+=`; on a chief ${T(cm)}, ${names.length>1?names.slice(0,-1).join(', ')+' and '+names[names.length-1]:names[0]} Sable`;}
+  return s;
+}
+function chargeSVG(kind,col,cx,cy,s){
+  const g=d=>`<g transform="translate(${cx} ${cy}) scale(${s})">${d}</g>`,st=`stroke="${col}" fill="none" stroke-width="3" stroke-linecap="round"`;
+  switch(kind){
+    case 'garb':case 'garb2':return g(`<path d="M0,14 L0,-6 M0,14 L-6,-4 M0,14 L6,-4 M0,14 L-10,-1 M0,14 L10,-1" ${st}/><ellipse cx="0" cy="-10" rx="3" ry="6" fill="${col}"/><ellipse cx="-7" cy="-8" rx="2.6" ry="5.5" fill="${col}" transform="rotate(-25 -7 -8)"/><ellipse cx="7" cy="-8" rx="2.6" ry="5.5" fill="${col}" transform="rotate(25 7 -8)"/><ellipse cx="-11" cy="-3" rx="2.3" ry="5" fill="${col}" transform="rotate(-45 -11 -3)"/><ellipse cx="11" cy="-3" rx="2.3" ry="5" fill="${col}" transform="rotate(45 11 -3)"/><rect x="-7" y="3" width="14" height="3.5" fill="${col}"/>`);
+    case 'millwheel':case 'cartwheel':case 'cog':{let d=`<circle r="12" ${st}/><circle r="3" fill="${col}"/>`;const n=kind==='cog'?10:8;
+      for(let i=0;i<n;i++){const deg=i*360/n,a=deg*Math.PI/180;
+        if(kind==='cog')d+=`<rect x="-2.6" y="-17" width="5.2" height="6" fill="${col}" transform="rotate(${deg})"/>`;
+        else d+=`<line x1="0" y1="0" x2="${(Math.cos(a)*12).toFixed(1)}" y2="${(Math.sin(a)*12).toFixed(1)}" stroke="${col}" stroke-width="2"/>`;
+        if(kind==='millwheel')d+=`<rect x="-2.2" y="-17" width="4.4" height="5.5" fill="${col}" transform="rotate(${deg})"/>`;}
+      return g(d);}
+    case 'millstone':return g(`<circle r="13" fill="${col}"/><circle r="3.5" fill="#000" opacity=".35"/><path d="M-9,-9 L-3,-3 M9,-9 L3,-3 M-9,9 L-3,3 M9,9 L3,3" stroke="#000" stroke-opacity=".3" stroke-width="1.4"/>`);
+    case 'loaf':return g([[-8,-6],[8,-6],[0,7]].map(([x,y])=>`<ellipse cx="${x}" cy="${y}" rx="6.5" ry="4.5" fill="${col}"/>`).join(''));
+    case 'hammer':return g(`<rect x="-1.8" y="-6" width="3.6" height="20" fill="${col}"/><rect x="-10" y="-13" width="20" height="7" rx="1" fill="${col}"/>`);
+    case 'shuttle':return g(`<path d="M-16,0 Q-8,-6 0,-6 Q8,-6 16,0 Q8,6 0,6 Q-8,6 -16,0Z" fill="${col}"/><rect x="-5" y="-1.5" width="10" height="3" fill="#000" opacity=".3"/>`);
+    case 'tankard':return g(`<rect x="-8" y="-10" width="13" height="20" rx="2" fill="${col}"/><path d="M5,-5 q8,0 8,5 q0,5 -8,5" ${st}/><rect x="-9" y="-13" width="15" height="4" rx="1" fill="${col}"/>`);
+    case 'key':return g(`<circle cx="0" cy="-9" r="5.5" ${st}/><line x1="0" y1="-3.5" x2="0" y2="14" stroke="${col}" stroke-width="3"/><rect x="0" y="7" width="6" height="3" fill="${col}"/><rect x="0" y="11.5" width="4.5" height="2.5" fill="${col}"/>`);
+    case 'sprig':return g(`<path d="M0,14 Q-1,0 2,-14" ${st}/>`+[-8,-2,4,10].map((y,i)=>`<ellipse cx="${i%2?5:-4}" cy="${y-2}" rx="5" ry="2.4" fill="${col}" transform="rotate(${i%2?-30:30} ${i%2?5:-4} ${y-2})"/>`).join(''));
+    case 'rose':{let d='';for(let i=0;i<5;i++){const a=(i*72-90)*Math.PI/180;d+=`<circle cx="${(Math.cos(a)*7).toFixed(1)}" cy="${(Math.sin(a)*7).toFixed(1)}" r="6" fill="${col}"/>`;}return g(d+`<circle r="4" fill="${col}" stroke="#000" stroke-opacity=".25" stroke-width="1"/>`);}
+    case 'star':{let p='';for(let i=0;i<10;i++){const a=(i*36-90)*Math.PI/180,r=i%2?5.5:14;p+=`${(Math.cos(a)*r).toFixed(1)},${(Math.sin(a)*r).toFixed(1)} `;}return g(`<polygon points="${p}" fill="${col}"/>`);}
+    case 'crescent':return g(`<path d="M-12,-3 A12,12 0 0 0 12,-3 A9,9 0 0 1 -12,-3Z" fill="${col}"/>`);
+    case 'book':return g(`<path d="M0,-8 Q-8,-12 -15,-9 L-15,9 Q-8,6 0,10 Q8,6 15,9 L15,-9 Q8,-12 0,-8Z" fill="${col}"/><line x1="0" y1="-8" x2="0" y2="10" stroke="#000" stroke-opacity=".3" stroke-width="1"/>`);
+    case 'plough':return g(`<path d="M-14,6 L6,-2 L14,6 Z" fill="${col}"/><line x1="-4" y1="2" x2="-12" y2="-12" stroke="${col}" stroke-width="3"/>`);
+    case 'spindle':{let d=`<circle r="10" ${st}/><circle r="2.5" fill="${col}"/>`;for(let i=0;i<6;i++){const a=i*Math.PI/3;d+=`<line x1="0" y1="0" x2="${(Math.cos(a)*10).toFixed(1)}" y2="${(Math.sin(a)*10).toFixed(1)}" stroke="${col}" stroke-width="1.6"/>`;}return g(d+`<line x1="-14" y1="14" x2="-4" y2="4" stroke="${col}" stroke-width="2.4"/>`);}
+  }
+  return '';
+}
+function armsSVG(ar,px,label){
+  const id='a'+(pid++),shield='M8,6 H92 V46 C92,76 72,92 50,102 C28,92 8,76 8,46 Z';
+  const c1=TINCT[ar.c1][1],c2=TINCT[ar.c2][1],m=TINCT[ar.metal][1],chief=ar.aug.length>0;
+  let f=`<rect width="100" height="110" fill="${c1}"/>`;
+  switch(ar.div){
+    case 'pale':f+=`<rect x="50" width="50" height="110" fill="${c2}"/>`;break;
+    case 'fess':f+=`<rect y="52" width="100" height="60" fill="${c2}"/>`;break;
+    case 'bend':f+=`<polygon points="0,0 100,110 0,110" fill="${c2}"/>`;break;
+    case 'chevron':f+=`<polygon points="0,110 0,84 50,40 100,84 100,110" fill="${c2}"/>`;break;
+    case 'quarterly':f+=`<rect x="50" width="50" height="52" fill="${c2}"/><rect y="52" width="50" height="60" fill="${c2}"/>`;break;
+  }
+  f+=chargeSVG(ar.charge,m,50,chief?60:50,chief?1.05:1.35);
+  if(chief){f+=`<rect width="100" height="28" fill="${TINCT[ar.metal==='or'?'argent':'or'][1]}"/><line x1="0" y1="28" x2="100" y2="28" stroke="#000" stroke-opacity=".25"/>`;
+    const n=ar.aug.length;ar.aug.forEach((t,i)=>{f+=chargeSVG(AUG[t],TINCT.sable[1],(50+(i-(n-1)/2)*26).toFixed(1),16,.55);});}
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 106" width="${px}" height="${Math.round(px*1.06)}" class="arms" role="img" aria-label="${(label?label+': ':'')+blazon(ar)}"><defs><clipPath id="${id}"><path d="${shield}"/></clipPath><linearGradient id="${id}s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></linearGradient></defs><g clip-path="url(#${id})">${f}<rect width="100" height="110" fill="url(#${id}s)"/></g><path d="${shield}" fill="none" stroke="#3a3328" stroke-width="2.6" stroke-linejoin="round"/></svg>`;
+}
+function familyCards(){
+  const fams={};for(const a of S.agents){const k=familyKey(a);(fams[k]||(fams[k]=[])).push(a);}
+  return Object.keys(fams).map(k=>({k,members:fams[k],live:fams[k].filter(a=>!a.dead)})).sort((x,y)=>y.live.length-x.live.length||(x.k>y.k?1:-1));
+}
+
+// ---------- the Moot Hall: elections ----------
+function standing(a){const v=LIVE.filter(b=>b!==a&&isAdult(b));return v.reduce((s,b)=>s+op(b,a),0)/Math.max(1,v.length);}
+function ambition(a){return a.tr.diligence*.4+(1-a.tr.warmth)*.25+a.tr.temper*.15+(a.coins>40?.15:0);}
+const voters=()=>LIVE.filter(a=>a.age>=18);
+function voteScore(v,c,noise){
+  if(v===c)return 999;
+  let s=op(v,c);
+  if(familyKey(v)===familyKey(c))s+=25;
+  if(isKin(v,c)||v.spouse===c.id)s+=30;
+  if(c.job==='reeve'){
+    if(v.mem.some(m=>m.w===c.id&&m.t==='demanded dues I could not pay'))s-=20;
+    if(v.mem.some(m=>m.w===c.id&&m.t==='put me in the stocks'))s-=40;
+  }
+  const L=S.election&&S.election.lean[v.id];if(L&&L[c.id])s+=L[c.id];
+  if(noise)s+=(rnd()-.5)*12;
+  return s;
+}
+function favourite(v,noise){
+  const e=S.election;if(!e)return null;let best=null,bs=-1e9;
+  for(const id of e.cands){const c=S.agents[id];if(c.dead)continue;const s=voteScore(v,c,noise);if(s>bs){bs=s;best=id;}}
+  return best;
+}
+function callElection(days,by){
+  if(S.election)return;
+  if(voters().length<3)return;
+  const inc=byJob('reeve');
+  const ess=['baker','miller','smith','innkeeper','herbalist'];
+  const pool=LIVE.filter(a=>a.age>=21&&a.age<72&&a!==inc&&!(ess.includes(a.job)&&LIVE.filter(b=>b.job===a.job).length<2));
+  const scored=pool.map(a=>({a,s:standing(a)/100+ambition(a)+rnd()*.3})).sort((x,y)=>y.s-x.s);
+  const cands=[];if(inc&&inc.age<74)cands.push(inc.id);
+  for(const c of scored){if(cands.length>=3)break;if(c.s>.55||cands.length<2)cands.push(c.a.id);}
+  if(!cands.length)return;
+  const vote=dayStart()+days*TPD+78;
+  S.election={cands,vote,lean:{},by:!!by};
+  S.gathers.push({id:S.gid++,type:'election',place:'hall',start:vote,end:vote+18});
+  const names=cands.map(i=>S.agents[i]);
+  log(`${by?'With no reeve, Ashwood Fold must choose one.':`${inc?N(inc)+"'s":"The reeve's"} term is up.`} ${names.length>1?`${listNames(names)} will stand`:`${N(names[0])} stands unopposed`}. The vote is in ${days} days at the Moot Hall.`,'nudge','politics',{ids:cands});
+}
+function canvass(a,b){
+  const e=S.election;if(!e||a.age<18||b.age<18)return false;
+  const isCand=e.cands.includes(a.id);
+  if(rnd()>(isCand?.55:.22))return false;
+  const fav=favourite(a,false);if(fav==null||b.id===fav||e.cands.includes(b.id))return false;
+  const c=S.agents[fav],trust=(op(b,a)+100)/200,L=(e.lean[b.id]||(e.lean[b.id]={}));
+  L[fav]=(L[fav]||0)+(isCand?9:6)*trust*(techOn('school')?.8:1);
+  glyph(a,'…','rumour');
+  if(isCand&&rnd()<.12)log(`${N(a)} asks ${N(b)} for a vote at ${PN(a.at)}.`,'event');
+  else if(!isCand&&rnd()<.05)log(`${N(a)} has been telling ${N(b)} to vote for ${N(c)}.`,'event');
+  return true;
+}
+function campaignRound(a){
+  const e=S.election;if(!e||!e.cands.includes(a.id)||a.coins<12||S.tick<=(a.roundAt||0)||rnd()>.4)return false;
+  const here=LIVE.filter(b=>b!==a&&b.at==='tavern'&&b.arrived&&b.act.type!=='sleep'&&b.age>=18);if(here.length<2)return false;
+  a.roundAt=S.tick+TPD;a.coins-=here.length;const k=byJob('innkeeper');if(k&&k!==a)k.coins+=here.length;
+  for(const b of here){const L=(e.lean[b.id]||(e.lean[b.id]={}));L[a.id]=(L[a.id]||0)+5;b.tipsy=1;}
+  log(`${N(a)} stands a round at The Plough and reminds everyone when the vote is.`,'event');return true;
+}
+function tallyElection(){
+  const e=S.election;S.election=null;S.nextElection=S.tick+2*YEAR_DAYS*TPD;
+  const cands=e.cands.map(i=>S.agents[i]).filter(c=>!c.dead);if(!cands.length)return;
+  const inc=byJob('reeve');
+  const votes={};for(const c of cands)votes[c.id]=0;
+  const ballots=[];
+  if(cands.length>1){S.election=e;for(const v of voters()){const f=favourite(v,true);if(f!=null&&votes[f]!=null){votes[f]++;ballots.push([v,S.agents[f]]);mem(v,S.agents[f],'voted for');}}S.election=null;}
+  const order=[...cands].sort((x,y)=>votes[y.id]-votes[x.id]||y.age-x.age),win=order[0];
+  if(inc&&inc!==win){inc.job=inc.prevJob&&inc.prevJob!=='reeve'?inc.prevJob:'labourer';inc.work=JOBS[inc.job];}
+  if(win.job!=='reeve'){win.prevJob=win.job;win.job='reeve';win.work='hall';}
+  S.reeveSince=S.tick;S.lastElection={t:S.tick,res:order.map(c=>[c.id,votes[c.id]])};
+  for(const [v,c] of ballots)if(c===win)adj(win,v,3);
+  for(const l of order.slice(1)){adj(l,win,-8*(.5+l.tr.temper));if(l.tr.temper>.6&&rnd()<.5)mem(l,win,'stole the election from me');}
+  let line;
+  if(cands.length===1)line=`${N(win)} is confirmed as reeve, unopposed.`;
+  else{
+    line=`Election day at the Moot Hall. ${N(win)} is chosen as reeve with ${votes[win.id]} votes${order.slice(1).map(c=>`, ${N(c)} ${votes[c.id]}`).join('')}.`;
+    if(inc&&inc!==win)line+=` ${N(inc)} goes back to ${inc.job} work.`;
+    else if(inc===win)line+=` ${N(win)} keeps the office.`;
+    if(order[1]&&votes[order[1].id]===votes[win.id])line+=` The vote is tied, and the office goes to the elder.`;
+    const turn=ballots.find(([v,c])=>c===win&&!e.cands.includes(v.id)&&order.slice(1).some(l=>(isKin(v,l)||v.spouse===l.id||v.home===l.home)));
+    if(turn)line+=` Even ${N(turn[0])} voted against family.`;
+  }
+  log(line,'nudge','politics',{ids:order.map(c=>c.id),election:1});
+}
+
+// ---------- the Moot Hall: the court ----------
+function bringCase(accused,accuser,charge,evidence,truth){
+  if(!accused||accused.dead||!isAdult(accused))return;
+  const kind=charge.split(' at ')[0];
+  if(S.cases.some(c=>c.accused===accused.id&&c.charge.split(' at ')[0]===kind))return;
+  S.cases.push({id:S.cid++,accused:accused.id,accuser:accuser?accuser.id:null,charge,evidence,truth:!!truth,filed:S.tick});
+}
+function scheduleCourt(){
+  S.cases=S.cases.filter(c=>!S.agents[c.accused].dead);
+  if(!S.cases.length||!byJob('reeve')||S.gathers.some(g=>g.type==='court'))return;
+  const cases=S.cases.splice(0,3);
+  const parties=new Set();for(const c of cases){parties.add(c.accused);if(c.accuser!=null)parties.add(c.accuser);}
+  const close=a=>[...parties].some(i=>{const p=S.agents[i];return isKin(a,p)||a.spouse===p.id||a.home===p.home;});
+  const pool=LIVE.filter(a=>a.age>=18&&!parties.has(a.id)&&a.job!=='reeve'&&!close(a));if(pool.length<3){S.cases.unshift(...cases);return;}
+  const jurors=[];while(jurors.length<Math.min(5,pool.length)){const j=pick(pool);if(!jurors.includes(j.id))jurors.push(j.id);}
+  S.gathers.push({id:S.gid++,type:'court',place:'hall',start:dayStart()+84,end:dayStart()+100,cases,jurors});
+  log(`The court will sit at the Moot Hall this afternoon. ${cases.map(c=>`${N(S.agents[c.accused])} is accused of ${c.charge}`).join('; ')}.`,'nudge');
+}
+function decideCase(c,jurors){
+  const acc=S.agents[c.accused],plf=c.accuser!=null?S.agents[c.accuser]:null,reeve=byJob('reeve');
+  if(acc.dead)return;
+  const school=techOn('school');
+  let confessed=false;
+  if(c.truth&&acc.tr.scruple>.7&&rnd()<.35)confessed=true;
+  const votes=jurors.map(j=>{
+    let p=c.evidence;const bias=((plf&&!plf.dead?op(j,plf):0)-op(j,acc))/100*(school?.35:.6);p+=bias;
+    if(S.rumours.some(r=>r.subject===acc.id&&j.knows.includes(r.id)))p+=.15;
+    if(reeve&&reeve!==j)p+=((plf?op(reeve,plf):0)-op(reeve,acc))/100*.15;
+    if(isKin(j,acc)||j.home===acc.home||j.spouse===acc.id)p-=.5;
+    if(plf&&(isKin(j,plf)||j.home===plf.home||j.spouse===plf.id))p+=.3;
+    p+=(rnd()-.5)*.3;
+    return {j,g:confessed||p>.5,bias};
+  });
+  const g=votes.filter(v=>v.g).length,guilty=g*2>votes.length;
+  for(const v of votes)mem(acc,v.j,v.g?'voted me guilty':'spoke for me at court');
+  let line=`At the Moot Hall, ${N(acc)} stood accused${plf?` by ${N(plf)}`:''} of ${c.charge}.`;
+  line+=confessed?` ${N(acc)} confessed before the jury had a chance to speak.`:` The jury of ${listNames(votes.map(v=>v.j))} found ${N(acc)} ${guilty?'guilty':'not guilty'}, ${guilty?g:votes.length-g} to ${guilty?votes.length-g:g}.`;
+  let sentence='';
+  if(guilty){
+    acc.convictions=(acc.convictions||0)+1;
+    const prior=acc.convictions-1,serious=/^wrecking/.test(c.charge),fight=/fight/.test(c.charge);
+    if(!fight&&((serious&&prior>=1)||prior>=2)){
+      sentence=`Having stood before the court ${prior===1?'once':numberWord(prior)+' times'} before, ${N(acc)} is banished from Ashwood Fold.`;
+      exile(acc,'banished by the court');
+    }else{
+      const fine=serious?15:/purse/.test(c.charge)?5:/fight/.test(c.charge)?2:3,paid=Math.min(acc.coins,fine);acc.coins-=paid;if(plf&&!plf.dead)plf.coins+=paid;
+      sentence=`${reeve?N(reeve):'The court'} fines ${N(acc)} ${fine} pennies`;
+      if(serious||/purse/.test(c.charge)||(fight&&prior>=2)){sentence+=' and sets them in the stocks on the Green';for(const b of LIVE)if(b!==acc&&!isKin(b,acc))adj(b,acc,-5);if(reeve){mem(acc,reeve,'put me in the stocks');adj(acc,reeve,-20);}}
+      sentence+='.';
+    }
+    if(plf)adj(acc,plf,-15);
+    if(!c.truth)sentence+=` ${N(acc)} was innocent.`;
+  }else{
+    if(plf){adj(acc,plf,-18);adj(plf,acc,-5);}
+    if(c.truth)sentence=`${N(acc)} was guilty all the same.`;
+  }
+  const swayed=votes.filter(v=>!confessed&&Math.abs(v.bias)>.3&&v.g===(v.bias>0)).sort((x,y)=>Math.abs(y.bias)-Math.abs(x.bias))[0];
+  if(swayed)line+=` ${N(swayed.j)}, who ${swayed.bias>0?'has no love for':'is fond of'} ${N(acc)}, voted ${swayed.g?'guilty':'to acquit'}.`;
+  log(line+(sentence?' '+sentence:''),guilty?'bad':'good','court',{ids:[acc.id],guilty});
+  S.verdicts.unshift({t:S.tick,acc:acc.id,plf:plf?plf.id:null,charge:c.charge,guilty,score:[g,votes.length-g],truth:c.truth});
+  if(S.verdicts.length>12)S.verdicts.length=12;
+}
+function exile(a,reason){
+  a.dead={t:S.tick,cause:reason,age:a.age,exiled:true};refreshLive();
+  for(const id in S.tech){const t=S.tech[id];t.backers=t.backers.filter(i=>i!==a.id);t.opponents=t.opponents.filter(i=>i!==a.id);}
+  if(S.election)S.election.cands=S.election.cands.filter(i=>i!==a.id);
+  const kin=LIVE.filter(b=>op(b,a)>50);for(const b of kin){b.lonely=Math.min(1,b.lonely+.25);mem(b,a,'misses');}
+  succeed(a);
+}
+
+// ---------- eras ----------
+const ERAS=['The Cottage Years','The Mill Years','The Canal Years','The Age of Steam','The Railway Age'];
+const ERA_LINES=['',
+  'With the cotton mill working, Ashwood Fold enters the Mill Years. The cottage looms are falling quiet.',
+  'The canal is open. Boats bring coal and corn up the valley, and the Canal Years begin.',
+  'Steam comes to Ashwood Fold. The mill chimney never stops smoking now. This is the Age of Steam.',
+  'The first train whistles along the valley. Manchester is an hour away, and the Railway Age has begun.'];
+function eraOf(){return techBuilt('railway')?4:techBuilt('steam')?3:techBuilt('canal')?2:techBuilt('cottonmill')?1:0;}
+function eraDay(){
+  const e=eraOf();
+  if(e!==S.era){S.era=e;log(ERA_LINES[e],'nudge','era',{era:e});}
+}
+function startBuilding(id){
+  const t=S.tech[id],T=TECH[id];
+  t.state='building';t.doneAt=dayStart()+TPD*T.build+60;t.navvies=[];
+  const inv=S.agents[t.inventor];
+  log(`Work begins on the ${T.name.toLowerCase()}, ${N(inv)}'s great scheme. It will take ${T.build} days.`,'good','tech',{tech:id});
+  for(let i=0;i<(T.navvies||0);i++){
+    if(LIVE.length>=MAXPOP)break;
+    const sex=rnd()<.85?'m':'f',name=nameBaby(sex,pick(SURNAMES));
+    const tr={temper:.5+rnd()*.4,warmth:.3+rnd()*.5,diligence:.5+rnd()*.4,forgive:.2+rnd()*.5,gossip:.3+rnd()*.5,scruple:.2+rnd()*.45};
+    const nid=S.agents.length,n=addAgent(makeAgent(nid,name,'navvy','tavern',tr,{age:19+rnd()*16,sex,hue:20}));
+    n.coins=6;n.navvy=true;n.arrivedAt=S.tick;n.x=n.px=.5;n.y=n.py=13;n.arrived=false;n.act={type:'stroll',place:'tavern',left:2,target:null};const q=pointIn(P.tavern);n.tx=q[0];n.ty=q[1];
+    for(const a of LIVE)if(a!==n){S.op[a.id][nid]=Math.round(-18+a.tr.warmth*20+(rnd()-.5)*10);S.op[nid][a.id]=Math.round((rnd()-.5)*14);}
+    t.navvies.push(nid);
+  }
+  if(t.navvies.length)log(`${listNames(t.navvies.map(i=>S.agents[i]))} arrive with the navvy gang and take rooms at The Plough. Some of the village are not glad to see them.`,'event','arrival',{ids:t.navvies});
+}
+function finishBuilding(id){
+  const t=S.tech[id],T=TECH[id];
+  t.state='built';t.builtAt=S.tick;
+  const inv=S.agents[t.inventor];
+  log(`The ${T.name.toLowerCase()} is finished: ${N(inv)}'s great scheme, ${T.what}.`,'good','tech',{tech:id,ids:[inv.id],built:1});
+  const fam=familyKey(inv),ar=armsOf(fam);
+  if(ar.aug.length<3&&!ar.aug.includes(id)&&!inv.dead){ar.aug.push(id);log(`The ${fam} family add ${CHARGE_NAMES[AUG[id]]} to their arms, in honour of ${N(inv)}'s ${T.name.toLowerCase()}.`,'good','arms',{fam});}
+  const stay=[],go=[];
+  for(const nid of t.navvies||[]){const n=S.agents[nid];if(n.dead)continue;
+    if(n.spouse>=0||LIVE.filter(b=>b!==n).reduce((s,b)=>s+op(b,n),0)/LIVE.length>25){stay.push(n);n.job='labourer';n.work='mill';n.navvy=false;}
+    else{go.push(n);a_leave(n,'moved on with the navvy gang');}}
+  if(go.length)log(`The navvies move on. ${stay.length?`${listNames(stay)} ${stay.length>1?'stay':'stays'} behind to make a life here.`:'Nobody is sorry to see the back of them.'}`,'event','departure');
+}
+function a_leave(a,why){exile(a,why);}
+function navvyWage(a){a.coins+=.09;}
+function emigrationDay(){
+  if(!techOn('railway'))return;
+  for(const a of [...LIVE]){
+    if(a.age<17||a.age>32||a.spouse>=0||a.navvy)continue;
+    const push=(a.coins<8?.5:0)+(a.lonely>.6?.3:0)+(a.mem.some(m=>/stocks|guilty/.test(m.t))?.4:0)+.2;
+    if(rnd()<.004*push*3){
+      const kin=LIVE.filter(b=>b!==a&&(isKin(b,a)||op(b,a)>60));
+      exile(a,'left on the train for Manchester');
+      log(`${N(a)} takes the train to Manchester to look for work.${kin[0]?` ${N(kin[0])} waves from the platform.`:''}`,'life','departure',{ids:[a.id]});
+    }
+  }
+  for(const g of S.agents.filter(x=>x.dead&&/Manchester/.test(x.dead.cause))){
+    if(S.tick-g.dead.t>TPD*YEAR_DAYS*3)continue;
+    const kin=LIVE.find(b=>isKin(b,g));if(kin&&rnd()<.01)log(`A letter comes from ${N(g)} in Manchester. ${pick(['The work is hard and the air is black','There is money to be made, if you can stand the noise','It ends by asking after everyone at home','It asks for a few pennies to tide them over'])}.`,'event','letter',{ids:[g.id]});
+  }
+}
+function civicDay(){
+  if(!S.election&&S.tick>=S.nextElection-3*TPD)callElection(3,false);
+  if(weekday()==='Saturday')scheduleCourt();
+  eraDay();
+  emigrationDay();
+  for(const id in S.tech){const t=S.tech[id];if(t.state==='building'&&S.tick>=t.doneAt-60)finishBuilding(id);}
+}
+
+// ---------- drawing ----------
+const cv=document.getElementById('map');let cw=0,ch=0,dpr=1,C={},colorStamp=0;
+function readColors(){
+  const cs=getComputedStyle(document.documentElement);
+  for(const k of ['grass','grass2','path','roof','roofhome','field','water','night','mapink','lamp','good','bad','accent','muted','bg','panel','ink'])C[k]=cs.getPropertyValue('--'+k).trim();
+  C.L=cs.getPropertyValue('--agentL').trim()||'40%';C.dark=parseInt(C.L)>50;
+}
+function resize(){const r=cv.getBoundingClientRect();dpr=window.devicePixelRatio||1;cw=r.width;ch=r.width*H/W;cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr);}
+new ResizeObserver(resize).observe(cv);
+function darkness(h){const [r,s]=LIGHT[seasonOf()];if(h<r-1.5||h>=s+2)return .55;if(h<r+.5)return .55*(r+.5-h)/2;if(h>=s)return .55*(h-s)/2;return 0;}
+function doorOf(p){const cx=p.x+p.w/2;return p.y+p.h<=13?[cx,p.y+p.h]:[cx,p.y];}
+function agentColor(a){return `hsl(${hueOf(a)} 58% ${C.L})`;}
+const visibleA=a=>!a.dead&&!(a.arrived&&a.act.type==='sleep');
+function draw(al){
+  if(!cw)resize();if(!cw)return;
+  if(performance.now()-colorStamp>1500){readColors();colorStamp=performance.now();}
+  const ctx=cv.getContext('2d'),ts=cw/W,px=1/ts,season=seasonOf();
+  ctx.setTransform(dpr*ts,0,0,dpr*ts,0,0);
+  ctx.fillStyle=C.grass;ctx.fillRect(0,0,W,H);
+  if(season===3){ctx.fillStyle=C.bg;ctx.globalAlpha=.55;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
+  else if(season===2){ctx.fillStyle=C.lamp;ctx.globalAlpha=.12;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
+  ctx.fillStyle=C.grass2;for(let i=0;i<40;i++){const x=(i*7.3)%W,y=(i*11.7)%23;ctx.fillRect(x,y,.25,.25);}
+  ctx.fillStyle=C.water;ctx.fillRect(0,23.8,W,2.2);
+  if(placeShown('wharf')){ctx.fillRect(0,.3,W,.5);}
+  if(techBuilt('railway')){ctx.strokeStyle=C.mapink;ctx.globalAlpha=.7;ctx.lineWidth=.06;ctx.beginPath();ctx.moveTo(0,.06);ctx.lineTo(W,.06);ctx.moveTo(0,.2);ctx.lineTo(W,.2);ctx.stroke();for(let x=.3;x<W;x+=.7){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,.26);ctx.stroke();}ctx.globalAlpha=1;}
+  ctx.strokeStyle=C.bg;ctx.globalAlpha=.35;ctx.lineWidth=.08;
+  for(let i=0;i<8;i++){const x=(i*5.3+(S.tick*.15))%W;ctx.beginPath();ctx.moveTo(x,24.6+(i%3)*.5);ctx.lineTo(x+1.4,24.6+(i%3)*.5);ctx.stroke();}
+  ctx.globalAlpha=1;
+  ctx.strokeStyle=C.path;ctx.lineWidth=.75;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(0,13);ctx.lineTo(16,13);ctx.stroke();
+  for(const id in P){if(id==='square'||!placeShown(id))continue;const p=P[id],d=doorOf(p);ctx.beginPath();ctx.moveTo(d[0],d[1]);ctx.lineTo(d[0],13);ctx.lineTo(clamp(d[0],16,24),13);ctx.stroke();}
+  if(techBuilt('barn')){ctx.fillStyle=C.roof;ctx.fillRect(BARN.x,BARN.y,BARN.w,BARN.h);ctx.strokeStyle=C.mapink;ctx.globalAlpha=.35;ctx.lineWidth=.07;ctx.strokeRect(BARN.x,BARN.y,BARN.w,BARN.h);ctx.globalAlpha=1;}
+  for(const id in P){
+    const p=P[id];if(!placeShown(id))continue;
+    if(p.indoor){
+      ctx.fillStyle=p.home?C.roofhome:C.roof;ctx.fillRect(p.x,p.y,p.w,p.h);
+      ctx.strokeStyle=C.mapink;ctx.globalAlpha=.35;ctx.lineWidth=.07;ctx.strokeRect(p.x,p.y,p.w,p.h);
+      ctx.beginPath();ctx.moveTo(p.x+.3,p.y+p.h/2);ctx.lineTo(p.x+p.w-.3,p.y+p.h/2);ctx.stroke();ctx.globalAlpha=1;
+      if(season===3){ctx.fillStyle=C.bg;ctx.globalAlpha=.45;ctx.fillRect(p.x,p.y,p.w,p.h);ctx.globalAlpha=1;}
+      if(id==='mill'){ctx.strokeStyle=C.mapink;ctx.lineWidth=.1;ctx.beginPath();ctx.arc(p.x+p.w+.6,p.y+p.h-.4,.8,0,Math.PI*2);ctx.stroke();
+        if(techBuilt('millstone')){ctx.beginPath();ctx.arc(p.x+p.w+.6,p.y+p.h-2.2,.8,0,Math.PI*2);ctx.stroke();}}
+      if(id==='cottonmill'){ctx.fillStyle=C.mapink;ctx.fillRect(p.x+p.w-1,p.y-.9,.5,1.2);}
+      if(id==='chapel'){ctx.strokeStyle=C.mapink;ctx.lineWidth=.12;ctx.beginPath();ctx.moveTo(p.x+p.w/2,p.y-.9);ctx.lineTo(p.x+p.w/2,p.y+.1);ctx.moveTo(p.x+p.w/2-.35,p.y-.55);ctx.lineTo(p.x+p.w/2+.35,p.y-.55);ctx.stroke();}
+    }else if(id==='fields'){
+      ctx.fillStyle=C.field;ctx.globalAlpha=season===3?.4:1;ctx.fillRect(p.x,p.y,p.w,p.h);ctx.globalAlpha=1;ctx.strokeStyle=C.mapink;ctx.globalAlpha=.15;ctx.lineWidth=.06;
+      for(let x=p.x+.6;x<p.x+p.w;x+=.7){ctx.beginPath();ctx.moveTo(x,p.y+.2);ctx.lineTo(x,p.y+p.h-.2);ctx.stroke();}ctx.globalAlpha=1;
+    }else if(id==='square'){
+      ctx.fillStyle=C.grass2;ctx.fillRect(p.x,p.y,p.w,p.h);ctx.strokeStyle=C.path;ctx.lineWidth=.2;ctx.strokeRect(p.x,p.y,p.w,p.h);
+      ctx.fillStyle=C.water;ctx.strokeStyle=C.mapink;ctx.lineWidth=.08;ctx.beginPath();ctx.arc(20,13,.55,0,Math.PI*2);ctx.fill();ctx.stroke();
+    }else if(id==='garden'){
+      ctx.fillStyle=C.grass2;ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle=C.good;ctx.globalAlpha=season===3?.15:.45;
+      for(let x=p.x+.5;x<p.x+p.w;x+=.8)for(let y=p.y+.5;y<p.y+p.h;y+=.8){ctx.beginPath();ctx.arc(x,y,.14,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+    }else if(id==='wharf'){
+      ctx.fillStyle=C.path;ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle=C.roof;for(let i=0;i<3;i++)ctx.fillRect(p.x+.5+i*1.1,p.y+.6,.7,.7);
+    }else{
+      ctx.fillStyle=C.path;ctx.fillRect(p.x,p.y,p.w,p.h);ctx.strokeStyle=C.mapink;ctx.globalAlpha=.4;ctx.lineWidth=.1;
+      ctx.beginPath();ctx.moveTo(p.x+p.w/2,p.y+.4);ctx.lineTo(p.x+p.w/2,p.y+p.h-.4);ctx.moveTo(p.x+p.w/2-.4,p.y+1);ctx.lineTo(p.x+p.w/2+.4,p.y+1);ctx.stroke();ctx.globalAlpha=1;
+    }
+  }
+  const h=hourOf(),dk=darkness(h)+(S.storm>0?.18:0);
+  if(dk>0){ctx.fillStyle=C.night;ctx.globalAlpha=Math.min(.7,dk);ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
+  if(dk>.15){
+    const lit={};for(const a of LIVE)if(a.arrived&&a.at&&P[a.at].indoor&&a.act.type!=='sleep')lit[a.at]=1;
+    ctx.fillStyle=C.lamp;
+    for(const id in lit){const p=P[id];ctx.globalAlpha=.9;ctx.fillRect(p.x+.6,p.y+p.h-1,.45,.45);ctx.fillRect(p.x+p.w-1.05,p.y+p.h-1,.45,.45);ctx.globalAlpha=.18;ctx.beginPath();ctx.arc(p.x+p.w/2,p.y+p.h/2,Math.max(p.w,p.h)*.6,0,Math.PI*2);ctx.fill();}
+    ctx.globalAlpha=1;
+  }
+  const fs=Math.max(10,ts*.58)*px;
+  ctx.font=`500 ${fs}px "Alegreya Sans", sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const id in P){const p=P[id];if(!placeShown(id))continue;let name=p.name.replace(/^the /,'');if((ts<15&&p.home)||p.w<3)name=name.split(' ').slice(0,2).join(' ').replace(/ Cottage$/,'');
+    const ly=p.indoor?p.y+p.h+fs*.75:p.y+fs*.75;
+    ctx.fillStyle=C.mapink;ctx.globalAlpha=dk>.3?.85:.7;ctx.fillText(name,p.x+p.w/2,ly);}
+  ctx.globalAlpha=1;
+  if(S.storm>0||season===3){const snow=season===3;ctx.strokeStyle=snow?C.bg:C.water;ctx.fillStyle=C.bg;ctx.globalAlpha=snow?.8:.6;ctx.lineWidth=.06;const off=(performance.now()/(snow?160:40))%3;
+    const n=S.storm>0?90:30;for(let i=0;i<n;i++){const x=(i*4.37+(snow?Math.sin(off+i)*.3:0))%W,y=((i*7.91)+off*3)%H;if(snow){ctx.beginPath();ctx.arc(x,y,.1,0,Math.PI*2);ctx.fill();}else{ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-.25,y+.7);ctx.stroke();}}ctx.globalAlpha=1;}
+  const s=S.agents[sel];
+  const pos=a=>[a.px+(a.x-a.px)*al,a.py+(a.y-a.py)*al];
+  if(s&&visibleA(s)){
+    const sp=pos(s);
+    for(const b of LIVE){if(b===s||!visibleA(b))continue;const o=op(s,b);if(Math.abs(o)<40)continue;
+      const bp=pos(b);ctx.strokeStyle=o>0?C.good:C.bad;ctx.globalAlpha=Math.min(.85,Math.abs(o)/100);ctx.lineWidth=.12;ctx.setLineDash(o>0?[]:[.35,.25]);
+      ctx.beginPath();ctx.moveTo(sp[0],sp[1]);ctx.lineTo(bp[0],bp[1]);ctx.stroke();}
+    ctx.setLineDash([]);ctx.globalAlpha=1;
+  }
+  const R=Math.max(.42,5*px);
+  for(const a of LIVE){
+    if(!visibleA(a))continue;
+    const [x,y]=pos(a),r=R*(a.age<4?.55:a.age<14?.75:1);
+    ctx.fillStyle=agentColor(a);ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=C.dark?C.bg:'#fff';ctx.lineWidth=Math.max(.06,1*px);ctx.stroke();
+    if(a.id===sel){ctx.strokeStyle=C.lamp;ctx.lineWidth=Math.max(.12,2*px);ctx.beginPath();ctx.arc(x,y,r+.28,0,Math.PI*2);ctx.stroke();}
+    if(ts>=18&&a.age>=14){ctx.fillStyle=C.dark?C.bg:'#fff';ctx.font=`700 ${r*1.2}px "Alegreya Sans", sans-serif`;ctx.fillText(a.first[0],x,y+r*.05);}
+    if(a.glyph){const g=a.glyph;ctx.font=`700 ${Math.max(12,ts*.8)*px}px "Alegreya Sans", sans-serif`;
+      ctx.fillStyle=g.k==='good'?C.good:g.k==='bad'?C.bad:g.k==='rumour'?C.lamp:C.mapink;
+      ctx.fillText(g.c,x,y-r-Math.max(.45,7*px));}
+  }
+}
+cv.addEventListener('click',e=>{
+  const rc=cv.getBoundingClientRect(),x=(e.clientX-rc.left)/rc.width*W,y=(e.clientY-rc.top)/rc.height*H;
+  let best=-1,bd=1.6;for(const a of LIVE){if(!visibleA(a))continue;const d=Math.hypot(a.x-x,a.y-y);if(d<bd){bd=d;best=a.id;}}
+  if(best>=0)select(best);
+});
+
+// ---------- interface ----------
+const $=id=>document.getElementById(id);
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+function describe(a){
+  if(a.dead)return `died ${seasonName(a.dead.t)}`;
+  if(!a.arrived){const verb={sleep:'heading home to bed',eat:'heading home to eat',work:`off to work at ${PN(a.act.place)}`,lessons:'off to school',gather:'on the way to a gathering',confront:`looking for ${S.agents[a.act.target]?S.agents[a.act.target].first:'someone'}`}[a.act.type];return verb||`walking to ${PN(a.act.place)}`;}
+  const p=PN(a.act.place);
+  switch(a.act.type){
+    case 'sleep':return 'asleep';
+    case 'eat':return a.age<4?'being fed':'eating at home';
+    case 'buy':return 'buying bread';
+    case 'meal':return 'eating supper at The Plough';
+    case 'steal':return 'lingering at the Bakehouse';
+    case 'work':return a.job==='innkeeper'?'serving at The Plough':`working at ${p}`;
+    case 'social':return a.tipsy>.3?`drinking at ${p}`:`passing the time at ${p}`;
+    case 'play':return `playing on ${p}`;
+    case 'lessons':return 'at lessons in the School';
+    case 'help':return `helping out at ${p}`;
+    case 'chapel':return 'at chapel';
+    case 'fair':return S.fair&&S.fair.harvest?'at the Harvest Home':'enjoying the fair';
+    case 'gather':{const g=S.gathers.find(x=>x.id===a.act.target);return g?({wedding:'at a wedding',funeral:'at a funeral',election:'voting at the Moot Hall',court:(g.cases.some(c=>c.accused===a.id)?'on trial at the Moot Hall':g.jurors.includes(a.id)?'sitting on the jury':'watching the court')}[g.type]):'at the Chapel';}
+    case 'confront':return 'spoiling for a row';
+    default:return a.age<4?'at home':`wandering about ${p}`;
+  }
+}
+const moodOf=a=>clamp(1-(a.hunger*.45+a.tired*.3+a.lonely*.25),0,1);
+const moodColor=m=>m>.6?'var(--good)':m>.35?'var(--lamp)':'var(--bad)';
+let rosterEls={},rosterSig='';
+function buildRoster(){
+  const sig=LIVE.map(a=>a.id).join(',')+'|'+S.agents.length;
+  rosterSig=sig;
+  const r=$('roster');r.innerHTML='';rosterEls={};
+  const order=[...LIVE].sort((x,y)=>(x.home>y.home?1:x.home<y.home?-1:0)||y.age-x.age);
+  for(const a of order){
+    const b=document.createElement('button');b.className='res';b.dataset.id=a.id;
+    b.innerHTML=`<span class="thumb">${portraitSVG(a,30)}</span><span><span class="nm">${a.first}<small>${jobLabel(a)} · ${Math.floor(a.age)}</small></span><span class="doing"></span></span><span class="mood"><span></span></span>`;
+    r.appendChild(b);rosterEls[a.id]=b;
+  }
+  const dead=S.agents.filter(a=>a.dead).sort((x,y)=>y.dead.t-x.dead.t);
+  $('yardBox').hidden=!dead.length;$('yardSum').textContent=`The chapel yard and the departed (${dead.length})`;
+  $('yard').innerHTML=dead.map(a=>`<button class="res" data-id="${a.id}"><span class="thumb">${portraitSVG(a,30)}</span><span><span class="nm">${a.name}<small>${Math.floor(a.dead.age)} · ${jobLabel(a)}</small></span><span class="doing">${a.dead.exiled?cap(a.dead.cause):'Died'}, ${seasonName(a.dead.t)}</span></span></button>`).join('');
+  const selEl=$('rumourSubject');const cur=selEl.value;
+  selEl.innerHTML=LIVE.filter(isAdult).map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+  if(cur!==''&&LIVE.some(a=>String(a.id)===cur))selEl.value=cur;
+  $('nStranger').disabled=!STRANGERS.some(n=>!S.agents.some(a=>a.name===n[0]))||LIVE.length>=MAXPOP;
+}
+function traitWords(t){
+  const w=[];
+  if(t.temper>.6)w.push('quick-tempered');else if(t.temper<.3)w.push('even-tempered');
+  if(t.warmth>.65)w.push('warm-hearted');else if(t.warmth<.35)w.push('reserved');
+  if(t.diligence>.7)w.push('hard-working');else if(t.diligence<.4)w.push('idle');
+  if(t.forgive>.65)w.push('forgiving');else if(t.forgive<.3)w.push('holds grudges');
+  if(t.gossip>.65)w.push('loose-tongued');
+  if(t.scruple<.45)w.push('light-fingered');else if(t.scruple>.8)w.push('scrupulous');
+  return w.length?w:['unremarkable'];
+}
+function familyLine(a){
+  const parts=[];
+  if(a.spouse>=0){const s=S.agents[a.spouse];parts.push(`${a.sex==='f'?'Wife':'Husband'} of ${N(s)}${s.dead?' (late)':''}`);}
+  else if(a.widowOf!=null)parts.push(`${a.sex==='f'?'Widow':'Widower'} of ${N(S.agents[a.widowOf])}`);
+  if(a.parents.length)parts.push(`${a.sex==='f'?'Daughter':'Son'} of ${listNames(a.parents.map(i=>S.agents[i]))}`);
+  const kids=childrenOf(a);if(kids.length)parts.push(`${a.sex==='f'?'Mother':'Father'} of ${listNames(kids)}`);
+  return parts.join(' · ');
+}
+function renderDetail(){
+  const d=$('detail'),a=S.agents[sel];
+  if(!a){d.innerHTML='<p class="empty">Tap a villager on the map or in the list to follow them. Their friendships show as solid green threads on the map, grudges as dashed red.</p>';return;}
+  const bar=(label,v)=>`<span>${label}</span><span class="bar"><span style="width:${Math.round(v*100)}%;background:${v>.7?'var(--bad)':v>.45?'var(--lamp)':'var(--good)'}"></span></span><em>${Math.round(v*100)}</em>`;
+  const others=LIVE.filter(b=>b!==a).map(b=>({b,o:op(a,b)})).sort((x,y)=>y.o-x.o);
+  const rel=r=>{const o=Math.round(r.o),w=Math.abs(o)/2;return `<span class="who" data-id="${r.b.id}">${r.b.first}</span><span class="bar"><span style="${o>=0?`left:50%;width:${w}%;background:var(--good)`:`right:50%;width:${w}%;background:var(--bad)`}"></span></span><em>${o>0?'+':''}${o}</em>`;};
+  const friends=others.filter(r=>r.o>20).slice(0,3),foes=others.filter(r=>r.o<-15).reverse().slice(0,3);
+  const mems=a.mem.map(m=>{const who=m.w>=0?S.agents[m.w]:null;const txt=who?(/ me$/.test(m.t)||/^(is|was|smashed|mourns)/.test(m.t)?(m.t==='mourns'?`mourns ${N(who)}`:`${N(who)} ${m.t}`):`${m.t} ${N(who)}`):m.t;return `<li><time>Day ${m.d}</time>${txt}${m.p?` at ${PN(m.p)}`:''}</li>`;}).join('');
+  const rum=S.rumours.filter(r=>a.knows.includes(r.id)).slice(-4).map(r=>`<li>that ${r.subject===a.id?'they themselves':N(S.agents[r.subject])} ${r.text}</li>`).join('');
+  const fam=familyLine(a);
+  const role=a.dead?(a.dead.exiled?`${cap(jobLabel(a))} · ${a.dead.cause}, ${seasonName(a.dead.t)}`:`${cap(jobLabel(a))} · died ${seasonName(a.dead.t)}, aged ${Math.floor(a.dead.age)}, ${a.dead.cause}`):`${cap(jobLabel(a))} · ${Math.floor(a.age)} years old · ${P[a.home].name}${isAdult(a)?` · ${Math.floor(a.coins)} pennies`:''}`;
+  const fk=familyKey(a);
+  d.innerHTML=`<div class="dhead"><div class="dport">${portraitSVG(a,88)}</div><div><div class="dname"><h3>${a.name}</h3>${armsSVG(armsOf(fk),30,'Arms of the '+familyPlural(fk))}</div><p class="role">${role}</p></div></div>${fam?`<p class="fam">${fam}</p>`:''}
+   ${a.dead?'':`<p class="now">${cap(describe(a))}</p><div class="meters">${bar('Hunger',a.hunger)}${bar('Tiredness',a.tired)}${bar('Loneliness',a.lonely)}</div>`}
+   <div class="lbl">Temperament</div><div class="traits">${traitWords(a.tr).map(w=>`<span>${w}</span>`).join('')}</div>
+   ${a.dead?'':`<div class="lbl">Thinks well of</div>${friends.length?`<div class="rels">${friends.map(rel).join('')}</div>`:'<p class="empty">Nobody in particular.</p>'}
+   <div class="lbl">Thinks ill of</div>${foes.length?`<div class="rels">${foes.map(rel).join('')}</div>`:'<p class="empty">Nobody, yet.</p>'}`}
+   <div class="lbl">Remembers</div>${mems?`<ul class="mems">${mems}</ul>`:'<p class="empty">Nothing worth telling.</p>'}
+   ${rum&&!a.dead?`<div class="lbl">Has heard</div><ul class="mems">${rum}</ul>`:''}`;
+}
+function renderTechs(){
+  const html=Object.keys(TECH).map(id=>{
+    const T=TECH[id],t=S.tech[id],locked=!T.req.every(techBuilt)&&t.state==='none';
+    let tag,line,extra='';
+    if(t.state==='building'){const pct=clamp(100-(t.doneAt-S.tick)/(TPD*T.build)*100,0,100);return `<div class="tech st-idea"><div class="tn"><b>${T.name}</b><span>Being built</span></div><div class="ts">${N(S.agents[t.inventor])}'s scheme. Finished in ${Math.max(1,Math.ceil((t.doneAt-S.tick)/TPD))} days.</div><div class="pm"><span style="width:${pct}%"></span></div></div>`;}
+    if(t.state==='built'){const broken=t.brokenUntil>S.tick;tag=broken?'Wrecked':'Built';
+      line=broken?`Smashed in the night. Repairs in ${Math.ceil((t.brokenUntil-S.tick)/TPD)} day${t.brokenUntil-S.tick>TPD?'s':''}.`:`Built ${seasonName(t.builtAt)}. ${N(S.agents[t.inventor])}'s idea. It ${T.what}.`;
+      return `<div class="tech ${broken?'st-broken':'st-built'}"><div class="tn"><b>${T.name}</b><span>${tag}</span></div><div class="ts">${line}</div></div>`;}
+    if(t.state==='idea'){const inv=S.agents[t.inventor],bk=t.backers.map(i=>S.agents[i]).filter(b=>b!==inv),opp=t.opponents.map(i=>S.agents[i]);
+      line=`${N(inv)}'s idea. Backers ${t.backers.length} of ${T.need}${bk.length?` (${listNames(bk.slice(0,4))}${bk.length>4?' and more':''})`:''}${opp.length?`. Against: ${listNames(opp.slice(0,4))}`:''}. Costs ${T.cost} pennies.`;
+      return `<div class="tech st-idea"><div class="tn"><b>${T.name}</b><span>Being argued over</span></div><div class="ts">${line}</div></div>`;}
+    if(locked)return `<div class="tech st-locked"><div class="tn"><b>${T.name}</b><span>Unthought of</span></div><div class="ts">Nobody will think of it until the village has the ${T.req.map(r=>TECH[r].name.toLowerCase()).join(' and the ')}.</div></div>`;
+    const pr=clamp(t.pressure,0,100);
+    line=pr<25?'Nobody is talking about it.':pr<75?`${T.hint}.`:`${T.hint}. Someone is bound to think of it soon.`;
+    return `<div class="tech"><div class="tn"><b>${T.name}</b><span>Unthought of</span></div><div class="ts">${line}</div><div class="pm" aria-hidden="true"><span style="width:${pr}%"></span></div></div>`;
+  }).join('');
+  if(html!==renderTechs.last){$('techs').innerHTML=html;renderTechs.last=html;}
+}
+function renderCivic(){
+  const r=byJob('reeve'),e=S.election;
+  let h=`<div class="hallbox"><div class="lbl" style="margin:0">The reeve</div>`;
+  h+=r?`<div class="cand one"><span class="thumb">${portraitSVG(r,30)}</span><span>${N(r)} ${surname(r)} <small>${S.reeveSince!=null?'elected '+seasonName(S.reeveSince):'appointed by the manor'}</small></span></div>`:`<p class="empty">Nobody holds the office.</p>`;
+  if(e){
+    const vs=voters(),count={};for(const id of e.cands)count[id]=0;for(const v of vs){const f=favourite(v,false);if(f!=null)count[f]++;}
+    h+=`<div class="lbl" style="margin:4px 0 0">Election ${dayOf(e.vote)===dayOf()?'today':'on '+weekday(e.vote)} · support if the vote were now</div>`;
+    h+=e.cands.filter(id=>!S.agents[id].dead).map(id=>{const c=S.agents[id];return `<div class="cand"><span class="thumb">${portraitSVG(c,30)}</span><span>${N(c)}${c.job==='reeve'?' <small>reeve</small>':` <small>${c.job}</small>`}</span><span class="vbar"><span style="width:${Math.round(count[id]/Math.max(1,vs.length)*100)}%"></span></span><em>${count[id]}</em></div>`;}).join('');
+  }else h+=`<p class="note2">Next election: ${seasonName(S.nextElection)}.${S.lastElection?` Last time: ${S.lastElection.res.map(([id,v])=>`${S.agents[id].first} ${v}`).join(', ')}.`:''}</p>`;
+  h+='</div>';
+  const pend=S.cases.concat(...S.gathers.filter(g=>g.type==='court').map(g=>g.cases));
+  let c=`<div class="hallbox"><div class="lbl" style="margin:0">The court</div>`;
+  c+=pend.length?`<p class="note2">Waiting to be heard: ${pend.slice(0,3).map(x=>`${N(S.agents[x.accused])}, for ${x.charge}`).join('; ')}${pend.length>3?' and more':''}.</p>`:'<p class="note2">No cases waiting. The court sits on Saturdays when there is business.</p>';
+  c+=S.verdicts.slice(0,4).map(v=>`<div class="verd"><span class="pill ${v.guilty?'bad':'good'}">${v.guilty?'Guilty':'Acquitted'} ${v.guilty?v.score[0]+'–'+v.score[1]:v.score[1]+'–'+v.score[0]}</span><span>${N(S.agents[v.acc])}, ${v.charge}</span></div>`).join('');
+  c+='</div>';
+  $('civic').innerHTML=h+c;
+}
+function renderFamilies(){
+  const html=familyCards().map(({k,members,live})=>{
+    const ar=armsOf(k),dead=members.length-live.length,faces=(live.length?live:members).sort((x,y)=>y.age-x.age).slice(0,8);
+    return `<div class="famcard${live.length?'':' gone'}">${armsSVG(ar,62,'Arms of the '+familyPlural(k))}<div style="min-width:0"><h3>The ${familyPlural(k)}</h3><p class="motto">“${ar.motto}”</p><p class="blz">${blazon(ar)}</p><div class="faces">${faces.map(a=>`<button class="who" data-id="${a.id}" aria-label="${a.name}">${portraitSVG(a,26)}</button>`).join('')}</div><div class="count">${live.length?`${live.length} living`:'No one left'}${dead?` · ${dead} in the chapel yard`:''}</div></div></div>`;
+  }).join('');
+  const sig=familyCards().map(c=>c.k+c.live.map(a=>a.id+':'+Math.floor(a.age)+a.job).join(',')+armsOf(c.k).aug.join('')).join('|');
+  if(sig!==renderFamilies.sig){renderFamilies.sig=sig;$('fams').innerHTML=html;}
+}
+let logLen=-1,logFirst=null;
+function renderLog(){
+  if(S.log.length===logLen&&S.log[0]===logFirst)return;logLen=S.log.length;logFirst=S.log[0];
+  let html='',day=-1;
+  for(let i=S.log.length-1;i>=Math.max(0,S.log.length-220);i--){const e=S.log[i],d=dayOf(e.t);
+    if(d!==day){day=d;html+=`<h3 class="dayhead">${weekday(e.t)}, day ${dayInSeason(e.t)} of ${seasonName(e.t)}</h3>`;}
+    html+=`<div class="entry k-${e.k}"><time>${fmtTime(e.t)}</time><i></i><p>${e.h}</p></div>`;}
+  $('log').innerHTML=html||'<p class="empty">Nothing has happened yet.</p>';
+}
+function render(force){
+  if(!S)return;
+  $('when').innerHTML=`${seasonName()}<small>${weekday()}, day ${dayInSeason()} of ${SEASONS[seasonOf()].toLowerCase()} · ${fmtTime(S.tick)}</small>`;
+  const chips=[`<span class="chip era">${ERAS[S.era]}</span>`];
+  if(S.election)chips.push(`<span class="chip fair">Election ${dayOf(S.election.vote)===dayOf()?'today':weekday(S.election.vote)}</span>`);
+  if(S.storm>0)chips.push(`<span class="chip storm">${seasonOf()===3?'Blizzard':'Storm'} · ${Math.ceil(S.storm/6)}h left</span>`);
+  if(S.fair)chips.push(`<span class="chip fair">${S.fair.harvest?'Harvest Home':fairOn()?'Fair on the Green':'Fair '+(dayOf(S.fair.start)===dayOf()?'at 10:00':'tomorrow')}</span>`);
+  for(const g of S.gathers)if(g.type!=='election')chips.push(`<span class="chip ${g.type==='wedding'?'fair':''}">${{wedding:'Wedding',funeral:'Funeral',court:'Court'}[g.type]} ${S.tick>=g.start?'now':dayOf(g.start)===dayOf()?'today':'tomorrow'}</span>`);
+  const live=S.rumours.filter(r=>S.tick-r.born<TPD*4).length;if(live)chips.push(`<span class="chip rumour">${live} rumour${live>1?'s':''} about</span>`);
+  if(S.spoil>0)chips.push(`<span class="chip rumour">Flour spoiled · ${Math.ceil(S.spoil/6)}h</span>`);
+  if(isSunday())chips.push('<span class="chip">Sunday</span>');
+  $('chips').innerHTML=chips.join('');
+  const st=S.stores,kids=LIVE.filter(a=>a.age<14).length;
+  $('stores').innerHTML=`<span>Souls <b>${LIVE.length}</b>${kids?` (${kids} children)`:''}</span><span>Granary <b>${Math.floor(st.grain)}</b> of ${grainCap()}</span><span>Flour <b>${Math.floor(st.flour)}</b></span><span>Loaves <b>${Math.floor(st.bread)}</b></span>`;
+  const sig=LIVE.map(a=>a.id).join(',')+'|'+S.agents.length;
+  if(sig!==rosterSig||force)buildRoster();
+  for(const a of LIVE){const el=rosterEls[a.id];if(!el)continue;el.querySelector('.doing').textContent=describe(a);const m=moodOf(a),ms=el.querySelector('.mood span');ms.style.width=Math.round(m*100)+'%';ms.style.background=moodColor(m);el.classList.toggle('sel',a.id===sel);}
+  if(force||render.n++%2===0){renderDetail();renderTechs();}
+  if(force||render.n%6===1)renderFamilies();
+  if(force||render.n%3===1)renderCivic();
+  renderLog();
+  $('nFair').disabled=!!S.fair;
+}
+render.n=0;
+function select(id){sel=id;render(true);}
+document.addEventListener('click',e=>{const w=e.target.closest('.who,.res');if(w&&w.dataset.id!=null&&!w.closest('.story'))select(+w.dataset.id);});
+let speed=1;const TPS={0:0,1:3,3:9,10:30,30:90};
+document.querySelectorAll('.speed button').forEach(b=>b.addEventListener('click',()=>{speed=+b.dataset.speed;document.querySelectorAll('.speed button').forEach(x=>x.classList.toggle('on',x===b));}));
+$('nRumour').onclick=nudgeRumour;$('nShort').onclick=nudgeShort;$('nStorm').onclick=nudgeStorm;$('nStranger').onclick=nudgeStranger;$('nFair').onclick=nudgeFair;$('nPurse').onclick=nudgePurse;
+const msg=t=>{$('saveMsg').textContent=t;};
+$('copySave').onclick=()=>{const code=encode();
+  const fallback=()=>{$('loadArea').hidden=false;$('saveText').value=code;$('saveText').select();msg('Select all the text below and copy it.');};
+  try{navigator.clipboard.writeText(code).then(()=>msg('Save code copied. Paste it somewhere safe.'),fallback);}catch(e){fallback();}};
+$('showLoad').onclick=()=>{$('loadArea').hidden=false;$('saveText').value='';$('saveText').focus();msg('');};
+$('cancelLoad').onclick=()=>{$('loadArea').hidden=true;msg('');};
+function resetViews(){sel=-1;logLen=-1;rosterSig='';renderTechs.last='';renderFamilies.sig='';if(G){for(const id in G.agents){G.scene.remove(G.agents[id].g);}G.agents={};}}
+$('loadSave').onclick=()=>{try{S=decode($('saveText').value);refreshLive();resetViews();render(true);$('loadArea').hidden=true;msg(`Loaded. ${seasonName()}, ${fmtTime(S.tick)}.`);autosave();}catch(e){msg(e.message||'That save code could not be read.');}};
+let confirmNew=0;
+$('newTown').onclick=()=>{if(Date.now()-confirmNew>4000){confirmNew=Date.now();$('newTown').textContent='Tap again to start over';msg('This replaces the current village.');return;}
+  confirmNew=0;$('newTown').textContent='Start a new village';newTown((Math.random()*2**31)|0);resetViews();render(true);msg('A new village, same faces, fresh fortunes.');};
+
+// ---------- the annals ----------
+function yearTitle(y,ents){
+  const built=ents.find(e=>e.built);if(built)return `The Year of the ${TECH[built.tech].name.replace(/\b\w/g,c=>c.toUpperCase())}`;
+  const ban=ents.find(e=>e.c==='court'&&/banished/.test(e.h));if(ban)return `The Year ${S.agents[ban.ids[0]].first} Was Banished`;
+  const el=ents.find(e=>e.election);if(el&&el.ids.length>1&&ents.filter(e=>e.c==='death').length===0)return `The Year ${S.agents[el.ids[0]].first} Was Elected`;
+  const deaths=ents.filter(e=>e.c==='death');
+  if(deaths.length){const d=S.agents[deaths[0].ids[0]];return deaths.length>2?'The Year of Many Funerals':`The Year ${d.name} Was Buried`;}
+  const wed=ents.find(e=>e.c==='wedding');if(wed){const [x,y2]=wed.ids.map(i=>S.agents[i]);return `The Year ${x.first} Married ${y2.first}`;}
+  const births=ents.filter(e=>e.c==='birth');if(births.length)return births.length>1?`The Year of ${births.length} Christenings`:`The Year ${S.agents[births[0].ids[0]].first} Was Born`;
+  const sab=ents.find(e=>e.sabotage);if(sab)return 'The Year of the Machine Breakers';
+  const thin=ents.find(e=>e.harvest==='thin');if(thin)return 'The Hungry Year';
+  if(ents.some(e=>e.feud))return 'The Year of Bad Blood';
+  if(ents.some(e=>e.idea))return 'The Year of New Ideas';
+  return 'A Quiet Year';
+}
+function numberWord(n){return ['no','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'][n]||String(n);}
+function yearIntro(y){
+  const r=S.years[y]||{startPop:0,births:0,deaths:0,weddings:0},cur=y===yearOf();
+  const endPop=cur?LIVE.length:r.startPop+r.births-r.deaths;
+  const bits=[];
+  bits.push(`${cur?'This year began':`Year ${y} began`} with ${numberWord(r.startPop)} souls in Ashwood Fold${cur?` and there are ${numberWord(LIVE.length)} now`:` and ended with ${numberWord(Math.max(0,endPop))}`}.`);
+  const ev=[];if(r.births)ev.push(`${numberWord(r.births)} ${r.births>1?'births':'birth'}`);if(r.deaths)ev.push(`${numberWord(r.deaths)} ${r.deaths>1?'deaths':'death'}`);if(r.weddings)ev.push(`${numberWord(r.weddings)} ${r.weddings>1?'weddings':'wedding'}`);
+  bits.push(ev.length?`There ${r.births+r.deaths+r.weddings>1?'were':'was'} ${ev.join(', ').replace(/, ([^,]*)$/,' and $1')}.`:'Nobody was born, married or buried.');
+  if(r.harvest)bits.push(`The harvest was ${r.harvest}.`);
+  return bits.join(' ');
+}
+function paragraphs(ents){const out=[];let cur=[];for(const e of ents){cur.push(e.h);if(cur.length>=4){out.push(cur.join(' '));cur=[];}}if(cur.length)out.push(cur.join(' '));return out.map(p=>`<p>${p}</p>`).join('');}
+function castEntry(a){
+  const life=a.born!=null?`born ${seasonName(a.born)}`:a.arrivedAt!=null?`came to the village ${seasonName(a.arrivedAt)}`:`aged ${Math.floor(a.dead?a.dead.age-(a.dead.t-36)/TPD/YEAR_DAYS:a.age-(S.tick-36)/TPD/YEAR_DAYS)} when this chronicle begins`;
+  const end=a.dead?(a.dead.exiled?`; ${a.dead.cause}, ${seasonName(a.dead.t)}`:`; died ${seasonName(a.dead.t)}, ${a.dead.cause}, aged ${Math.floor(a.dead.age)}`):`; ${Math.floor(a.age)} years old now`;
+  const others=S.agents.filter(b=>b!==a);
+  const best=others.filter(b=>op(a,b)>50).sort((x,y)=>op(a,y)-op(a,x))[0],worst=others.filter(b=>op(a,b)<-40).sort((x,y)=>op(a,x)-op(a,y))[0];
+  const fam=familyLine(a);
+  const bits=[];if(best)bits.push(`Closest to ${N(best)}.`);if(worst)bits.push(`Never got on with ${N(worst)}.`);
+  const tr=traitWords(a.tr).slice(0,2).join(' and ');
+  return `<div>${portraitSVG(a,64)}<span><b>${a.name}</b><em>${cap(a.job==='child'&&a.dead?'child':a.job==='child'?(a.age<4?'baby':'child'):a.job)}, ${life}${end}</em>${fam?fam+'. ':''}${cap(tr)}. ${bits.join(' ')}</span></div>`;
+}
+function snapshot(){
+  try{
+    if(view==='3d'&&G){draw3d(1,0);return cv3.toDataURL('image/jpeg',.85);}
+    if(!cw)resize();if(!cw)return null;draw(1);return cv.toDataURL('image/jpeg',.85);
+  }catch(e){return null;}
+}
+function buildStory(){
+  const img=snapshot(),y0=yearOf(S.annals.length?S.annals[0].t:S.tick),y1=yearOf();
+  let html=`<h1>The Annals of Ashwood Fold</h1><p class="sub">A true account of the village, from Spring of Year 1 to ${seasonName()}</p>`;
+  if(img)html+=`<figure><img src="${img}" alt="Ashwood Fold in ${SEASONS[seasonOf()].toLowerCase()}, as it stands today"><figcaption>Ashwood Fold as it stands, ${seasonName()}</figcaption></figure>`;
+  const prologue=S.annals.filter(e=>e.c==='prologue');
+  if(prologue.length)html+=`<p class="intro">${prologue.map(e=>e.h).join(' ')}</p><p class="orn">· · ·</p>`;
+  let prevEra=-1;const roman=['I','II','III','IV','V'];
+  for(let y=Math.min(y0,1);y<=y1;y++){
+    const era=S.years[y]&&S.years[y].era!=null?S.years[y].era:Math.max(prevEra,0);
+    if(era!==prevEra){prevEra=era;html+=`<div class="bookhead"><span class="num">Book ${roman[era]}</span><h2>${ERAS[era]}</h2></div>`;}
+    const ents=S.annals.filter(e=>yearOf(e.t)===y&&e.c!=='prologue');
+    if(!ents.length&&!S.years[y])continue;
+    html+=`<section class="chapter"><span class="num">Chapter ${y}</span><h2>${yearTitle(y,ents)}</h2><p class="intro">${yearIntro(y)}</p>`;
+    for(let s=0;s<4;s++){
+      const capN={friend:1,fight:2,feud:2,rumour:2,crime:3,court:3,politics:3,letter:1,departure:3},seen={};
+      const se=ents.filter(e=>seasonOf(e.t)===s&&!(e.c==='season'&&e.season===0)&&!/Now for the money|talks .* round to/.test(e.h)).filter(e=>{const c=capN[e.c];if(!c)return true;seen[e.c]=(seen[e.c]||0)+1;return seen[e.c]<=c;});
+      if(!se.length)continue;
+      html+=`<h3>${SEASONS[s]}</h3>${paragraphs(se)}`;
+    }
+    html+=`</section>`;
+  }
+  const cast=[...S.agents].sort((a,b)=>(a.born??-1e9)-(b.born??-1e9)||b.age-a.age);
+  const fams=familyCards();
+  html+=`<section class="chapter"><span class="num">Appendix</span><h2>The Arms of the Families</h2><div class="armorial">${fams.map(({k,live,members})=>{const ar=armsOf(k);return `<div>${armsSVG(ar,96,'Arms of the '+familyPlural(k))}<b>${familyPlural(k)}</b><span>“${ar.motto}”</span><i>${blazon(ar)}</i><i>${live.length?`${live.length} living, ${members.length-live.length} departed`:'The line has ended'}</i></div>`;}).join('')}</div></section>`;
+  html+=`<section class="chapter"><span class="num">Appendix</span><h2>The Folk of Ashwood Fold</h2><div class="cast">${cast.map(castEntry).join('')}</div></section><p class="orn">· · ·</p>`;
+  $('book').innerHTML=html;
+  $('storyMeta').textContent=`${S.annals.length} entries · ${S.agents.length} lives`;
+}
+let storySpeed=1;
+$('openStory').onclick=()=>{buildStory();$('story').hidden=false;$('story').scrollTop=0;document.body.style.overflow='hidden';storySpeed=speed;speed=0;$('closeStory').focus();};
+function closeStory(){$('story').hidden=true;document.body.style.overflow='';speed=storySpeed;$('openStory').focus();}
+$('closeStory').onclick=closeStory;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('story').hidden)closeStory();});
+$('copyStory').onclick=()=>{
+  const book=$('book').cloneNode(true);book.querySelectorAll('figure').forEach(f=>f.remove());
+  const text=[...book.querySelectorAll('h1,.sub,h2,.num,h3,p,.cast div')].map(el=>el.matches('h1,h2')?'\n'+el.textContent.toUpperCase():el.matches('h3')?'\n'+el.textContent:el.textContent).join('\n');
+  const done=()=>{$('copyStory').textContent='Copied';setTimeout(()=>$('copyStory').textContent='Copy as text',1800);};
+  try{navigator.clipboard.writeText(text).then(done,()=>{$('copyStory').textContent='Copy failed: select the text instead';});}catch(e){$('copyStory').textContent='Copy failed: select the text instead';}
+};
+
+// ---------- 3D view ----------
+let view='2d',G=null,follow=false;
+const cv3=$('map3d');
+const tw=x=>x-W/2, tz=y=>y-H/2;
+function prism(w,d,h){
+  const x=w/2,z=d/2,g=new THREE.BufferGeometry();
+  const v=[-x,0,-z,-x,0,z,-x,h,0, x,0,z,x,0,-z,x,h,0, -x,0,z,x,0,z,x,h,0, -x,0,z,x,h,0,-x,h,0, x,0,-z,-x,0,-z,-x,h,0, x,0,-z,-x,h,0,x,h,0];
+  g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));g.computeVertexNormals();return g;
+}
+function makeLabel(text,o){
+  o=Object.assign({size:44,color:'#1d2725',bg:'rgba(244,246,241,0.88)',weight:600,h:.62},o||{});
+  const c=document.createElement('canvas'),x=c.getContext('2d'),font=`${o.weight} ${o.size}px "Alegreya Sans", "Gill Sans", sans-serif`;
+  x.font=font;const w=Math.ceil(x.measureText(text).width+o.size*.9),hh=Math.ceil(o.size*1.5);c.width=w;c.height=hh;
+  if(o.bg){const r=hh/2;x.fillStyle=o.bg;x.beginPath();x.moveTo(r,0);x.lineTo(w-r,0);x.arc(w-r,r,r,-Math.PI/2,Math.PI/2);x.lineTo(r,hh);x.arc(r,r,r,Math.PI/2,Math.PI*1.5);x.fill();}
+  x.font=font;x.fillStyle=o.color;x.textAlign='center';x.textBaseline='middle';x.fillText(text,w/2,hh/2+1);
+  const t=new THREE.CanvasTexture(c);t.minFilter=THREE.LinearFilter;
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));s.scale.set(o.h*w/hh,o.h,1);s.renderOrder=30;return s;
+}
+const glyphTex={};
+function glyphMat(c,k){const key=c+k;if(!glyphTex[key]){const col={good:'#3f9a57',bad:'#c8402c',rumour:'#d9971c',muted:'#55605b'}[k]||'#55605b';
+  const s=makeLabel(c,{size:64,color:'#fff',bg:col,weight:700,h:.8});glyphTex[key]=s.material;}return glyphTex[key];}
+const SEASON_COL={ground:[0x7aa258,0x6f9a4c,0x93984e,0xdfe5e8],leaf:[[0x5d9a4a,0x6aa54f,0xd9a7b8],[0x3f6e3a,0x4f7d3c,0x5d8a45],[0xb8652a,0xd39b3a,0x8f7a35],[0x3d5544,0x4a5d4a,0x56665a]],
+  crop:[0x7fae4c,0x6f9d3c,0xd2b450,0x8a7350],cropH:[.25,.8,1.05,.12]};
+function init3d(){
+  if(G)return true;
+  if(typeof THREE==='undefined')return false;
+  let renderer;try{renderer=new THREE.WebGLRenderer({canvas:cv3,antialias:true});}catch(e){return false;}
+  if(!renderer.getContext())return false;
+  renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  const scene=new THREE.Scene();scene.background=new THREE.Color(0x9fc3d6);scene.fog=new THREE.Fog(0x9fc3d6,50,125);
+  const camera=new THREE.PerspectiveCamera(38,1.5,.5,260);
+  const hemi=new THREE.HemisphereLight(0xdfeeff,0x4a5a3a,.6);scene.add(hemi);
+  const sun=new THREE.DirectionalLight(0xfff1d6,1);sun.castShadow=true;sun.shadow.mapSize.set(1536,1536);
+  Object.assign(sun.shadow.camera,{left:-28,right:28,top:22,bottom:-22,near:1,far:120});sun.shadow.bias=-.0006;scene.add(sun);scene.add(sun.target);
+  const lam=c=>new THREE.MeshLambertMaterial({color:c});
+  const roofMats=[];const roofLam=c=>{const m=lam(c);m.userData.base=new THREE.Color(c);roofMats.push(m);return m;};
+  const add=(m,cast,recv,parent)=>{if(cast)m.castShadow=true;if(recv!==false)m.receiveShadow=true;(parent||scene).add(m);return m;};
+  const groundMat=lam(SEASON_COL.ground[0]);
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(W+160,H+160),groundMat);ground.rotation.x=-Math.PI/2;add(ground);
+  const water=new THREE.Mesh(new THREE.PlaneGeometry(W+160,2.3),new THREE.MeshPhongMaterial({color:0x4d84a0,shininess:90,specular:0xaaccdd}));
+  water.rotation.x=-Math.PI/2;water.position.set(0,.035,tz(24.9));add(water);
+  const bank=lam(0x6f8f4f);for(const y of [23.65,26.15]){const b=new THREE.Mesh(new THREE.BoxGeometry(W+160,.12,.3),bank);b.position.set(0,.06,tz(y));add(b);}
+  const laneMat=lam(0xcdb991);
+  const lane=(x1,y1,x2,y2,parent)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(Math.abs(x2-x1)+.8,.04,Math.abs(y2-y1)+.8),laneMat);m.position.set(tw((x1+x2)/2),.02,tz((y1+y2)/2));add(m,false,true,parent);};
+  lane(-60,13,16,13);
+  const win={},chimneys=[],labels={},rows=[],groups={},homeSpots={};let boat=null,train=null,trainPuffs=[];let wheel=null,wheel2=null;
+  const groupFor=id=>{const p=P[id];if(!p.tech&&!p.plot)return scene;const g=new THREE.Group();scene.add(g);groups[id]=g;return g;};
+  const building=(id,p,parent)=>{
+    const cx=tw(p.x+p.w/2),cz=tz(p.y+p.h/2),bw=p.w-.5,bd=p.h-.5;
+    const wh={tavern:2.1,mill:2.2,hall:2,chapel:2.5,weaving:1.8,cottonmill:4.2,school:1.9}[id]||1.5;
+    const wallC=p.home?0xe8dcc2:{forge:0x8f877b,mill:0xd6cbb0,chapel:0xcfcabf,tavern:0xe2d2b0,hall:0xc9bba0,cottonmill:0xa4553e,school:0xd9cdb0}[id]||0xddd1b8;
+    add(new THREE.Mesh(new THREE.BoxGeometry(bw,wh,bd),lam(wallC)),true,true,parent).position.set(cx,wh/2,cz);
+    const along=bw>=bd,rh=Math.min(bw,bd)*(id==='cottonmill'?.3:.48);
+    const roof=new THREE.Mesh(prism((along?bw:bd)+.35,(along?bd:bw)+.35,rh),roofLam(id==='chapel'||id==='cottonmill'?0x56616b:p.home?0x7c4b36:id==='forge'?0x4f4a45:0x6a4535));
+    roof.position.set(cx,wh,cz);if(!along)roof.rotation.y=Math.PI/2;add(roof,true,true,parent);
+    const front=p.y+p.h<=13?1:-1,fz=cz+front*(bd/2+.02);
+    if(p.home||id==='tavern')homeSpots[id]={x:cx+(id==='tavern'?-bw*.18:bw*.22),y:Math.min(wh*.8,1.35),z:fz+front*.14,parent};
+    const door=new THREE.Mesh(new THREE.PlaneGeometry(.55,.95),lam(0x4a3326));door.position.set(cx,.48,fz);if(front<0)door.rotation.y=Math.PI;parent.add(door);
+    const wm=new THREE.MeshBasicMaterial({color:0x2c3238});win[id]=wm;
+    const floors=id==='cottonmill'?3:1;
+    for(let f=0;f<floors;f++)for(const dx of (id==='cottonmill'?[-.38,-.13,.13,.38]:[-.32,.32])){const w=new THREE.Mesh(new THREE.PlaneGeometry(.42,.42),wm);w.position.set(cx+dx*bw,floors>1?1+f*1.2:wh*.58,fz);if(front<0)w.rotation.y=Math.PI;parent.add(w);}
+    if(p.home||['bakery','forge','tavern','school'].includes(id)||id==='cottonmill'){
+      const tall=id==='cottonmill';
+      const ch=new THREE.Mesh(new THREE.BoxGeometry(tall?.7:.38,tall?5:.9,tall?.7:.38),lam(tall?0x7a3a2a:0x7d6a5c));
+      const chx=tall?cx+bw/2+.6:cx+(along?bw*.3:0),chz=tall?cz:cz+(along?0:bd*.3),chy=tall?2.5:wh+rh*.65;
+      ch.position.set(chx,chy,chz);add(ch,true,true,parent);
+      const puffs=[];for(let i=0;i<3;i++){const s=new THREE.Mesh(new THREE.SphereGeometry(tall?.4:.22,8,6),new THREE.MeshLambertMaterial({color:tall?0x9a9a9a:0xd8d8d8,transparent:true,opacity:.6}));s.visible=false;scene.add(s);puffs.push(s);}
+      chimneys.push({id,x:chx,y:chy+(tall?2.5:.45),z:chz,puffs,big:tall});
+    }
+    if(id==='chapel'){const sp=new THREE.Mesh(new THREE.ConeGeometry(.55,2.2,4),roofLam(0x56616b));sp.position.set(cx,wh+rh+.9,cz-bd*.25);sp.rotation.y=Math.PI/4;add(sp,true,true,parent);}
+    if(id==='mill'){
+      const mk=()=>{const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.TorusGeometry(1.1,.12,6,18),lam(0x5d4532)));
+        for(let i=0;i<8;i++){const sp=new THREE.Mesh(new THREE.BoxGeometry(.14,2.2,.3),lam(0x6b4f39));sp.rotation.z=i*Math.PI/8;g.add(sp);}
+        g.rotation.y=Math.PI/2;g.traverse(m=>m.castShadow=true);return g;};
+      wheel=mk();wheel.position.set(cx+bw/2+.35,1.05,cz+bd*.15);scene.add(wheel);
+      wheel2=mk();wheel2.position.set(cx+bw/2+.35,1.05,cz-bd*.35);wheel2.visible=false;scene.add(wheel2);
+    }
+    if(id==='tavern'){const post=new THREE.Mesh(new THREE.BoxGeometry(.12,1.6,.12),lam(0x4a3326));post.position.set(cx+bw/2+.3,.8,fz+.3*front);add(post,true,true,parent);
+      const sign=new THREE.Mesh(new THREE.BoxGeometry(.06,.5,.7),lam(0xb07b2c));sign.position.set(cx+bw/2+.3,1.35,fz+.3*front);add(sign,true,true,parent);}
+    if(id==='school'){const bell=new THREE.Mesh(new THREE.BoxGeometry(.5,.7,.5),roofLam(0x6a4535));bell.position.set(cx,wh+rh+.2,cz);add(bell,true,true,parent);}
+    return wh+rh+(id==='chapel'?1.9:0);
+  };
+  for(const id in P){
+    const p=P[id],cx=tw(p.x+p.w/2),cz=tz(p.y+p.h/2),parent=groupFor(id);
+    if(id!=='square'){const d=doorOf(p);lane(d[0],d[1],d[0],13,parent);lane(d[0],13,clamp(d[0],16,24),13,parent);}
+    let top=.4;
+    if(p.indoor)top=building(id,p,parent);
+    else if(id==='fields'){
+      const pl=new THREE.Mesh(new THREE.PlaneGeometry(p.w,p.h),lam(0x9c8248));pl.rotation.x=-Math.PI/2;pl.position.set(cx,.03,cz);add(pl);
+      const cm=lam(SEASON_COL.crop[0]);for(let y=p.y+.5;y<p.y+p.h-.2;y+=.75){const r=new THREE.Mesh(new THREE.BoxGeometry(p.w-.6,.5,.32),cm);r.position.set(cx,0,tz(y));add(r,true);rows.push(r);}
+      G_cropMat=cm;
+    }else if(id==='square'){
+      const pl=new THREE.Mesh(new THREE.PlaneGeometry(p.w,p.h),lam(0x9cc177));pl.rotation.x=-Math.PI/2;pl.position.set(cx,.03,cz);add(pl);G_greenMat=pl.material;
+      const well=new THREE.Mesh(new THREE.CylinderGeometry(.6,.65,.6,12),lam(0x9a958a));well.position.set(cx,.3,cz);add(well,true);
+      const wr=new THREE.Mesh(prism(1.6,1.4,.5),roofLam(0x6a4535));wr.position.set(cx,1.35,cz);add(wr,true);
+      for(const dx of [-.6,.6]){const pst=new THREE.Mesh(new THREE.BoxGeometry(.1,1.1,.1),lam(0x4a3326));pst.position.set(cx+dx,.85,cz);add(pst,true);}
+      top=1.9;
+    }else if(id==='garden'){
+      const pl=new THREE.Mesh(new THREE.PlaneGeometry(p.w,p.h),lam(0x6f9550));pl.rotation.x=-Math.PI/2;pl.position.set(cx,.03,cz);add(pl);
+      let k=0;for(let x=p.x+.6;x<p.x+p.w-.3;x+=.8)for(let y=p.y+.6;y<p.y+p.h-.3;y+=.8){const b=new THREE.Mesh(new THREE.IcosahedronGeometry(.28,0),lam([0x4e8a45,0x8c6bb1,0x5f9a4a,0xc9a33b][k++%4]));b.position.set(tw(x),.25,tz(y));add(b,true);}
+    }else if(id==='wharf'){
+      const pl=new THREE.Mesh(new THREE.PlaneGeometry(p.w,p.h),lam(0x9e9584));pl.rotation.x=-Math.PI/2;pl.position.set(cx,.04,cz);add(pl,false,true,parent);
+      for(let i=0;i<4;i++){const c=new THREE.Mesh(new THREE.BoxGeometry(.6,.6,.6),lam(i%2?0x7a5a40:0x6b4c34));c.position.set(cx-1.2+i*.75,.3+(i===2?.6:0),cz+.2);add(c,true,true,parent);}
+      const post=new THREE.Mesh(new THREE.BoxGeometry(.18,2.4,.18),lam(0x4a3326));post.position.set(cx+1.5,1.2,cz-.5);add(post,true,true,parent);
+      const arm=new THREE.Mesh(new THREE.BoxGeometry(1.8,.14,.14),lam(0x4a3326));arm.position.set(cx+1,2.3,cz-.5);add(arm,true,true,parent);
+      top=2.6;
+    }else{
+      const pl=new THREE.Mesh(new THREE.PlaneGeometry(p.w,p.h),lam(0xb8ab90));pl.rotation.x=-Math.PI/2;pl.position.set(cx,.03,cz);add(pl);
+      const st=new THREE.Mesh(new THREE.BoxGeometry(.25,2,.25),lam(0x8d877c));st.position.set(cx,1,cz);add(st,true);
+      const ar=new THREE.Mesh(new THREE.BoxGeometry(1,.22,.25),lam(0x8d877c));ar.position.set(cx,1.5,cz);add(ar,true);
+      for(const dx of [-1.8,1.8]){const stall=new THREE.Mesh(prism(1.4,1,.5),roofLam(dx<0?0xb2503a:0x3f6f8a));stall.position.set(cx+dx,1.1,cz+.2);add(stall,true);
+        const tb=new THREE.Mesh(new THREE.BoxGeometry(1.2,.7,.8),lam(0x7a5a40));tb.position.set(cx+dx,.35,cz+.2);add(tb,true);}
+      top=2.2;
+    }
+    let nm=p.name.replace(/^the /,'');if(p.home)nm=nm.split(' ')[0];
+    const lb=makeLabel(nm,{h:p.home?.7:.85});lb.position.set(cx,top+.7,cz);(parent===scene?scene:parent).add(lb);labels[id]=lb;
+  }
+  // works that appear when built
+  const techG={};
+  const tg=id=>{const g=new THREE.Group();g.visible=false;scene.add(g);techG[id]=g;return g;};
+  {const g=tg('barn'),cx=tw(BARN.x+BARN.w/2),cz=tz(BARN.y+BARN.h/2);
+    add(new THREE.Mesh(new THREE.BoxGeometry(BARN.w-.3,2.2,BARN.h-.3),lam(0x8a5a3c)),true,true,g).position.set(cx,1.1,cz);
+    const r=new THREE.Mesh(prism(BARN.h,BARN.w,1.5),roofLam(0x5b3a28));r.rotation.y=Math.PI/2;r.position.set(cx,2.2,cz);add(r,true,true,g);
+    const d=new THREE.Mesh(new THREE.PlaneGeometry(1.4,1.6),lam(0x4a3326));d.position.set(cx-(BARN.w-.3)/2-.02,.8,cz);d.rotation.y=-Math.PI/2;g.add(d);}
+  {const g=tg('plough'),p=P.fields,cx=tw(p.x+1.2),cz=tz(p.y-.6);
+    add(new THREE.Mesh(new THREE.BoxGeometry(1.6,.15,.15),lam(0x6b4f39)),true,true,g).position.set(cx,.5,cz);
+    const sh=new THREE.Mesh(new THREE.ConeGeometry(.25,.6,4),lam(0x6a6a70));sh.rotation.z=Math.PI/2;sh.position.set(cx+.9,.3,cz);add(sh,true,true,g);
+    for(const dz of [-.25,.25]){const h=new THREE.Mesh(new THREE.BoxGeometry(.7,.08,.08),lam(0x6b4f39));h.position.set(cx-1,.75,cz+dz);h.rotation.z=-.5;add(h,true,true,g);}}
+  {const g=tg('shuttle'),p=P.weaving,cx=tw(p.x+p.w+.6),cz=tz(p.y+p.h/2);
+    add(new THREE.Mesh(new THREE.BoxGeometry(1.3,1.4,2.6),lam(0xd9cdb5)),true,true,g).position.set(cx,.7,cz);
+    const r=new THREE.Mesh(prism(2.8,1.5,.6),roofLam(0x6a4535));r.rotation.y=Math.PI/2;r.position.set(cx,1.4,cz);add(r,true,true,g);}
+  {const g=tg('canal'),zc=tz(.2);
+    const w=new THREE.Mesh(new THREE.PlaneGeometry(W+160,1.4),new THREE.MeshPhongMaterial({color:0x3f6f7e,shininess:80,specular:0x99bbcc}));w.rotation.x=-Math.PI/2;w.position.set(0,.045,zc);g.add(w);
+    for(const dz of [-.75,.75]){const b=new THREE.Mesh(new THREE.BoxGeometry(W+160,.25,.18),lam(0x8d8578));b.position.set(0,.12,zc+dz);add(b,false,true,g);}
+    for(const x of [tw(30),tw(31)]){const gate=new THREE.Mesh(new THREE.BoxGeometry(.15,.5,1.4),lam(0x5b4330));gate.position.set(x,.2,zc);add(gate,true,true,g);}
+    boat=new THREE.Group();const hull=new THREE.Mesh(new THREE.BoxGeometry(3.4,.35,.7),lam(0x2f4a3a));hull.position.y=.18;boat.add(hull);
+    const cab=new THREE.Mesh(new THREE.BoxGeometry(1.2,.5,.6),lam(0x9a3b2a));cab.position.set(-1,.55,0);boat.add(cab);
+    const load=new THREE.Mesh(new THREE.BoxGeometry(1.8,.25,.55),lam(0x2a2622));load.position.set(.6,.42,0);boat.add(load);
+    boat.position.set(0,0,zc);boat.traverse(m=>m.castShadow=true);g.add(boat);}
+  {const g=tg('railway'),zr=tz(-2.6);
+    const bed=new THREE.Mesh(new THREE.BoxGeometry(W+160,.18,1.8),lam(0x7a6e60));bed.position.set(0,.09,zr);add(bed,false,true,g);
+    for(const dz of [-.36,.36]){const r=new THREE.Mesh(new THREE.BoxGeometry(W+160,.08,.08),lam(0x55555c));r.position.set(0,.24,zr+dz);g.add(r);}
+    const slM=lam(0x4a3a2c);for(let x=-W/2-30;x<W/2+30;x+=1.1){const s=new THREE.Mesh(new THREE.BoxGeometry(.25,.06,1.2),slM);s.position.set(x,.2,zr);g.add(s);}
+    const st=new THREE.Mesh(new THREE.BoxGeometry(4,1.8,1.6),lam(0xb7a789));st.position.set(tw(14.8),.9,zr-2);add(st,true,true,g);
+    const sr=new THREE.Mesh(prism(4.4,2,.7),roofLam(0x56616b));sr.position.set(tw(14.8),1.8,zr-2);add(sr,true,true,g);
+    const plat=new THREE.Mesh(new THREE.BoxGeometry(7,.35,.8),lam(0x9a958a));plat.position.set(tw(14.8),.18,zr-1.1);add(plat,false,true,g);
+    train=new THREE.Group();
+    const boiler=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,2.2,12),lam(0x2b4a33));boiler.rotation.z=Math.PI/2;boiler.position.y=.75;train.add(boiler);
+    const cabE=new THREE.Mesh(new THREE.BoxGeometry(.9,1,.9),lam(0x2b4a33));cabE.position.set(-1.3,.85,0);train.add(cabE);
+    const funnel=new THREE.Mesh(new THREE.CylinderGeometry(.13,.18,.6,8),lam(0x1d1d1d));funnel.position.set(.8,1.3,0);train.add(funnel);
+    const base=new THREE.Mesh(new THREE.BoxGeometry(3,.25,.9),lam(0x1d1d1d));base.position.y=.38;train.add(base);
+    for(let i=1;i<=3;i++){const c=new THREE.Mesh(new THREE.BoxGeometry(2.6,.9,.95),lam(i%2?0x7a2c24:0x6a2620));c.position.set(-i*3,.75,0);train.add(c);}
+    train.traverse(m=>m.castShadow=true);train.position.set(0,0,zr);g.add(train);
+    for(let i=0;i<4;i++){const s=new THREE.Mesh(new THREE.SphereGeometry(.3,8,6),new THREE.MeshLambertMaterial({color:0xe8e8e8,transparent:true,opacity:.6}));g.add(s);trainPuffs.push(s);}}
+  {const g=tg('steam'),p=P.cottonmill,x=tw(p.x-.4),z=tz(p.y+1);
+    const ch=new THREE.Mesh(new THREE.CylinderGeometry(.35,.55,7,10),lam(0x6e3326));ch.position.set(x,3.5,z);add(ch,true,true,g);
+    const eh=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.6,1.6),lam(0x8a4a36));eh.position.set(x+.1,.8,z+1.3);add(eh,true,true,g);
+    const puffs=[];for(let i=0;i<4;i++){const s=new THREE.Mesh(new THREE.SphereGeometry(.45,8,6),new THREE.MeshLambertMaterial({color:0x5a5a5a,transparent:true,opacity:.6}));s.visible=false;scene.add(s);puffs.push(s);}
+    chimneys.push({id:'cottonmill',x,y:7,z,puffs,big:true,tech:'steam'});}
+  // trees from their own seed, so the simulation's dice are untouched
+  let ts=91;const lr=()=>((ts=(Math.imul(ts,1664525)+1013904223)>>>0)/4294967296);
+  const trunkM=lam(0x5a4130),leafM=[lam(0x3f6e3a),lam(0x4f7d3c),lam(0x5d8a45)];
+  const free=(x,y)=>{if(y>23.2&&y<26.8)return false;if(y<1.4&&y>-6)return false;if(Math.abs(y-13)<1.3&&x<25)return false;
+    if(x>BARN.x-1&&x<BARN.x+BARN.w+1&&y>BARN.y-1&&y<BARN.y+BARN.h+1)return false;if(x>P.fields.x-1&&x<P.fields.x+3&&y>P.fields.y-1.6&&y<P.fields.y)return false;
+    if(x>P.weaving.x+P.weaving.w-.5&&x<P.weaving.x+P.weaving.w+2&&y>P.weaving.y-1&&y<P.weaving.y+P.weaving.h+1)return false;
+    for(const id in P){const p=P[id];if(x>p.x-1.2&&x<p.x+p.w+1.2&&y>p.y-1.4&&y<p.y+p.h+1.2)return false;const d=doorOf(p);if(Math.abs(x-d[0])<1&&((y-d[1])*(13-y)>=0))return false;}return true;};
+  let placed=0;for(let i=0;i<600&&placed<70;i++){const x=-9+lr()*(W+18),y=-7+lr()*(H+14);if(!free(x,y))continue;placed++;
+    const s=.7+lr()*.6,tr=new THREE.Mesh(new THREE.CylinderGeometry(.12*s,.16*s,.8*s,6),trunkM);tr.position.set(tw(x),.4*s,tz(y));add(tr,true);
+    const lf=new THREE.Mesh(lr()<.5?new THREE.ConeGeometry(.75*s,1.9*s,7):new THREE.IcosahedronGeometry(.85*s,0),leafM[Math.floor(lr()*3)]);lf.position.set(tw(x),(.8+.85)*s,tz(y));add(lf,true);}
+  const sg=new THREE.BufferGeometry(),sp=[];for(let i=0;i<400;i++){const th=lr()*Math.PI*2,ph=lr()*Math.PI*.45;sp.push(Math.sin(ph)*Math.cos(th)*150,Math.cos(ph)*150,Math.sin(ph)*Math.sin(th)*150);}
+  sg.setAttribute('position',new THREE.Float32BufferAttribute(sp,3));
+  const stars=new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:1.2,sizeAttenuation:false,transparent:true,opacity:0,fog:false}));scene.add(stars);
+  const RN=700,rg=new THREE.BufferGeometry(),rp=new Float32Array(RN*6),rv=[];
+  for(let i=0;i<RN;i++){const x=(lr()-.5)*(W+10),y=lr()*14,z=(lr()-.5)*(H+10);rv.push([x,y,z]);}
+  rg.setAttribute('position',new THREE.BufferAttribute(rp,3));
+  const rain=new THREE.LineSegments(rg,new THREE.LineBasicMaterial({color:0xaac4d6,transparent:true,opacity:.55}));rain.visible=false;rain.frustumCulled=false;scene.add(rain);
+  const snowG=new THREE.BufferGeometry(),snowP=new Float32Array(RN*3);snowG.setAttribute('position',new THREE.BufferAttribute(snowP,3));
+  const snow=new THREE.Points(snowG,new THREE.PointsMaterial({color:0xffffff,size:.18,transparent:true,opacity:.9}));snow.visible=false;snow.frustumCulled=false;scene.add(snow);
+  const thG=new THREE.BufferGeometry();thG.setAttribute('position',new THREE.BufferAttribute(new Float32Array(60*6),3));thG.setAttribute('color',new THREE.BufferAttribute(new Float32Array(60*6),3));
+  const threads=new THREE.LineSegments(thG,new THREE.LineBasicMaterial({vertexColors:true,depthTest:false,transparent:true,opacity:.85}));threads.renderOrder=25;threads.frustumCulled=false;scene.add(threads);
+  G={renderer,scene,camera,sun,hemi,water,win,chimneys,labels,rows,wheel,wheel2,stars,rain,rv,snow,threads,agents:{},groups,techG,homeSpots,boat,train,trainPuffs,groundMat,leafM,roofMats,cropMat:G_cropMat,greenMat:G_greenMat,
+     theta:-.35,phi:.92,radius:46,target:new THREE.Vector3(0,0,1.5),time:0,ray:new THREE.Raycaster(),seasonSeen:-1};
+  bind3dControls();size3d();G.radius=defR();new ResizeObserver(size3d).observe(cv3);
+  return true;
+}
+let G_cropMat=null,G_greenMat=null;
+const bannerTex={};
+function bannerTexture(fam){
+  const ar=armsOf(fam),key=fam+':'+ar.aug.join(',');
+  if(bannerTex[key])return bannerTex[key];
+  const c=document.createElement('canvas');c.width=128;c.height=136;
+  const tex=new THREE.CanvasTexture(c);tex.minFilter=THREE.LinearFilter;bannerTex[key]=tex;
+  const img=new Image();img.onload=()=>{try{c.getContext('2d').drawImage(img,0,0,128,136);tex.needsUpdate=true;}catch(e){}};
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(armsSVG(ar,128));
+  return tex;
+}
+function updateBanners(){
+  for(const id in G.homeSpots){
+    const sp=G.homeSpots[id],folk=household(id).filter(isAdult).sort((x,y)=>y.age-x.age);
+    const keeper=id==='tavern'?byJob('innkeeper'):null;
+    const fam=id==='tavern'?(keeper?familyKey(keeper):null):(folk[0]?familyKey(folk[0]):null);
+    if(!sp.sprite){sp.sprite=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true}));sp.sprite.scale.set(.72,.76,1);sp.sprite.position.set(sp.x,sp.y,sp.z);sp.parent.add(sp.sprite);}
+    if(!fam){sp.sprite.visible=false;continue;}
+    const tex=bannerTexture(fam);if(sp.sprite.material.map!==tex){sp.sprite.material.map=tex;sp.sprite.material.needsUpdate=true;}
+    sp.sprite.visible=true;
+  }
+}
+function defR(){return 46*Math.pow(Math.max(1,1.5/(G.camera.aspect||1.5)),.85);}
+function size3d(){if(!G)return;const r=cv3.getBoundingClientRect();if(!r.width)return;G.renderer.setSize(r.width,r.height,false);G.camera.aspect=r.width/r.height;G.camera.updateProjectionMatrix();}
+function agentMesh(a){
+  let m=G.agents[a.id];if(m)return m;
+  const g=new THREE.Group();
+  const mat=new THREE.MeshLambertMaterial({color:new THREE.Color().setHSL(hueOf(a)/360,.55,.48),transparent:true});
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.24,.34,.8,10),mat);body.position.y=.4;body.castShadow=true;
+  const headM=new THREE.MeshLambertMaterial({color:0xf0d0ab,transparent:true});
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.22,12,10),headM);head.position.y=1.02;head.castShadow=true;
+  const hat=new THREE.Mesh(new THREE.CylinderGeometry(.2,.26,.12,10),mat);hat.position.y=1.2;
+  body.userData.id=head.userData.id=a.id;
+  const fig=new THREE.Group();fig.add(body,head,hat);g.add(fig);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.55,.06,6,24),new THREE.MeshBasicMaterial({color:0xe0a43a,depthTest:false,transparent:true}));ring.rotation.x=Math.PI/2;ring.position.y=.05;ring.renderOrder=26;ring.visible=false;g.add(ring);
+  const glyph=new THREE.Sprite(glyphMat('!','bad'));glyph.position.y=1.85;glyph.renderOrder=31;glyph.visible=false;g.add(glyph);
+  const tag=makeLabel(a.first,{h:.5,bg:'rgba(29,39,37,0.85)',color:'#fff'});tag.position.y=2.45;tag.visible=false;g.add(tag);
+  G.scene.add(g);
+  m=G.agents[a.id]={g,fig,body,head,hat,ring,glyph,tag,mat,mats:[mat,headM],pick:[body,head],hue:hueOf(a)};
+  return m;
+}
+const lerpC=(a,b,t)=>new THREE.Color(a).lerp(new THREE.Color(b),clamp(t,0,1));
+function applySeason(s){
+  G.seasonSeen=s;
+  G.groundMat.color.set(SEASON_COL.ground[s]);
+  G.leafM.forEach((m,i)=>m.color.set(SEASON_COL.leaf[s][i]));
+  if(G.cropMat)G.cropMat.color.set(SEASON_COL.crop[s]);
+  if(G.greenMat)G.greenMat.color.set(s===3?0xe8edf0:s===2?0xa9b46c:0x9cc177);
+  for(const m of G.roofMats)m.color.copy(m.userData.base).lerp(new THREE.Color(0xf2f5f7),s===3?.65:0);
+  const ch=SEASON_COL.cropH[s];for(const r of G.rows){r.scale.y=ch;r.position.y=.25*ch;}
+}
+function draw3d(al,dt){
+  if(!G)return;
+  G.time+=dt;
+  const season=seasonOf();if(season!==G.seasonSeen)applySeason(season);
+  const [rise,set]=LIGHT[season];
+  const h=hourOf()+(speed?al/6:0),f=(h-rise+.5)/(set-rise+1),day=clamp(Math.sin(Math.PI*f),0,1)*(f>0&&f<1?1:0),storm=S.storm>0;
+  const winterDim=season===3?.8:1;
+  if(day>0){G.sun.position.set(Math.cos(Math.PI*f)*-34,6+Math.sin(Math.PI*f)*(season===3?22:season===1?38:32),14);G.sun.color.copy(lerpC(0xffa45c,0xfff3dc,day*1.6));G.sun.intensity=(.2+.6*Math.pow(day,.5))*(storm?.45:1)*winterDim;}
+  else{G.sun.position.set(-18,30,-12);G.sun.color.set(0x8fa6dd);G.sun.intensity=.22;}
+  G.hemi.intensity=(.25+.3*day)*(storm?.75:1)*(season===3?1.1:1);
+  G.hemi.color.copy(lerpC(0x3a4a78,0xdfeeff,day*1.4));
+  let sky=day<.35?lerpC(0x0b1430,0xe29a72,day/.35):lerpC(0xe29a72,season===3?0xb9c6cf:0x9fc3d6,(day-.35)/.3);
+  if(storm)sky.lerp(new THREE.Color(0x4c565f),.65);
+  if(S.era>=3)sky.lerp(new THREE.Color(0x8b8374),.2);
+  G.scene.background.copy(sky);G.scene.fog.color.copy(sky);
+  const dk=darkness(h)+(storm?.18:0);
+  G.stars.material.opacity=storm?0:clamp((dk-.25)*2.5,0,.9);
+  // works and new cottages
+  for(const id in G.groups)G.groups[id].visible=placeShown(id);
+  for(const id in G.techG)G.techG[id].visible=techBuilt(id);
+  if(G.wheel2)G.wheel2.visible=techBuilt('millstone');
+  const awake={};for(const a of LIVE)if(a.arrived&&a.at&&P[a.at].indoor&&a.act.type!=='sleep')awake[a.at]=(awake[a.at]||0)+1;
+  for(const id in G.win)G.win[id].color.set(awake[id]&&dk>.12?0xffc764:awake[id]?0x6a6253:0x2c3238);
+  for(const c of G.chimneys){
+    const shown=placeShown(c.id)&&(!c.tech||techBuilt(c.tech)),on=shown&&(!!awake[c.id]||(c.big&&techOn('cottonmill')&&hourOf()>6&&hourOf()<19)||(season===3&&c.id!=='school'&&household(c.id).length>0));
+    c.puffs.forEach((p,i)=>{p.visible=on&&!storm;if(!p.visible)return;const t=((G.time*.35+i/3)%1);p.position.set(c.x+t*(c.big?1.8:.9),c.y+t*(c.big?3.5:2.2),c.z+t*.3);p.scale.setScalar(.6+t*1.4);p.material.opacity=.55*(1-t);});
+  }
+  if(G.time-(G.bannerT||-9)>1){G.bannerT=G.time;updateBanners();}
+  if(G.boat&&G.techG.canal.visible)G.boat.position.x=((G.time*1.1)%(W+60))-(W/2+30);
+  if(G.train&&G.techG.railway.visible){const t=(G.time%60)/60;G.train.position.x=-W/2-45+t*(W+90);
+    G.trainPuffs.forEach((p,i)=>{const k=((G.time*1.5+i/4)%1);p.position.set(G.train.position.x+.8-k*2.5,1.6+k*1.6,G.train.position.z);p.scale.setScalar(.6+k*1.5);p.material.opacity=.6*(1-k);});}
+  const spin=dt*(speed?.8:0)*(S.spoil>0?.3:1);if(G.wheel)G.wheel.rotation.x+=spin;if(G.wheel2)G.wheel2.rotation.x+=spin;
+  // villagers
+  const sa=S.agents[sel];
+  for(const id in G.agents){const a=S.agents[id];if(!a||a.dead){G.agents[id].g.visible=false;}}
+  for(const a of LIVE){
+    const m=agentMesh(a),vis=visibleA(a);m.g.visible=vis;if(!vis)continue;
+    const hu=hueOf(a);if(hu!==m.hue){m.hue=hu;m.mat.color.setHSL(hu/360,.55,.48);}
+    const sc=a.age<4?.45:a.age<14?.5+a.age*.035:a.age>70?.94:1;m.fig.scale.setScalar(sc);
+    m.glyph.position.y=1.85*sc+.2;m.tag.position.y=2.45*sc+.2;
+    const x=a.px+(a.x-a.px)*al,y=a.py+(a.y-a.py)*al;
+    const walking=!a.arrived&&speed>0;
+    m.g.position.set(tw(x),walking?Math.abs(Math.sin(G.time*11+a.id))*.14:0,tz(y));
+    if(!a.arrived){const dx=a.tx-a.px,dz=a.ty-a.py;if(dx||dz)m.g.rotation.y=Math.atan2(dx,dz);}
+    m.g.rotation.z=Math.sin(G.time*2.6+a.id)*.16*a.tipsy;
+    m.fig.rotation.x=a.age>70?.18:0;
+    const inside=a.arrived&&a.at&&P[a.at].indoor;
+    for(const mt of m.mats){mt.depthTest=!inside;mt.opacity=inside?.72:1;}
+    m.body.renderOrder=m.head.renderOrder=m.hat.renderOrder=inside?15:0;
+    m.ring.visible=a.id===sel;m.tag.visible=a.id===sel;
+    if(a.glyph){m.glyph.material=glyphMat(a.glyph.c,a.glyph.k);m.glyph.visible=true;}else m.glyph.visible=false;
+  }
+  const pos=G.threads.geometry.attributes.position,colA=G.threads.geometry.attributes.color;let n=0;
+  if(sa&&!sa.dead&&G.agents[sa.id]&&G.agents[sa.id].g.visible){
+    const sp=G.agents[sa.id].g.position;
+    for(const b of LIVE){if(b===sa||n>=60)continue;const mb=G.agents[b.id];if(!mb||!mb.g.visible)continue;const o=op(sa,b);if(Math.abs(o)<40)continue;
+      const bp=mb.g.position,c=o>0?[.3,.75,.4]:[.9,.3,.22],k=Math.abs(o)/100;
+      pos.setXYZ(n*2,sp.x,.9,sp.z);pos.setXYZ(n*2+1,bp.x,.9,bp.z);colA.setXYZ(n*2,c[0]*k,c[1]*k,c[2]*k);colA.setXYZ(n*2+1,c[0]*k,c[1]*k,c[2]*k);n++;}
+  }
+  G.threads.geometry.setDrawRange(0,n*2);pos.needsUpdate=colA.needsUpdate=true;
+  const snowing=season===3,raining=storm&&!snowing;
+  G.rain.visible=raining;G.snow.visible=snowing;
+  if(raining){const rp=G.rain.geometry.attributes.position;G.rv.forEach((d,i)=>{d[1]-=dt*16;if(d[1]<0)d[1]+=14;rp.setXYZ(i*2,d[0],d[1],d[2]);rp.setXYZ(i*2+1,d[0]-.08,d[1]-.6,d[2]);});rp.needsUpdate=true;}
+  if(snowing){const sp2=G.snow.geometry.attributes.position,rate=storm?3.2:1.1,cnt=storm?G.rv.length:Math.floor(G.rv.length*.4);
+    G.rv.forEach((d,i)=>{if(i>=cnt){sp2.setXYZ(i,0,-50,0);return;}d[1]-=dt*rate;if(d[1]<0)d[1]+=14;sp2.setXYZ(i,d[0]+Math.sin(G.time+i)*.3,d[1],d[2]);});sp2.needsUpdate=true;}
+  if(follow&&sa&&!sa.dead&&G.agents[sa.id]&&G.agents[sa.id].g.visible){const p=G.agents[sa.id].g.position;G.target.x+=(p.x-G.target.x)*.06;G.target.z+=(p.z-G.target.z)*.06;}
+  const c=G.camera,sp=Math.sin(G.phi);
+  c.position.set(G.target.x+G.radius*sp*Math.sin(G.theta),G.radius*Math.cos(G.phi),G.target.z+G.radius*sp*Math.cos(G.theta));
+  c.lookAt(G.target);
+  G.renderer.render(G.scene,c);
+}
+function bind3dControls(){
+  const pts=new Map();let downAt=0,moved=0,pinch=0,mid=null;
+  cv3.addEventListener('pointerdown',e=>{cv3.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY,b:e.button});if(pts.size===1){downAt=performance.now();moved=0;}pinch=0;mid=null;});
+  cv3.addEventListener('pointermove',e=>{
+    const p=pts.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;moved+=Math.abs(dx)+Math.abs(dy);
+    if(pts.size===1){
+      if(p.b===2||e.shiftKey)pan(dx,dy);
+      else{G.theta-=dx*.008;G.phi=clamp(G.phi-dy*.006,.08,1.35);}
+    }else if(pts.size===2){
+      const [a,b]=[...pts.values()],d=Math.hypot(a.x-b.x,a.y-b.y),m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+      if(pinch)G.radius=clamp(G.radius*pinch/d,10,85);
+      if(mid)pan(m.x-mid.x,m.y-mid.y);
+      pinch=d;mid=m;
+    }
+  });
+  const up=e=>{const was=pts.size;pts.delete(e.pointerId);pinch=0;mid=null;
+    if(was===1&&moved<7&&performance.now()-downAt<500)pick3d(e);};
+  cv3.addEventListener('pointerup',up);cv3.addEventListener('pointercancel',e=>{pts.delete(e.pointerId);});
+  cv3.addEventListener('contextmenu',e=>e.preventDefault());
+  cv3.addEventListener('wheel',e=>{e.preventDefault();G.radius=clamp(G.radius*Math.exp(e.deltaY*.0012),10,85);},{passive:false});
+}
+function pan(dx,dy){const k=G.radius*.0016,ct=Math.cos(G.theta),st=Math.sin(G.theta);follow=false;syncFollow();
+  G.target.x=clamp(G.target.x-dx*k*ct-dy*k*st,-W/2,W/2);G.target.z=clamp(G.target.z+dx*k*st-dy*k*ct,-H/2,H/2);}
+function pick3d(e){
+  const r=cv3.getBoundingClientRect(),v=new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  G.ray.setFromCamera(v,G.camera);
+  const objs=[];for(const id in G.agents)if(G.agents[id].g.visible)objs.push(...G.agents[id].pick);
+  const hit=G.ray.intersectObjects(objs,false)[0];
+  if(hit)select(hit.object.userData.id);
+  else{
+    let best=-1,bd=28;const sv=new THREE.Vector3();
+    for(const id in G.agents){const m=G.agents[id];if(!m.g.visible)continue;sv.setFromMatrixPosition(m.head.matrixWorld).project(G.camera);
+      const px=(sv.x+1)/2*r.width,py=(1-sv.y)/2*r.height,d=Math.hypot(px-(e.clientX-r.left),py-(e.clientY-r.top));if(d<bd){bd=d;best=+id;}}
+    if(best>=0)select(best);
+  }
+}
+function syncFollow(){$('vFollow').classList.toggle('on',follow);$('vFollow').setAttribute('aria-pressed',follow);}
+function setView(v,save){
+  if(v==='3d'&&!init3d()){v='2d';$('v3d').disabled=true;$('viewNote').textContent='3D needs WebGL, which this browser is not providing.';}
+  view=v;cv.hidden=v!=='2d';cv3.hidden=v!=='3d';$('cam3d').hidden=v!=='3d';
+  $('v2d').classList.toggle('on',v==='2d');$('v3d').classList.toggle('on',v==='3d');
+  if(v==='3d')$('viewNote').textContent='Drag to turn. Pinch or scroll to zoom. Two fingers or right-drag to pan.';
+  else if(!$('v3d').disabled)$('viewNote').textContent='';
+  if(v==='3d')size3d();
+  if(save)try{localStorage.setItem(SAVEKEY+'-view',v);}catch(e){}
+}
+$('v2d').onclick=()=>setView('2d',true);$('v3d').onclick=()=>setView('3d',true);
+$('vReset').onclick=()=>{if(!G)return;Object.assign(G,{theta:-.35,phi:.92,radius:defR()});G.target.set(0,0,1.5);follow=false;syncFollow();};
+$('vTop').onclick=()=>{if(!G)return;Object.assign(G,{theta:0,phi:.08,radius:defR()*.9});G.target.set(0,0,0);follow=false;syncFollow();};
+$('vFollow').onclick=()=>{if(sel<0||!S.agents[sel]||S.agents[sel].dead){$('viewNote').textContent='Pick a villager first, then Follow keeps the camera on them.';return;}follow=!follow;if(follow&&G)G.radius=Math.min(G.radius,24);syncFollow();};
+
+// ---------- loop ----------
+let acc=0,last=performance.now(),lastUI=0;
+function frame(now){
+  const dt=Math.min(.25,(now-last)/1000);last=now;acc+=dt*TPS[speed];let n=0;
+  while(acc>=1&&n<60){tick();acc-=1;n++;}if(n>=60)acc=0;
+  if(view==='3d'&&G)draw3d(speed?acc:1,dt);else draw(speed?acc:1);
+  if(now-lastUI>450){render();lastUI=now;}
+  requestAnimationFrame(frame);
+}
+function boot(data){
+  if(data&&data.state)S=migrate(data.state);
+  else{try{const raw=localStorage.getItem(SAVEKEY);if(raw){const o=JSON.parse(raw);if(o&&o.agents&&o.op)S=migrate(o);}}catch(e){S=null;}}
+  if(!S)newTown(20261023);
+  refreshLive();
+  if(data&&typeof data.sel==='number')sel=data.sel;
+  readColors();render(true);
+  let v='3d';try{v=localStorage.getItem(SAVEKEY+'-view')||'3d';}catch(e){}
+  setView(v,false);requestAnimationFrame(frame);
+}
+window.claude?.hot?.snapshot?.(()=>({state:S,sel}));
+window.claude?.hot?.ready?window.claude.hot.ready(boot):boot(window.claude?.hot?.data??{});
+})();
+</script>
