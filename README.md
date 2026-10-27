@@ -35,11 +35,11 @@ Open `dist/ashwood-fold.html` in a browser to play. Three.js r128 loads from cdn
 
 | Path | What lives there |
 | --- | --- |
-| `src/data/` | Plain data: places, jobs, founding families, names, ideas, eras, heraldry |
+| `src/data/` | Plain data: places, jobs, founding families, names, eras, heraldry, and `ideas.js`, one record per idea |
 | `src/sim/` | The simulation. Never touches the DOM or Three.js, so it runs the same in Node |
 | `src/sim/hooks.js` | The only way the simulation reaches the page (redraw after a nudge, autosave) |
 | `src/save/` | Save codes (`AF1:` prefix) and browser autosave |
-| `src/view/` | 2D map, 3D view, panels, portraits and arms, the annals book |
+| `src/view/` | 3D view, panels, portraits and arms, the annals book |
 | `src/main.js` | Boot and game loop |
 | `index.html`, `src/view/styles.css` | Page shell and styles, inlined by the build |
 | `harness/` | Headless runner, balance report, invariants, v5 reference and parity check |

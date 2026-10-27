@@ -5,9 +5,8 @@ import { SEASONS, TPD, YEAR_DAYS } from '../data/world.js';
 import { armsOf, blazon, familyCards, familyPlural } from '../sim/heraldry.js';
 import { op } from '../sim/social.js';
 import { LIVE, N, S, numberWord, seasonName, seasonOf, yearOf } from '../sim/state.js';
-import { cv, cw, draw, resize } from './map2d.js';
 import { armsSVG, portraitSVG } from './portraits.js';
-import { G, cv3, draw3d, view } from './three.js';
+import { G, cv3, draw3d } from './three.js';
 import { $, cap, familyLine, traitWords } from './ui.js';
 import { V } from './vstate.js';
 
@@ -48,8 +47,7 @@ export function castEntry(a){
 }
 export function snapshot(){
   try{
-    if(view==='3d'&&G){draw3d(1,0);return cv3.toDataURL('image/jpeg',.85);}
-    if(!cw)resize();if(!cw)return null;draw(1);return cv.toDataURL('image/jpeg',.85);
+    if(!G)return null;draw3d(1,0);return cv3.toDataURL('image/jpeg',.85);
   }catch(e){return null;}
 }
 export function buildStory(){
