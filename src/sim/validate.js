@@ -28,6 +28,8 @@ export function validateIdeas(ideas = IDEAS) {
     if (d.hires && !P[d.hires.place]) errors.push(`${where}: hires at unknown place ${d.hires.place}`);
     if (d.emblem && !CHARGE_NAMES[d.emblem]) errors.push(`${where}: emblem ${d.emblem} has no name`);
   }
+  // Places that appear with an idea must name a real one.
+  if (ideas === IDEAS) for (const [pid, p] of Object.entries(P)) if (p.tech && !known.has(p.tech)) errors.push(`place ${pid}: appears with unknown idea ${p.tech}`);
   // Every idea must be reachable: requirements form no cycle and lead back to ideas needing nothing.
   const state = {};
   const visit = (id, path) => {
