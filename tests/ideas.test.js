@@ -2,11 +2,16 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { IDEAS } from '../src/data/ideas.js';
-import { validateIdeas } from '../src/sim/validate.js';
+import { validateBuildings, validateIdeas } from '../src/sim/validate.js';
 
 describe('ideas are data', () => {
   it('the idea records validate', () => {
     expect(validateIdeas()).toEqual([]);
+  });
+
+  it('the building records validate, and a missing legacy is caught', () => {
+    expect(validateBuildings()).toEqual([]);
+    expect(validateBuildings({ shed: { w: 2, h: 2 } }).join('\n')).toMatch(/legacy/);
   });
 
   it('the validator catches broken records', () => {

@@ -20,52 +20,56 @@
 //     maxSlope, maxFlood hard limits (defaults 0.35 and 0.15)
 //   founding           order in which the first village is laid out (lower first); absent = built later
 //   hue                household colour for a founding home
+//   legacy             what the valley does with it as time passes:
+//                        replaceable  pulled down and replaced (cottages, fields)
+//                        adaptable    rebuilt or put to new use on the same site (inn, mill, hall)
+//                        enduring     kept as a landmark, and later a ruin or protected site (green, chapel, cross)
 export const BUILDINGS = {
-  square:   { name: 'the Green', w: 8, h: 6, indoor: false, kind: 'open', archetype: 'green', features: ['well'],
+  square:   { name: 'the Green', legacy: 'enduring', w: 8, h: 6, indoor: false, kind: 'open', archetype: 'green', features: ['well'],
               place: { centre: 4, flat: 3, dry: 2 }, founding: 1 },
-  chapel:   { name: 'the Chapel', w: 4, h: 4, indoor: true, kind: 'sacred', archetype: 'sacred', features: ['spire'],
+  chapel:   { name: 'the Chapel', legacy: 'enduring', w: 4, h: 4, indoor: true, kind: 'sacred', archetype: 'sacred', features: ['spire'],
               place: { centre: 3, flat: 2, dry: 2, near: { square: 2 } }, founding: 2 },
-  tavern:   { name: 'The Plough', w: 6, h: 4, indoor: true, kind: 'civic', archetype: 'long', features: ['sign', 'chimney'],
+  tavern:   { name: 'The Plough', legacy: 'adaptable', w: 6, h: 4, indoor: true, kind: 'civic', archetype: 'long', features: ['sign', 'chimney'],
               place: { centre: 3, near: { square: 3 }, road: 1 }, founding: 3 },
-  market:   { name: 'the Market Cross', w: 6, h: 3, indoor: false, kind: 'open', archetype: 'market', features: ['cross', 'stalls'],
+  market:   { name: 'the Market Cross', legacy: 'enduring', w: 6, h: 3, indoor: false, kind: 'open', archetype: 'market', features: ['cross', 'stalls'],
               place: { centre: 3, near: { square: 3 }, road: 1 }, founding: 4 },
-  hall:     { name: 'the Moot Hall', w: 4, h: 3, indoor: true, kind: 'civic', archetype: 'civic',
+  hall:     { name: 'the Moot Hall', legacy: 'adaptable', w: 4, h: 3, indoor: true, kind: 'civic', archetype: 'civic',
               place: { centre: 3, near: { square: 2 } }, founding: 5 },
-  mill:     { name: 'the Watermill', w: 5, h: 4, indoor: true, kind: 'work', archetype: 'workshop', features: ['waterwheel'],
+  mill:     { name: 'the Watermill', legacy: 'adaptable', w: 5, h: 4, indoor: true, kind: 'work', archetype: 'workshop', features: ['waterwheel'],
               place: { riverbank: true, centre: 2, maxFlood: 1, maxSlope: 0.5 }, founding: 6 },
-  fields:   { name: 'the South Fields', w: 12, h: 5, indoor: false, kind: 'field', archetype: 'field', features: ['crops'],
+  fields:   { name: 'the South Fields', legacy: 'replaceable', w: 12, h: 5, indoor: false, kind: 'field', archetype: 'field', features: ['crops'],
               place: { fertile: 4, flat: 3, nearWater: 1, edge: 1, away: { sacred: 1 }, maxFlood: 0.6 }, founding: 7 },
-  forge:    { name: 'the Forge', w: 4, h: 3, indoor: true, kind: 'work', archetype: 'workshop', features: ['chimney'],
+  forge:    { name: 'the Forge', legacy: 'adaptable', w: 4, h: 3, indoor: true, kind: 'work', archetype: 'workshop', features: ['chimney'],
               place: { centre: 2, flat: 1, away: { sacred: 1 } }, founding: 8 },
-  bakery:   { name: 'the Bakehouse', w: 4, h: 3, indoor: true, kind: 'work', archetype: 'workshop', features: ['chimney'],
+  bakery:   { name: 'the Bakehouse', legacy: 'adaptable', w: 4, h: 3, indoor: true, kind: 'work', archetype: 'workshop', features: ['chimney'],
               place: { centre: 2, near: { market: 2 } }, founding: 9 },
-  weaving:  { name: 'the Weaving Shed', w: 5, h: 4, indoor: true, kind: 'work', archetype: 'long',
+  weaving:  { name: 'the Weaving Shed', legacy: 'adaptable', w: 5, h: 4, indoor: true, kind: 'work', archetype: 'long',
               place: { centre: 1, flat: 2, near: { home: 1 } }, founding: 10 },
-  garden:   { name: 'the Physic Garden', w: 5, h: 3, indoor: false, kind: 'open', archetype: 'garden', features: ['beds'],
+  garden:   { name: 'the Physic Garden', legacy: 'replaceable', w: 5, h: 3, indoor: false, kind: 'open', archetype: 'garden', features: ['beds'],
               place: { fertile: 1, centre: 3, near: { sacred: 3 } }, founding: 11 },
-  holt:     { name: 'Holt Cottage', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
+  holt:     { name: 'Holt Cottage', legacy: 'replaceable', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
               place: { centre: 2, near: { home: 2 }, dry: 2 }, founding: 12, hue: 12 },
-  pendle:   { name: 'Pendle Cottage', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
+  pendle:   { name: 'Pendle Cottage', legacy: 'replaceable', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
               place: { centre: 2, near: { mill: 2, home: 1 }, dry: 2 }, founding: 13, hue: 208 },
-  barrow:   { name: 'Barrow Cottage', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
+  barrow:   { name: 'Barrow Cottage', legacy: 'replaceable', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
               place: { centre: 2, near: { forge: 2, home: 1 }, dry: 2 }, founding: 14, hue: 36 },
-  fair:     { name: 'Fairclough Farmhouse', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
+  fair:     { name: 'Fairclough Farmhouse', legacy: 'replaceable', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
               place: { near: { fields: 4 }, centre: 1, dry: 2 }, founding: 15, hue: 128 },
-  calder:   { name: 'Calder Cottage', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
+  calder:   { name: 'Calder Cottage', legacy: 'replaceable', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
               place: { centre: 2, near: { garden: 2, home: 1 }, dry: 2 }, founding: 16, hue: 285 },
-  greaves:  { name: 'Greaves House', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
+  greaves:  { name: 'Greaves House', legacy: 'replaceable', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
               place: { centre: 3, near: { hall: 2, home: 1 }, dry: 2 }, founding: 17, hue: 172 },
-  cottage:  { name: 'Cottage', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
+  cottage:  { name: 'Cottage', legacy: 'replaceable', w: 4, h: 3, indoor: true, home: true, kind: 'home', archetype: 'house', features: ['chimney'],
               place: { centre: 2, near: { home: 3 }, road: 1, dry: 2, flat: 1 } },
-  barn:     { name: 'the Tithe Barn', w: 3, h: 4, indoor: true, kind: 'work', archetype: 'long',
+  barn:     { name: 'the Tithe Barn', legacy: 'adaptable', w: 3, h: 4, indoor: true, kind: 'work', archetype: 'long',
               place: { near: { fields: 5 }, dry: 2 } },
-  school:   { name: 'the School', w: 4, h: 3, indoor: true, kind: 'civic', archetype: 'civic', features: ['bell', 'chimney'],
+  school:   { name: 'the School', legacy: 'adaptable', w: 4, h: 3, indoor: true, kind: 'civic', archetype: 'civic', features: ['bell', 'chimney'],
               place: { centre: 2, near: { home: 2, sacred: 1 }, away: { works: 2 } } },
-  cottonmill: { name: 'the Cotton Mill', w: 6, h: 4, indoor: true, kind: 'works', archetype: 'industrial', features: ['stack'],
+  cottonmill: { name: 'the Cotton Mill', legacy: 'adaptable', w: 6, h: 4, indoor: true, kind: 'works', archetype: 'industrial', features: ['stack'],
               place: { riverbank: true, centre: 1, away: { sacred: 2 }, maxFlood: 1, maxSlope: 0.5 } },
-  wharf:    { name: 'the Canal Wharf', w: 4, h: 2, indoor: false, kind: 'open', archetype: 'wharf', features: ['crane'],
+  wharf:    { name: 'the Canal Wharf', legacy: 'adaptable', w: 4, h: 2, indoor: false, kind: 'open', archetype: 'wharf', features: ['crane'],
               place: { line: 'canal', centre: 3 } },
-  station:  { name: 'the Station', w: 5, h: 2, indoor: true, kind: 'civic', archetype: 'station',
+  station:  { name: 'the Station', legacy: 'adaptable', w: 5, h: 2, indoor: true, kind: 'civic', archetype: 'station',
               place: { line: 'railway', centre: 3 } },
 };
 
@@ -88,5 +92,7 @@ export const CROSSINGS = {
   bridge: { name: 'the bridge' },
 };
 
-// Which archetypes are rebuilt in a newer style as the eras pass (the rest keep their first look).
-export const RESTYLED = ['house', 'long', 'workshop', 'civic'];
+// The legacies a building can have (see `legacy` above).
+export const LEGACIES = ['replaceable', 'adaptable', 'enduring'];
+// Archetypes whose look follows the era style, so rebuilding them shows (the rest keep their first look).
+export const STYLED_ARCHETYPES = ['house', 'long', 'workshop', 'civic'];

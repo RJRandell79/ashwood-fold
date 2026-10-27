@@ -2,7 +2,7 @@
 import { EFFECT_BASE, IDEAS } from '../data/ideas.js';
 import { CHARGE_NAMES } from '../data/heraldry.js';
 import { JOBS } from '../data/world.js';
-import { BUILDINGS, CROSSINGS, LINES } from '../data/buildings.js';
+import { BUILDINGS, CROSSINGS, LEGACIES, LINES } from '../data/buildings.js';
 import { SIGNALS, SIGNAL_EVENTS } from './signals.js';
 
 export function validateIdeas(ideas = IDEAS) {
@@ -48,4 +48,14 @@ export function validateIdeas(ideas = IDEAS) {
   const eras = ideas.filter(d => d.opensEra).map(d => d.opensEra).sort((a, b) => a - b);
   eras.forEach((e, i) => { if (e !== i + 1) errors.push(`eras are not opened 1, 2, 3...: found ${eras.join(', ')}`); });
   return [...new Set(errors)];
+}
+
+/** Checks the building records: every one needs a footprint and a known legacy. */
+export function validateBuildings(buildings = BUILDINGS) {
+  const errors = [];
+  for (const [id, b] of Object.entries(buildings)) {
+    if (!LEGACIES.includes(b.legacy)) errors.push(`building ${id}: legacy must be one of ${LEGACIES.join(', ')}`);
+    if (!(b.w > 0 && b.h > 0)) errors.push(`building ${id}: needs a footprint`);
+  }
+  return errors;
 }

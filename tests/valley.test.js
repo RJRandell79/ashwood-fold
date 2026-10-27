@@ -85,5 +85,6 @@ describe('the river and the eras', () => {
     const rebuilt = Object.values(S.places).filter(p => p.rebuilt);
     expect(rebuilt.length).toBeGreaterThan(3);
     for (const p of rebuilt) expect(p.era).toBeGreaterThanOrEqual(2);
+    for (const id of ['square', 'chapel', 'market']) expect(S.places[id].rebuilt, `${id} is enduring`).toBeUndefined();
   });
 });

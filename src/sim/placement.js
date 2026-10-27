@@ -1,7 +1,7 @@
 // Where buildings go. The game, not the player, chooses every site: each candidate plot is
 // scored against the building's placement rules (src/data/buildings.js) on the valley terrain.
 // Placement is deterministic: no draws from the simulation's dice, ties go to the first plot found.
-import { BUILDINGS, COTTAGE_HUES, COTTAGE_NAMES, LINES, RESTYLED } from '../data/buildings.js';
+import { BUILDINGS, COTTAGE_HUES, COTTAGE_NAMES, LINES, STYLED_ARCHETYPES } from '../data/buildings.js';
 import { ERA_STYLES } from '../data/styles.js';
 import { effect } from './effects.js';
 import { log } from './log.js';
@@ -189,11 +189,13 @@ export function routeLine(id) {
 }
 
 /** Each spring one building that is two eras out of date may be rebuilt in the style of the present:
- *  a home when its household can pay for it, anything else at the parish's charge. Oldest first. */
+ *  a home when its household can pay for it, anything else at the parish's charge. Oldest first.
+ *  Enduring buildings (the Green, the chapel, the cross) are never rebuilt; they keep their first look. */
 export function restyleSeason() {
   const era = S.era || 0, now = ERA_STYLES[Math.min(era, ERA_STYLES.length - 1)];
   const dated = Object.values(P)
-    .filter(p => RESTYLED.includes((BUILDINGS[p.def] || {}).archetype) && era - (p.era || 0) >= 2 && ERA_STYLES[p.era || 0].material !== now.material)
+    .filter(p => { const d = BUILDINGS[p.def] || {}; return d.legacy !== 'enduring' && STYLED_ARCHETYPES.includes(d.archetype); })
+    .filter(p => era - (p.era || 0) >= 2 && ERA_STYLES[p.era || 0].material !== now.material)
     .sort((a, b) => (a.era || 0) - (b.era || 0) || (a.built || 0) - (b.built || 0) || (a.id < b.id ? -1 : 1));
   for (const p of dated) {
     if (p.home) {
@@ -206,7 +208,8 @@ export function restyleSeason() {
     }
     {
       rebuild(p, era);
-      log(`${PN(p.id).replace(/^the /, 'The ')} is rebuilt in ${now.material}.`, 'event', 'work', { place: p.id });
+      const how = BUILDINGS[p.def].legacy === 'adaptable' ? 'is rebuilt on its old footings' : 'is pulled down and rebuilt';
+      log(`${PN(p.id).replace(/^the /, 'The ')} ${how} in ${now.material}.`, 'event', 'work', { place: p.id });
       return p.id;
     }
   }
