@@ -9,19 +9,19 @@
 //   ideas                the ideas villagers can think of in this age (src/data/ideas.js)
 //   crossroads           the crossroads that can arise (src/data/crossroads.js)
 //   styles               how buildings look, era by era (src/data/styles.js)
-//   folk                 the founding cast: [name, job, home, traits, age, sex] (src/data/folk.js)
+//   cast                 the founding cast and how they stand with each other (src/data/folk.js)
 //   founding             building ids laid out for a new village, in order (src/data/buildings.js)
 //   next                 the age that follows, by way of an interlude, if any
 import { INDUSTRIAL_CROSSROADS, useCrossroads } from './crossroads.js';
 import { ERAS, ERA_LINES } from './eras.js';
-import { FOLK } from './folk.js';
+import { INDUSTRIAL_CAST } from './folk.js';
 import { INDUSTRIAL_IDEAS, useIdeas } from './ideas.js';
 import { ERA_STYLES } from './styles.js';
 
 export const AGES = {
   industrial: {
     id: 'industrial', name: 'The Industrial Village', startYear: 1750,
-    eras: ERAS, eraLines: ERA_LINES, ideas: INDUSTRIAL_IDEAS, crossroads: INDUSTRIAL_CROSSROADS, styles: ERA_STYLES, folk: FOLK,
+    eras: ERAS, eraLines: ERA_LINES, ideas: INDUSTRIAL_IDEAS, crossroads: INDUSTRIAL_CROSSROADS, styles: ERA_STYLES, cast: INDUSTRIAL_CAST,
     founding: ['square', 'chapel', 'tavern', 'market', 'hall', 'mill', 'fields', 'forge', 'bakery', 'weaving', 'garden', 'holt', 'pendle', 'barrow', 'fair', 'calder', 'greaves'],
     next: null,
   },
