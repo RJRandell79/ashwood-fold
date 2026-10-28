@@ -5,7 +5,7 @@ import { hashStr, lrng } from './faces.js';
 import { S, surname } from './state.js';
 
 export function familyKey(a){return (surname(a)||a.first);}
-export function familyPlural(f){return (/(s|x|sh|ch)$/.test(f)?f+'es':f+'s');}
+export function familyPlural(f){return (/es$/.test(f)?f:/(s|x|sh|ch)$/.test(f)?f+'es':f+'s');}
 export function armsOf(fam){
   if(!S.arms)S.arms={};
   if(S.arms[fam])return S.arms[fam];

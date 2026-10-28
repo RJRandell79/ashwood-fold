@@ -8,6 +8,7 @@ import { step } from './life.js';
 import { footDay } from './paths.js';
 import { eventsDay } from './events.js';
 import { crossroadsDay } from './crossroads.js';
+import { interludeDay } from './interlude.js';
 import { restyleSeason } from './placement.js';
 import { log } from './log.js';
 import { gatherTick, lifeDay } from './people.js';
@@ -43,6 +44,7 @@ export function midnight(){
   footDay();
   for(const k in S.cool)if(S.cool[k]<S.tick)delete S.cool[k];
   refreshLive();
+  interludeDay(); // last: it may close the age and open the next
 }
 export function tick(){
   S.tick++;
