@@ -200,10 +200,46 @@ export const EFFECT_BASE = {
   farBank: 0,                // 1 = buildings may go up on the far bank of the river
 };
 
+// The ideas of the manor village (1290 on). Some are shared with the industrial village (the same record):
+// the tithe barn, the second millstone, wood clearing and the stone bridge.
+const IDEA_OF = id => INDUSTRIAL_IDEAS.find(d => d.id === id);
+export const MEDIEVAL_IDEAS = [
+  IDEA_OF('millstone'), IDEA_OF('barn'), IDEA_OF('assart'), IDEA_OF('bridge'),
+  {
+    id: 'chantry', answers: 'social', name: 'Chantry school', what: 'pays a priest to sing for the dead and teach the children their letters', hint: 'Talk of the children growing up unlettered',
+    places: ['chantry'],
+    requires: [], inventorJobs: ['herbalist', 'reeve', 'innkeeper', 'baker'], backers: 5, cost: 35,
+    pressure: { base: 0.2, when: { manyChildren: 2 }, on: { rumourSpread: 20 } },
+    effects: { rumourTrust: { mul: 0.7 }, rumourDoubtChance: { set: 0.2 }, juryBias: { set: 0.4 }, childInherit: { set: 0.4 }, lessons: { set: 'chantry' } },
+    emblem: 'book',
+  },
+  {
+    id: 'charter', answers: 'economy', name: 'Market charter', what: "lets the village hold a market every week, by the king's leave", hint: 'Talk of the market at the next town, and the tolls paid there',
+    places: ['market'],
+    requires: [], inventorJobs: ['reeve', 'baker', 'innkeeper', 'farmer'], backers: 6, cost: 50,
+    pressure: { base: 0.35, when: { granaryFullAtHarvest: 3, hasWeavers: 0.3 } },
+    effects: { carterWage: { set: 0.09 }, springMigrants: { set: 1 }, migrantJob: { set: 'carter' }, migrantReason: { set: 'to trade at the new market' } },
+    builtLines: ['A stone cross is raised where the market will stand.'],
+    opensEra: 1,
+    emblem: 'key',
+  },
+  {
+    id: 'fulling', answers: 'economy', name: 'Fulling mill', what: "beats the cloth by water power instead of by men's feet", hint: "The weavers' cloth waits weeks for the walkers",
+    places: ['fulling'],
+    requires: ['charter'], inventorJobs: ['miller', 'weaver', 'smith'], backers: 6, cost: 70, buildDays: 5,
+    pressure: { base: 0.3, when: { hasWeavers: 0.5, weaversPoor: 1.5 } },
+    threatens: { labourer: 0.4 },
+    effects: { weaverWage: { mul: 1.5 } },
+    builtLines: ['The great hammers of the fulling mill can be heard from the Green.'],
+    opensEra: 2,
+    emblem: 'millwheel',
+  },
+];
+
 /** The ideas of the age the village is in now. Switched by useIdeas when the age changes. */
 export let IDEAS = INDUSTRIAL_IDEAS;
 /** Every idea of every age, by id, so the annals can still name the ideas of earlier ages. */
-export const IDEA = Object.fromEntries(INDUSTRIAL_IDEAS.map(d => [d.id, d]));
+export const IDEA = Object.fromEntries([...INDUSTRIAL_IDEAS, ...MEDIEVAL_IDEAS].map(d => [d.id, d]));
 /** Makes an age's ideas the live ones, and registers them for lookup. */
 export function useIdeas(list) {
   IDEAS = list;

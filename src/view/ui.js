@@ -1,5 +1,4 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
-import { STRANGERS } from '../data/folk.js';
 import { IDEA, IDEAS } from '../data/ideas.js';
 import { effect, eraName } from '../sim/effects.js';
 import { MAXPOP, SEASONS, TPD } from '../data/world.js';

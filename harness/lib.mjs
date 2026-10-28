@@ -10,8 +10,8 @@ export const TICKS_PER_YEAR = TPD * 20;
 
 /** Starts a fresh village from `seed` and runs it for `years` game years (or `ticks` ticks).
  *  `policy` (a name from harness/policies.mjs) answers crossroads once a day; by default none are answered. */
-export function run(seed, { years = 0, ticks = years * TICKS_PER_YEAR, onYear, policy = 'never' } = {}) {
-  newTown(seed);
+export function run(seed, { years = 0, ticks = years * TICKS_PER_YEAR, onYear, policy = 'never', age } = {}) {
+  newTown(seed, age);
   refreshLive();
   const answer = POLICIES[policy](seed);
   for (let i = 1; i <= ticks; i++) {

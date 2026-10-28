@@ -1,5 +1,5 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
-import { FOLK, STRANGERS } from '../data/folk.js';
+import { FOLK, INDUSTRIAL_NAMES } from '../data/folk.js';
 import { IDEAS } from '../data/ideas.js';
 import { JOBS, TPD, YEAR_DAYS } from '../data/world.js';
 import { armsOf, familyKey } from './heraldry.js';
@@ -23,7 +23,7 @@ export function blankState(seed,age=FIRST_AGE){
   const s={v:3,age,yearBase:AGES[age].startYear,seed,rng:seed|0,valley:{seed},places:{},lines:{},crossing:null,foot:{},cottages:0,tick:6*6,agents:[],op:[],pair:{},grudge:{},cool:{},
      stores:{grain:160,flour:30,bread:30,missing:0},pantry:{},storm:0,fair:null,rumours:[],rid:0,log:[],annals:[],lastThief:-1,bareLogged:0,spoil:0,
      tech:{},gathers:[],gid:0,vacant:[],built:{},years:{},arms:{},election:null,nextElection:(YEAR_DAYS+2)*TPD,cases:[],cid:0,verdicts:[],era:0,reeveSince:null,lastElection:null,brawls:{},harvest:0,yearQ:.8+(((seed>>>3)%40)/100)};
-  for(const {id} of IDEAS)s.tech[id]={state:'none',pressure:0,backers:[],opponents:[],adopters:[]};
+  for(const {id} of AGES[age].ideas)s.tech[id]={state:'none',pressure:0,backers:[],opponents:[],adopters:[]};
   return s;
 }
 export function newTown(seed,age=FIRST_AGE){
@@ -85,7 +85,7 @@ export function migrate(o){
   const fresh=blankState(o.seed||1);
   for(const k in fresh)if(o[k]===undefined)o[k]=fresh[k];
   const byName={};FOLK.forEach(f=>byName[f[0]]=f);
-  const sx={};STRANGERS.forEach(s=>sx[s[0]]=s[1]);
+  const sx={};INDUSTRIAL_NAMES.strangers.forEach(s=>sx[s[0]]=s[1]);
   for(const a of o.agents){
     const f=byName[a.name];
     a.age=f?f[4]+(Math.floor((o.tick||0)/TPD)/YEAR_DAYS):25+((a.id*7)%20);

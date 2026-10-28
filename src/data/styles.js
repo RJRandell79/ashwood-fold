@@ -23,3 +23,11 @@ export const SEASON_GROUND = {
 };
 export const SEASON_LEAF = [[0x5d9a4a, 0x6aa54f, 0xd9a7b8], [0x3f6e3a, 0x4f7d3c, 0x5d8a45], [0xb8652a, 0xd39b3a, 0x8f7a35], [0x3d5544, 0x4a5d4a, 0x56665a]];
 export const SEASON_CROP = { colour: [0x7fae4c, 0x6f9d3c, 0xd2b450, 0x8a7350], height: [0.25, 0.8, 1.05, 0.12] };
+
+// The manor village, 1290 on: timber frames and thatch, stone for the better buildings later.
+//   timber: walls show their frame
+export const MEDIEVAL_STYLES = [
+  { name: 'manor years', material: 'timber and thatch', wall: 0xcdb994, wallAlt: 0xc2ad86, roof: 0xa48a58, roofAlt: 0x8e7548, trim: 0x3b2a1e, pitch: 0.65, storeys: 0, timber: true },
+  { name: 'market years', material: 'timber and thatch', wall: 0xd6c6a2, wallAlt: 0xc9b690, roof: 0x9e8350, roofAlt: 0x8a7145, trim: 0x3b2a1e, pitch: 0.62, storeys: 0, timber: true },
+  { name: 'cloth years', material: 'stone and thatch', wall: 0xd8ceb6, wallAlt: 0xcabfa4, roof: 0x9b7f4e, roofAlt: 0x7c6440, trim: 0x3b2a1e, pitch: 0.58, storeys: 0 },
+];

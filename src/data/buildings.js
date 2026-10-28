@@ -72,6 +72,13 @@ export const BUILDINGS = {
               place: { riverbank: true, centre: 1, away: { sacred: 2 }, maxFlood: 1, maxSlope: 0.5 } },
   wharf:    { name: 'the Canal Wharf', legacy: 'adaptable', w: 4, h: 2, indoor: false, kind: 'open', archetype: 'wharf', features: ['crane'],
               place: { line: 'canal', centre: 3 } },
+  fulling:  { name: 'the Fulling Mill', legacy: 'adaptable', w: 4, h: 3, indoor: true, kind: 'work', archetype: 'workshop', features: ['waterwheel'],
+              place: { riverbank: true, centre: 1, away: { sacred: 1 }, maxFlood: 1, maxSlope: 0.5 } },
+  chantry:  { name: 'the Chantry', legacy: 'adaptable', w: 3, h: 3, indoor: true, kind: 'civic', archetype: 'civic', features: ['bell'],
+              place: { centre: 2, near: { sacred: 4 } } },
+  // What is left of a building the valley no longer uses: low walls in the grass. Its name and size are
+  // the old building's; it stands where it stood (made by the interludes, src/sim/interlude.js).
+  ruin:     { name: 'the ruins', legacy: 'enduring', w: 4, h: 3, indoor: false, kind: 'open', archetype: 'ruin', place: {} },
   tollhouse: { name: 'the Toll House', legacy: 'adaptable', w: 3, h: 3, indoor: true, kind: 'civic', archetype: 'house', features: ['chimney'],
               place: { line: 'turnpike', centre: 3 } },
   station:  { name: 'the Station', legacy: 'adaptable', w: 5, h: 2, indoor: true, kind: 'civic', archetype: 'station',

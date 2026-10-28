@@ -34,7 +34,7 @@ export function plan(a){
     if(pan<1&&(isAdult(a)?a.coins>=1:(a.age>=6&&purseOf(a)>=1))&&S.stores.bread>=1&&h>=6&&h<20)add('buy','bakery',a.hunger*1.45+.03);
     if(isAdult(a)&&a.home!=='tavern'&&a.coins>=2&&S.stores.bread>=1&&h>=11&&h<23)add('meal','tavern',a.hunger*1.25+a.tr.warmth*.1-avoid(a,'tavern'));
     if(a.hunger>.72&&a.coins<1&&purseOf(a)<1&&pan<1&&S.stores.bread>=1&&h>=5)add('steal','bakery',a.hunger*(1.25-a.tr.scruple)+.1);
-    if(st==='adult'&&a.work){
+    if(st==='adult'&&a.work&&P[a.work]){ // no work until the workplace exists (a carter before there is a market)
       const workH=a.job==='innkeeper'?(h>=10&&h<23):(h>=7&&h<18);
       const elder=Math.max(0,a.age-62)*.02;
       add('work',a.work,(workH?.55:-.9)+a.tr.diligence*.45+(a.coins<3?.3:0)-a.tired*.45-(sun&&a.job!=='innkeeper'?.5:0)-avoid(a,a.work)*.5-elder-(winter&&!P[a.work].indoor?.15:0));
@@ -100,7 +100,7 @@ export function perform(a){
     if((day&&a.tired<.08)||(h>=9.5&&h<21&&a.tired<.4)||a.hunger>.97)a.act.left=0;
     return;
   }
-  if(t==='work'){produce(a);if((a.job!=='innkeeper'&&h>=19)||(S.storm>0&&!P[a.work].indoor))a.act.left=0;}
+  if(t==='work'){produce(a);if((a.job!=='innkeeper'&&h>=19)||(S.storm>0&&!(P[a.work]&&P[a.work].indoor)))a.act.left=0;}
   if(SOCIAL_ACTS.includes(t))a.lonely=Math.max(0,a.lonely-.016);
   a.act.left--;
 }
