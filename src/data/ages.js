@@ -47,7 +47,8 @@ export const AGES = {
     next: null,
   },
 };
-export const FIRST_AGE = 'industrial';
+// A new game begins in the first age; saves from before ages existed are industrial (see ensureState).
+export const FIRST_AGE = 'medieval';
 
 /** Makes an age's data the live data the simulation reads. */
 export function useAge(id) {

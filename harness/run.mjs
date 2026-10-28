@@ -7,7 +7,7 @@ import { TPD } from '../src/data/world.js';
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const seeds = arg('--seeds', '1,11,23,42,77').split(',').map(Number);
-const years = Number(arg('--years', 30));
+const years = Number(arg('--years', 65)); // a whole game: the manor village, the interlude, the industrial village
 const yearOf = t => Math.floor(t / TPD / 20) + 1;
 
 const rows = [];

@@ -70,7 +70,7 @@ function site(p, ctx, out) {
     group.add(plinth);
   }
   out.group.add(group);
-  return { group, frame, base: hi, lw, ld, cx, cy };
+  return { group, frame, base: hi, lw, ld, cx, cy, style: ctx.style };
 }
 /** Turns a point in a building's local frame into world coordinates. */
 function toWorld(s, x, y, z) {
@@ -78,7 +78,16 @@ function toWorld(s, x, y, z) {
   return { x: s.frame.position.x + x * c + z * n, y: s.base + y, z: s.frame.position.z - x * n + z * c };
 }
 
-function walls(s, w, h, d, colour) { const m = shade(box(w, h, d, colour)); m.position.y = h / 2; s.frame.add(m); return m; }
+function walls(s, w, h, d, colour) {
+  const m = shade(box(w, h, d, colour)); m.position.y = h / 2; s.frame.add(m);
+  if (s.style && s.style.timber) { // a timber frame shows on the faces: posts and a rail
+    for (const z of [d / 2 + 0.015, -d / 2 - 0.015]) {
+      for (const x of [-w / 2 + 0.06, -w / 6, w / 6, w / 2 - 0.06]) { const post = new THREE.Mesh(new THREE.PlaneGeometry(0.12, h), mat(s.style.trim)); post.position.set(x, h / 2, z); if (z < 0) post.rotation.y = Math.PI; s.frame.add(post); }
+      const rail = new THREE.Mesh(new THREE.PlaneGeometry(w, 0.1), mat(s.style.trim)); rail.position.set(0, h * 0.55, z); if (z < 0) rail.rotation.y = Math.PI; s.frame.add(rail);
+    }
+  }
+  return m;
+}
 function gable(s, w, d, y, pitch, colour, alongX = w >= d) {
   const r = shade(new THREE.Mesh(prism((alongX ? w : d) + 0.35, (alongX ? d : w) + 0.35, Math.min(w, d) * pitch), roofMat(colour)));
   r.position.y = y;
@@ -289,7 +298,18 @@ function station(p, def, ctx, out) {
   return s.base + 1.8 + rh;
 }
 
-const BUILD = { house, long, workshop, sacred, civic, industrial, green, market, field, garden, wharf, station };
+/** What is left of a building no longer used: broken walls in the grass, no roof. */
+function ruin(p, def, ctx, out) {
+  const s = site(p, ctx, out), w = s.lw - 0.6, d = s.ld - 0.6, stone = 0x9a9384;
+  const seg = (x, z, len, along, h) => { const m = shade(box(along ? len : 0.3, h, along ? 0.3 : len, stone)); m.position.set(x, h / 2, z); s.frame.add(m); };
+  // each wall stands to a different height, as if robbed for stone
+  seg(-w / 4, d / 2, w / 2, true, 0.9); seg(w / 3, d / 2, w / 3, true, 0.35);
+  seg(0, -d / 2, w, true, 0.6);
+  seg(-w / 2, 0, d, false, 1.3); seg(w / 2, -d / 4, d / 2, false, 0.5);
+  return s.base + 1.4;
+}
+
+const BUILD = { house, long, workshop, sacred, civic, industrial, green, market, field, garden, wharf, station, ruin };
 
 /** Builds the 3D form of one place. */
 export function buildPlace(p, def, ctx) {

@@ -8,7 +8,10 @@ import { autosave } from '../save/codec.js';
 import { choose, hasRoom, optionsOf, severity } from '../sim/crossroads.js';
 import { eraName } from '../sim/effects.js';
 import { calYear, S } from '../sim/state.js';
-import { $ } from './ui.js';
+import { $, render } from './ui.js';
+import { AUTO_DAYS, beginInterlude } from '../sim/interlude.js';
+import { AGES } from '../data/ages.js';
+import { currentAge } from '../sim/state.js';
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const WORDS = ['no', 'one', 'two', 'three', 'four'];
@@ -21,7 +24,7 @@ let sig = '';
 /** Draws the panel when anything in it has changed. */
 export function renderCrossroads(force) {
   const X = S.xr || { open: [], past: [], used: 0 };
-  const s = JSON.stringify([X.open, X.past.length, X.past.map(p => p.status), X.used, X.crisisUsed, S.era, Math.floor(S.tick / TPD)]);
+  const s = JSON.stringify([X.open, X.past.length, X.past.map(p => p.status), X.used, X.crisisUsed, S.era, S.age, S.ageEnding, Math.floor(S.tick / TPD)]);
   if (s === sig && !force) return;
   sig = s;
   const left = Math.max(0, NUDGES_PER_ERA - (X.used || 0)), era = eraName(S.era || 0).replace(/^The /, 'the ');
@@ -33,7 +36,15 @@ export function renderCrossroads(force) {
   const last = [...X.past].reverse().find(p => p.label !== 'Let it be');
   const after = last && S.tick - last.at < TPD * 4
     ? `<p class="xr-after"><b>${esc(CROSSROAD[last.id].title)}.</b> ${esc(last.label)}: ${esc(last.result ? last.result.replace(/<[^>]+>/g, '') : last.idea ? `the village leans towards the ${IDEA[last.idea].name.toLowerCase()}. Whether anything comes of it is up to them; the annals will tell.` : '')}</p>` : '';
-  $('xroads').innerHTML = after + X.open.map(o => {
+  // an age at its close: the player may let the centuries pass now; otherwise they pass on their own
+  let closing = '';
+  if (S.ageEnding) {
+    const a = currentAge(), next = AGES[a.next], years = Math.max(1, Math.ceil((S.ageEnding + AUTO_DAYS * TPD - S.tick) / TPD / 20));
+    closing = `<article class="xr closing"><header><h3>${esc(a.name)} is drawing to its close</h3></header>
+      <p>The valley has become what this age will make of it. When you are ready, let the centuries pass: the annals will tell what came through them, and what was lost, and the story will take up again in ${next.startYear}. If you leave it, they will pass on their own in about ${years} year${years > 1 ? 's' : ''}.</p>
+      <div class="grid"><button class="nudge" data-interlude="1"><b>Let the centuries pass</b><small>To ${next.startYear}. This cannot be undone.</small></button></div></article>`;
+  }
+  $('xroads').innerHTML = closing + after + X.open.map(o => {
     const c = CROSSROAD[o.id], days = Math.max(1, Math.ceil((o.closes - S.tick) / TPD)), room = hasRoom(c);
     const opts = optionsOf(c).map(op => `<button class="nudge" data-xr="${o.id}" data-k="${op.k}"${room ? '' : ' disabled'}><b>${esc(op.label)}</b><small>${esc(op.intent)}</small></button>`).join('');
     return `<article class="xr"><header><h3>${esc(c.title)}</h3><span class="chip ${severity(o) === 'growing' ? '' : 'storm'}">${severity(o)}</span></header>
@@ -49,6 +60,7 @@ export function renderCrossroads(force) {
 }
 
 document.addEventListener('click', e => {
+  if (e.target.closest('[data-interlude]')) { if (beginInterlude()) { autosave(); render(true); renderCrossroads(true); } return; }
   const b = e.target.closest('[data-xr]');
   if (!b || b.disabled) return;
   const line = choose(b.dataset.xr, +b.dataset.k);

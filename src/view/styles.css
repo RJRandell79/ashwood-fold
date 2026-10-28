@@ -210,3 +210,5 @@ h2.sec{font-size:22px;margin-bottom:10px}
 .xr-past time{color:var(--muted);font-size:12px;margin-right:4px}
 .xr-after{border-left:3px solid var(--accent);padding:4px 10px;margin:0 0 10px;font-size:15px}
 .famrec{display:block;margin-top:3px;color:var(--muted);font-size:12.5px;line-height:1.35}
+.xr.closing{border-color:var(--accent);border-width:2px}
+.chapter.interlude{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0;font-style:italic}

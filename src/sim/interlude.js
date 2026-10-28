@@ -54,6 +54,11 @@ export function beginInterlude() {
   const H = S.history || (S.history = { ages: [], sites: [], eraTitles: {} });
   const living = Object.values(S.dynasties || {}).filter(r => r.living > 0);
   const kept = [], lost = [];
+  // the centuries' events in order: those before the great mortality, then the mortality and what it did
+  // to each family, then the rest
+  const tell = e => { if (e.when && !P[e.when] && !(S.tech[e.when] && S.tech[e.when].state === 'built')) return; say(e.text.replace('{place}', P[e.when] ? P[e.when].name : '')); };
+  const plagueYear = I && I.plague ? I.plague.year : Infinity;
+  for (const e of (I ? I.events : []).filter(e => e.year < plagueYear)) tell(e);
   if (I && I.plague) say(I.plague.text);
   for (const r of living) {
     const honour = r.deeds.filter(d => d.kind !== 'disgrace').length;
@@ -69,11 +74,8 @@ export function beginInterlude() {
     say(`The ${plural(r.name)} ${r.fate}.${later !== r.name ? ` By ${to.startYear} the name was spelt ${later}.` : ''}`);
   }
 
-  // --- what happened in between ---
-  for (const e of (I ? I.events : [])) {
-    if (e.when && !P[e.when] && !(S.tech[e.when] && S.tech[e.when].state === 'built')) continue;
-    say(e.text.replace('{place}', P[e.when] ? P[e.when].name : ''));
-  }
+  // --- what else happened in between ---
+  for (const e of (I ? I.events : []).filter(e => e.year >= plagueYear)) tell(e);
 
   // --- places: by their legacy ---
   const known = new Set([...to.founding, ...to.ideas.flatMap(d => d.places || [])]);
@@ -103,7 +105,7 @@ export function beginInterlude() {
   if (lanes) say('The old lanes are still the ways through the village, though few remember who first wore them.');
 
   // --- the people of the old age pass into the record ---
-  for (const a of S.agents) if (!a.dead) a.dead = { t: S.tick, cause: 'long ago', age: a.age, longAgo: true };
+  for (const a of S.agents) if (!a.dead) a.dead = { t: S.tick, cause: 'long ago', age: a.age, longAgo: true, ageName: from.name };
   H.ages.push({ id: from.id, endYear, families: living.map(r => ({ name: r.name, fate: r.fate, later: r.later || null })) });
   H.eraTitles[from.id] = S.eraTitles || {};
 

@@ -96,14 +96,14 @@ function addPlace3d(id){
   for(const c of b.chimneys){c.id=id;c.puffs=puffsFor(c);}
   let nm=p.name.replace(/^the /,'');if(p.home)nm=nm.replace(/ (Cottage|House|Farmhouse)( \w+)?$/,'');
   const lb=makeLabel(nm,{h:p.home?.7:.85});lb.position.set(p.x+p.w/2-W.O.x,b.top+.7,p.y+p.h/2-W.O.y);b.group.add(lb);b.label=lb;
-  b.era=p.era;W.root.add(b.group);W.places[id]=b;
+  b.key=`${p.age}|${p.era}|${p.def}|${p.name}`;W.root.add(b.group);W.places[id]=b;
 }
 function removePlace3d(id){const W=G.world,b=W.places[id];W.root.remove(b.group);b.group.traverse(o=>{if(o.geometry)o.geometry.dispose();});
   for(const c of b.chimneys)for(const s of c.puffs){G.scene.remove(s);}delete W.places[id];}
 /** Brings the scene into line with S.places and S.lines: new buildings go up, lost ones come down. */
 function syncPlaces(){
   const W=G.world;
-  for(const id in W.places)if(P[id]&&W.places[id].era!==P[id].era)removePlace3d(id); // rebuilt in a newer style
+  for(const id in W.places)if(P[id]&&W.places[id].key!==`${P[id].age}|${P[id].era}|${P[id].def}|${P[id].name}`)removePlace3d(id); // rebuilt, renamed or fallen to ruin
   for(const id in P)if(!W.places[id])addPlace3d(id);
   const ck=S.crossing&&S.crossing.kind;
   if(ck&&(!W.crossing||W.crossing.kind!==ck)){if(W.crossing)W.root.remove(W.crossing.group);W.crossing=buildCrossing(crossingEnds(),ck,W.v,W.O);W.root.add(W.crossing.group);}

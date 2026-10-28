@@ -13,7 +13,7 @@ export function seasonStart(){
   if(seasonOf()===0)recordFamilies();
   const s=seasonOf(),y=yearOf(),pop=LIVE.length;
   if(s===0){
-    S.years[y]={startPop:pop,births:0,deaths:0,weddings:0,era:S.era};S.yearQ=.65+rnd()*.6;
+    S.years[y]={startPop:pop,births:0,deaths:0,weddings:0,era:S.era,age:S.age,cal:calYear()};S.yearQ=.65+rnd()*.6;
     log(`Spring comes to Ashwood Fold in ${calYear()}, with ${pop} souls in the village.`,'event','season',{season:0});
     if(LIVE.filter(isAdult).length<12)arrive(pick(['labourer','farmhand','weaver']),'looking for work');
     const extra=effect('springMigrants');

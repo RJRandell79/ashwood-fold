@@ -1,5 +1,7 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { eraName } from '../sim/effects.js';
+import { AGES } from '../data/ages.js';
+import { interludeFor } from '../data/interludes.js';
 import { IDEA } from '../data/ideas.js';
 import { SEASONS, TPD, YEAR_DAYS } from '../data/world.js';
 import { armsOf, blazon, familyCards, familyPlural } from '../sim/heraldry.js';
@@ -11,7 +13,7 @@ import { $, cap, familyLine, showBtn, traitWords } from './ui.js';
 import { V } from './vstate.js';
 
 /** The calendar year of game year y. */
-export const yearName=y=>(S.yearBase??1750)+y-1;
+export const yearName=y=>(S.years[y]&&S.years[y].cal)??(S.yearBase??1750)+y-1;
 export function yearTitle(y,ents){
   const built=ents.find(e=>e.built);if(built)return `The Year of the ${IDEA[built.tech].name.replace(/\b\w/g,c=>c.toUpperCase())}`;
   const ban=ents.find(e=>e.c==='court'&&/banished/.test(e.h));if(ban)return `The Year ${S.agents[ban.ids[0]].first} Was Banished`;
@@ -39,7 +41,7 @@ export function yearIntro(y){
 export function paragraphs(ents){const out=[];let cur=[];for(const e of ents){cur.push(e.h+(e.place?showBtn(e.place):''));if(cur.length>=4){out.push(cur.join(' '));cur=[];}}if(cur.length)out.push(cur.join(' '));return out.map(p=>`<p>${p}</p>`).join('');}
 export function castEntry(a){
   const life=a.born!=null?`born ${seasonName(a.born)}`:a.arrivedAt!=null?`came to the village ${seasonName(a.arrivedAt)}`:`aged ${Math.floor(a.dead?a.dead.age-(a.dead.t-36)/TPD/YEAR_DAYS:a.age-(S.tick-36)/TPD/YEAR_DAYS)} when this chronicle begins`;
-  const end=a.dead?(a.dead.exiled?`; ${a.dead.cause}, ${seasonName(a.dead.t)}`:`; died ${seasonName(a.dead.t)}, ${a.dead.cause}, aged ${Math.floor(a.dead.age)}`):`; ${Math.floor(a.age)} years old now`;
+  const end=a.dead?(a.dead.longAgo?`; lived in the days of ${a.dead.ageName.replace(/^The /,'the ')}`:a.dead.exiled?`; ${a.dead.cause}, ${seasonName(a.dead.t)}`:`; died ${seasonName(a.dead.t)}, ${a.dead.cause}, aged ${Math.floor(a.dead.age)}`):`; ${Math.floor(a.age)} years old now`;
   const others=S.agents.filter(b=>b!==a);
   const best=others.filter(b=>op(a,b)>50).sort((x,y)=>op(a,y)-op(a,x))[0],worst=others.filter(b=>op(a,b)<-40).sort((x,y)=>op(a,x)-op(a,y))[0];
   const fam=familyLine(a);
@@ -52,18 +54,21 @@ export function snapshot(){
     if(!G)return null;draw3d(1,0);return cv3.toDataURL('image/jpeg',.85);
   }catch(e){return null;}
 }
+/** The title of the interlude that closed an age. */
+function interludeTitle(age){const a=AGES[age];const I=a&&a.next?interludeFor(age,a.next):null;return I?I.title:'The Years Between';}
 export function buildStory(){
   const img=snapshot(),y0=yearOf(S.annals.length?S.annals[0].t:S.tick),y1=yearOf();
   let html=`<h1>The Annals of Ashwood Fold</h1><p class="sub">A true account of the village, from the spring of ${yearName(1)} to ${seasonName().replace(/^\w/,c=>c.toLowerCase())}</p>`;
   if(img)html+=`<figure><img src="${img}" alt="Ashwood Fold in ${SEASONS[seasonOf()].toLowerCase()}, as it stands today"><figcaption>Ashwood Fold as it stands, ${seasonName()}</figcaption></figure>`;
-  const prologue=S.annals.filter(e=>e.c==='prologue');
+  const first=y0,prologue=S.annals.filter(e=>e.c==='prologue'&&yearOf(e.t)===first);
   if(prologue.length)html+=`<p class="intro">${prologue.map(e=>e.h).join(' ')}</p><p class="orn">· · ·</p>`;
-  let prevEra=-1;const roman=['I','II','III','IV','V'];
+  let prev=null,book=0;const roman=['I','II','III','IV','V','VI','VII','VIII','IX','X'];
   for(let y=Math.min(y0,1);y<=y1;y++){
-    const era=S.years[y]&&S.years[y].era!=null?S.years[y].era:Math.max(prevEra,0);
-    if(era!==prevEra){prevEra=era;html+=`<div class="bookhead"><span class="num">Book ${roman[era]}</span><h2>${eraName(era)}</h2></div>`;}
-    const ents=S.annals.filter(e=>yearOf(e.t)===y&&e.c!=='prologue');
-    if(!ents.length&&!S.years[y])continue;
+    const rec=S.years[y],era=rec&&rec.era!=null?rec.era:(prev?prev.era:0),age=(rec&&rec.age)||(prev?prev.age:S.age);
+    if(!prev||era!==prev.era||age!==prev.age){prev={era,age};html+=`<div class="bookhead"><span class="num">Book ${roman[book++]||book}</span><h2>${eraName(era,age)}</h2></div>`;}
+    const all=S.annals.filter(e=>yearOf(e.t)===y&&!(e.c==='prologue'&&y===first));
+    const between=all.filter(e=>e.c==='interlude'),ents=all.filter(e=>e.c!=='interlude');
+    if(ents.length||S.years[y]){
     html+=`<section class="chapter"><span class="num">${yearName(y)}</span><h2>${yearTitle(y,ents)}</h2><p class="intro">${yearIntro(y)}</p>`;
     for(let s=0;s<4;s++){
       const capN={friend:1,fight:2,feud:2,rumour:2,crime:3,court:3,politics:3,letter:1,departure:3},seen={};
@@ -72,6 +77,9 @@ export function buildStory(){
       html+=`<h3>${SEASONS[s]}</h3>${paragraphs(se)}`;
     }
     html+=`</section>`;
+    }
+    // the centuries between two ages: one chapter of their own
+    if(between.length){const nx=S.years[y+1];html+=`<section class="chapter interlude"><span class="num">${yearName(y)}–${nx&&nx.cal?nx.cal:''}</span><h2>${interludeTitle(rec&&rec.age)}</h2>${between.map(e=>`<p>${e.h}${e.place?showBtn(e.place):''}</p>`).join('')}</section><p class="orn">· · ·</p>`;}
   }
   const cast=[...S.agents].sort((a,b)=>(a.born??-1e9)-(b.born??-1e9)||b.age-a.age);
   const fams=familyCards();

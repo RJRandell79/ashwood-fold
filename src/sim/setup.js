@@ -6,7 +6,7 @@ import { armsOf, familyKey } from './heraldry.js';
 import { recordFamilies } from './dynasties.js';
 import { log } from './log.js';
 import { checkPair } from './social.js';
-import { currentAge, N, P, pointIn, refreshLive, rnd, S, setState, yearOf } from './state.js';
+import { calYear, currentAge, N, P, pointIn, refreshLive, rnd, S, setState, yearOf } from './state.js';
 import { addPlace, buildCottage, placeFounding, routeLine } from './placement.js';
 import { BUILDINGS } from '../data/buildings.js';
 import { AGES, FIRST_AGE } from '../data/ages.js';
@@ -50,7 +50,7 @@ export function foundCast(cast){
   for(const [i,j,v] of cast.later||[])set(i,j,v);
   for(const c of (cast.children||[]).map(A))for(const x of fresh)if(x!==c&&!c.parents.includes(x.id)&&x.home!==c.home){
     S.op[c.id][x.id]=Math.round(c.parents.reduce((s,p)=>s+S.op[p][x.id],0)/c.parents.length*.5);}
-  S.years[yearOf()]={startPop:S.agents.filter(a=>!a.dead).length,births:0,deaths:0,weddings:0,era:S.era||0};
+  S.years[yearOf()]={startPop:S.agents.filter(a=>!a.dead).length,births:0,deaths:0,weddings:0,era:S.era||0,age:S.age,cal:calYear()};
   refreshLive();
   for(const a of fresh)for(const b of fresh)if(a.id<b.id)checkPair(a,b,true);
   for(const a of fresh)for(const b of fresh)if(a!==b&&S.op[a.id][b.id]<-50)S.grudge[a.id+'-'+b.id]=1;
@@ -60,9 +60,10 @@ export function foundCast(cast){
   for(const line of cast.prologue)log(line.replace(/\{(\d+)\}/g,(_,k)=>N(A(+k))),'event','prologue');
 }
 export function ensureState(o){
-  const fresh=blankState(o.seed||1);
+  if(!o.age){o.age='industrial';o.yearBase=AGES.industrial.startYear;} // saves from before ages existed
+  const fresh=blankState(o.seed||1,o.age);
   for(const k in fresh)if(o[k]===undefined)o[k]=fresh[k];
-  for(const {id} of IDEAS)if(!o.tech[id])o.tech[id]={state:'none',pressure:0,backers:[],opponents:[],adopters:[]};
+  for(const {id} of AGES[o.age].ideas)if(!o.tech[id])o.tech[id]={state:'none',pressure:0,backers:[],opponents:[],adopters:[]};
   if(o.nextElection<o.tick)o.nextElection=o.tick+3*TPD+TPD;
   if(!Object.keys(o.places).length)layOutOldSave(o);
   o.v=3;
