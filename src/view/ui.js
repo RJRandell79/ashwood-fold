@@ -1,5 +1,4 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
-import { STRANGERS } from '../data/folk.js';
 import { IDEA, IDEAS } from '../data/ideas.js';
 import { effect, eraName } from '../sim/effects.js';
 import { MAXPOP, SEASONS, TPD } from '../data/world.js';
@@ -18,7 +17,7 @@ import { renderCrossroads } from './crossroads.js';
 export function $(id){return (document.getElementById(id));}
 export function cap(s){return (s[0].toUpperCase()+s.slice(1));}
 export function describe(a){
-  if(a.dead)return `died ${seasonName(a.dead.t)}`;
+  if(a.dead)return a.dead.longAgo?`lived in the days of ${a.dead.ageName.replace(/^The /,'the ')}`:`died ${seasonName(a.dead.t)}`;
   if(!a.arrived){const verb={sleep:'heading home to bed',eat:'heading home to eat',work:`off to work at ${PN(a.act.place)}`,lessons:'off to school',gather:'on the way to a gathering',confront:`looking for ${S.agents[a.act.target]?S.agents[a.act.target].first:'someone'}`}[a.act.type];return verb||`walking to ${PN(a.act.place)}`;}
   const p=PN(a.act.place);
   switch(a.act.type){
@@ -51,7 +50,7 @@ export function buildRoster(){
     b.innerHTML=`<span class="thumb">${portraitSVG(a,30)}</span><span><span class="nm">${a.first}<small>${jobLabel(a)} · ${Math.floor(a.age)}</small></span><span class="doing"></span></span><span class="mood"><span></span></span>`;
     r.appendChild(b);rosterEls[a.id]=b;
   }
-  const dead=S.agents.filter(a=>a.dead).sort((x,y)=>y.dead.t-x.dead.t);
+  const dead=S.agents.filter(a=>a.dead&&!a.dead.longAgo).sort((x,y)=>y.dead.t-x.dead.t); // the people of earlier ages are in the families and the annals
   $('yardBox').hidden=!dead.length;$('yardSum').textContent=`The chapel yard and the departed (${dead.length})`;
   $('yard').innerHTML=dead.map(a=>`<button class="res" data-id="${a.id}"><span class="thumb">${portraitSVG(a,30)}</span><span><span class="nm">${a.name}<small>${Math.floor(a.dead.age)} · ${jobLabel(a)}</small></span><span class="doing">${a.dead.exiled?cap(a.dead.cause):'Died'}, ${seasonName(a.dead.t)}</span></span></button>`).join('');
 }
@@ -84,7 +83,7 @@ export function renderDetail(){
   const mems=a.mem.map(m=>{const who=m.w>=0?S.agents[m.w]:null;const txt=who?(/ me$/.test(m.t)||/^(is|was|smashed|mourns)/.test(m.t)?(m.t==='mourns'?`mourns ${N(who)}`:`${N(who)} ${m.t}`):`${m.t} ${N(who)}`):m.t;return `<li><time>Day ${m.d}</time>${txt}${m.p?` at ${PN(m.p)}`:''}</li>`;}).join('');
   const rum=S.rumours.filter(r=>a.knows.includes(r.id)).slice(-4).map(r=>`<li>that ${r.subject===a.id?'they themselves':N(S.agents[r.subject])} ${r.text}</li>`).join('');
   const fam=familyLine(a);
-  const role=a.dead?(a.dead.exiled?`${cap(jobLabel(a))} · ${a.dead.cause}, ${seasonName(a.dead.t)}`:`${cap(jobLabel(a))} · died ${seasonName(a.dead.t)}, aged ${Math.floor(a.dead.age)}, ${a.dead.cause}`):`${cap(jobLabel(a))} · ${Math.floor(a.age)} years old · ${P[a.home].name}${isAdult(a)?` · ${Math.floor(a.coins)} pennies`:''}`;
+  const role=a.dead?(a.dead.longAgo?`${cap(jobLabel(a))} · lived in the days of ${a.dead.ageName.replace(/^The /,'the ')}`:a.dead.exiled?`${cap(jobLabel(a))} · ${a.dead.cause}, ${seasonName(a.dead.t)}`:`${cap(jobLabel(a))} · died ${seasonName(a.dead.t)}, aged ${Math.floor(a.dead.age)}, ${a.dead.cause}`):`${cap(jobLabel(a))} · ${Math.floor(a.age)} years old · ${P[a.home].name}${isAdult(a)?` · ${Math.floor(a.coins)} pennies`:''}`;
   const fk=familyKey(a);
   d.innerHTML=`<div class="dhead"><div class="dport">${portraitSVG(a,88)}</div><div><div class="dname"><h3>${a.name}</h3>${armsSVG(armsOf(fk),30,'Arms of the '+familyPlural(fk))}</div><p class="role">${role}</p></div></div>${fam?`<p class="fam">${fam}</p>`:''}
    ${a.dead?'':`<p class="now">${cap(describe(a))}</p><div class="meters">${bar('Hunger',a.hunger)}${bar('Tiredness',a.tired)}${bar('Loneliness',a.lonely)}</div>`}
@@ -100,7 +99,7 @@ export function renderTechs(){
     let tag,line,extra='';
     if(t.state==='building'){const pct=clamp(100-(t.doneAt-S.tick)/(TPD*T.buildDays)*100,0,100);return `<div class="tech st-idea"><div class="tn"><b>${T.name}</b><span>Being built</span></div><div class="ts">${N(S.agents[t.inventor])}'s scheme. Finished in ${Math.max(1,Math.ceil((t.doneAt-S.tick)/TPD))} days.</div><div class="pm"><span style="width:${pct}%"></span></div></div>`;}
     if(t.state==='built'){const broken=t.brokenUntil>S.tick;tag=broken?'Wrecked':'Built';
-      line=broken?`Smashed in the night. Repairs in ${Math.ceil((t.brokenUntil-S.tick)/TPD)} day${t.brokenUntil-S.tick>TPD?'s':''}.`:`Built ${seasonName(t.builtAt)}. ${N(S.agents[t.inventor])}'s idea. It ${T.what}.`;
+      line=broken?`Smashed in the night. Repairs in ${Math.ceil((t.brokenUntil-S.tick)/TPD)} day${t.brokenUntil-S.tick>TPD?'s':''}.`:t.inherited?`Built long ago, and still standing. It ${T.what}.`:`Built ${seasonName(t.builtAt)}. ${N(S.agents[t.inventor])}'s idea. It ${T.what}.`;
       return `<div class="tech ${broken?'st-broken':'st-built'}"><div class="tn"><b>${T.name}</b><span>${tag}</span></div><div class="ts">${line}</div></div>`;}
     if(t.state==='idea'){const inv=S.agents[t.inventor],bk=t.backers.map(i=>S.agents[i]).filter(b=>b!==inv),opp=t.opponents.map(i=>S.agents[i]);
       line=`${N(inv)}'s idea. Backers ${t.backers.length} of ${T.backers}${bk.length?` (${listNames(bk.slice(0,4))}${bk.length>4?' and more':''})`:''}${opp.length?`. Against: ${listNames(opp.slice(0,4))}`:''}. Costs ${T.cost} pennies.`;

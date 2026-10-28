@@ -75,6 +75,7 @@ export const INDUSTRIAL_CROSSROADS = [
       { label: 'Back the flying shuttle', intent: 'One weaver could do the work of two. Those who cannot afford one may be left behind.', favour: 'shuttle' },
       { label: 'Listen to talk of a mill', intent: 'Spin by water power, as they do in the next valley. It would change everything, and not for everyone\'s good.', favour: 'cottonmill' },
       { label: 'Ask the better-off to help', intent: 'Tide the weaving families over. Kindness now, and perhaps gratitude later.', relief: 'alms' },
+      { label: 'Talk of a fulling mill', intent: 'Let the river beat the cloth. The walkers who tread it now would lose their work.', favour: 'fulling' },
     ],
   },
   {
@@ -84,6 +85,7 @@ export const INDUSTRIAL_CROSSROADS = [
     options: [
       { label: 'Call a peacemaking at the chapel', intent: 'Ask the feuding families to shake hands before the village. The forgiving may; the proud may not.', relief: 'reconcile' },
       { label: 'Speak for a school', intent: 'Teach the children their letters, and the village to question idle talk. Slow to pay off.', favour: 'school' },
+      { label: 'Speak for a chantry', intent: 'Pay a priest to pray for the dead and teach the children. The village would have to find his keep.', favour: 'chantry' },
     ],
   },
 ];
@@ -91,7 +93,21 @@ export const INDUSTRIAL_CROSSROADS = [
 /** The crossroads of the age the village is in now. */
 export let CROSSROADS = INDUSTRIAL_CROSSROADS;
 /** Every crossroads of every age, by id. */
-export const CROSSROAD = Object.fromEntries(INDUSTRIAL_CROSSROADS.map(c => [c.id, c]));
+// The manor village shares most of these (options for ideas the age does not have are never offered),
+// and has one of its own: a good harvest with nowhere to sell it.
+export const MEDIEVAL_CROSSROADS = [
+  ...INDUSTRIAL_CROSSROADS.filter(c => c.id !== 'carriage'),
+  {
+    id: 'surplus', answers: 'economy', when: 'granaryFullAtHarvest', days: 2,
+    title: 'Corn and nowhere to sell it',
+    situation: 'The barns are full and the price has fallen. The nearest market is a long day away, and the tolls there are heavy.',
+    options: [
+      { label: 'Petition for a market charter', intent: "Ask the king's leave to hold a market here. It will cost money and goodwill, and the next town will not like it.", favour: 'charter' },
+      { label: 'Speak for a tithe barn', intent: 'Keep the surplus dry against a bad year. It does nothing for the price.', favour: 'barn' },
+    ],
+  },
+];
+export const CROSSROAD = Object.fromEntries([...INDUSTRIAL_CROSSROADS, ...MEDIEVAL_CROSSROADS].map(c => [c.id, c]));
 export function useCrossroads(list) {
   CROSSROADS = list;
   for (const c of list) CROSSROAD[c.id] = c;

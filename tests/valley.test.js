@@ -84,7 +84,7 @@ describe('the river and the eras', () => {
     expect(crossed).toBeGreaterThan(0);
   });
   it('old buildings are rebuilt in newer styles as the eras pass', () => {
-    run(1, { years: 30 });
+    run(1, { years: 30, age: 'industrial' });
     const rebuilt = Object.values(S.places).filter(p => p.rebuilt);
     expect(rebuilt.length).toBeGreaterThan(3);
     for (const p of rebuilt) expect(p.era).toBeGreaterThanOrEqual(2);

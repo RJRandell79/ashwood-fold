@@ -25,7 +25,7 @@ Needs Node 22 or later (`.nvmrc` pins 22).
 npm install
 npm run build        # writes dist/ashwood-fold.html, one self-contained page
 npm test             # valley and placement, old saves (v5 included), save codes, invariants over long runs
-npm run harness      # balance report: 5 seeds x 30 years (--seeds 1,2,3 --years 50)
+npm run harness      # balance report: 5 whole games of 65 years (--seeds 1,2,3 --years 80)
 npm run diversity    # how different the histories are: ideas, eras, layouts, families (--seeds 20)
 npm run nudges       # crossroads: the same villages never nudged, always nudged, nudged at random
 node harness/compare.mjs --base ../other-checkout   # behaviour report against another branch
@@ -39,6 +39,10 @@ Open `dist/ashwood-fold.html` in a browser to play. Three.js r128 loads from cdn
 | --- | --- |
 | `src/data/` | Plain data: jobs, founding families, names, eras, heraldry; `ideas.js` (one record per idea), `buildings.js` (footprints, archetypes, placement rules), `styles.js` (how each era builds) |
 | `src/sim/` | The simulation. Never touches the DOM or Three.js, so it runs the same in Node |
+| `src/data/ages.js` | The ages of the valley (the manor village of 1290, the industrial village of 1750): each with its ideas, eras, styles, crossroads, cast and founding buildings |
+| `src/sim/interlude.js`, `src/data/interludes.js` | The interlude between ages: which families come through, what becomes of each building, the centuries' events |
+| `src/sim/crossroads.js`, `src/data/crossroads.js` | Crossroads: real pressures, the player's choice to tip the balance, and the annals' follow-up |
+| `src/sim/dynasties.js` | Family records, kept apart from wealth and living members |
 | `src/sim/valley.js` | The valley grown from the run's seed: terrain, river, soil, woods. Rebuilt on demand, never saved |
 | `src/sim/placement.js` | Scores plots and places every building, cottage, canal and railway |
 | `src/sim/paths.js` | Footfall: paths wear where people walk |

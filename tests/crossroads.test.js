@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { run, TICKS_PER_YEAR } from '../harness/lib.mjs';
 import { checkInvariants } from '../harness/invariants.mjs';
-import { CROSSROAD, NUDGES_PER_ERA } from '../src/data/crossroads.js';
+import { CROSSROAD, INDUSTRIAL_CROSSROADS, MEDIEVAL_CROSSROADS, NUDGES_PER_ERA } from '../src/data/crossroads.js';
 import { choose, optionsOf } from '../src/sim/crossroads.js';
 import { validateCrossroads } from '../src/sim/validate.js';
 import { SIGNALS } from '../src/sim/signals.js';
@@ -13,7 +13,8 @@ import { TPD } from '../src/data/world.js';
 
 describe('crossroads', () => {
   it('the records validate, and the validator catches mistakes', () => {
-    expect(validateCrossroads()).toEqual([]);
+    expect(validateCrossroads(INDUSTRIAL_CROSSROADS)).toEqual([]);
+    expect(validateCrossroads(MEDIEVAL_CROSSROADS)).toEqual([]);
     const bad = validateCrossroads([{ id: 'x', answers: 'mood', when: 'moonFull', options: [{ label: 'a', intent: 'b', favour: 'flying', relief: 'corn' }] }]).join('\n');
     expect(bad).toMatch(/unknown signal moonFull/);
     expect(bad).toMatch(/answers must be/);

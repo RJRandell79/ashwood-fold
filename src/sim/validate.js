@@ -1,5 +1,5 @@
 // Checks the idea records for mistakes that would otherwise only show up mid-game.
-import { EFFECT_BASE, IDEAS } from '../data/ideas.js';
+import { EFFECT_BASE, IDEA, IDEAS } from '../data/ideas.js';
 import { CHARGE_NAMES } from '../data/heraldry.js';
 import { JOBS } from '../data/world.js';
 import { BUILDINGS, CROSSINGS, LEGACIES, LINES } from '../data/buildings.js';
@@ -76,7 +76,7 @@ export function validateCrossroads(records = CROSSROADS) {
     if (!c.options || !c.options.length) errors.push(`${where}: needs at least one option`);
     for (const o of c.options || []) {
       if (!!o.favour === !!o.relief) errors.push(`${where}: option "${o.label}" needs exactly one of favour or relief`);
-      if (o.favour && !IDEAS.some(d => d.id === o.favour)) errors.push(`${where}: favours unknown idea ${o.favour}`);
+      if (o.favour && !IDEA[o.favour]) errors.push(`${where}: favours unknown idea ${o.favour}`);
       if (o.relief && !RELIEFS.includes(o.relief)) errors.push(`${where}: unknown relief ${o.relief}`);
       if (!o.label || !o.intent) errors.push(`${where}: every option needs a label and an intent`);
     }

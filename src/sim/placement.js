@@ -3,6 +3,7 @@
 // Placement is deterministic: no draws from the simulation's dice, ties go to the first plot found.
 import { BUILDINGS, COTTAGE_FIRST, COTTAGE_HUES, HOUSE_WORD, LINES, MAX_HOMES, NAME_PARTS, STYLED_ARCHETYPES } from '../data/buildings.js';
 import { effect } from './effects.js';
+import { TPD, YEAR_DAYS } from '../data/world.js';
 import { log } from './log.js';
 import { noise, valley } from './valley.js';
 import { currentAge, household, isAdult, N, P, PN, S } from './state.js';
@@ -130,12 +131,20 @@ export function addPlace(id, defId = id, extra = {}) {
   if (!def) throw new Error(`unknown building ${defId}`);
   const plot = choosePlotSomewhere(defId);
   if (!plot) return null;
-  P[id] = { id, def: defId, name: extra.name || def.name, x: plot.x, y: plot.y, w: def.w, h: def.h, indoor: def.indoor, home: !!def.home, kind: def.kind,
+  P[id] = { id, def: defId, name: extra.name || (currentAge().placeNames || {})[defId] || def.name, x: plot.x, y: plot.y, w: def.w, h: def.h, indoor: def.indoor, home: !!def.home, kind: def.kind,
     age: S.age, era: S.era || 0, built: S.tick, ...(def.hue != null ? { hue: def.hue } : {}), ...extra };
+  // building over the site of something from an earlier age turns up its footings
+  const H = S.history, here = P[id];
+  const site = H && H.sites && H.sites.find(s => !s.found && s.walls && s.x < here.x + here.w && here.x < s.x + s.w && s.y < here.y + here.h && here.y < s.y + s.h);
+  if (site && S.agents.some(a => !a.dead)) {
+    site.found = S.tick;
+    // a find is worth telling only now and then; the rest are dug up and forgotten
+    if (S.tick - (H.lastFind ?? -1e12) > TPD * YEAR_DAYS * 5) { H.lastFind = S.tick; log(`Digging the footings for ${here.name}, the builders turn up old stones and broken pots: the remains of ${site.name}, built in ${site.year}.`, 'event', 'finds', { place: id }); }
+  }
   const felled = clearWood(P[id]);
   if (felled >= 10) {
     P[id].felled = felled;
-    if (!(def.place && def.place.wooded)) log(`Trees are felled to make room for ${P[id].name}.`, 'event', 'work', { place: id });
+    if (S.agents.length && !(def.place && def.place.wooded)) log(`Trees are felled to make room for ${P[id].name}.`, 'event', 'work', { place: id });
   }
   return P[id];
 }
@@ -177,10 +186,11 @@ export const cottagesLeft = () => Object.values(P).filter(p => p.home).length < 
 
 /** The name of the n-th cottage built (0-based), in an order set by the valley's seed. */
 export function cottageName(n, era = S.era || 0) {
-  if (n < COTTAGE_FIRST.length) return `${COTTAGE_FIRST[n]} Cottage`;
+  const word = currentAge().houseWord;
+  if (!word && n < COTTAGE_FIRST.length) return `${COTTAGE_FIRST[n]} Cottage`;
   const order = NAME_PARTS.map((w, i) => [noise(i * 3.7 + 0.5, 11.5, S.valley.seed), w]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
-  const k = n - COTTAGE_FIRST.length, part = order[k % order.length], again = Math.floor(k / order.length);
-  return `${part} ${HOUSE_WORD(era)}${again ? ' ' + ['', 'Two', 'Three', 'Four'][again] : ''}`;
+  const k = word ? n : n - COTTAGE_FIRST.length, part = order[k % order.length], again = Math.floor(k / order.length);
+  return `${part} ${word || HOUSE_WORD(era)}${again ? ' ' + ['', 'Two', 'Three', 'Four'][again] : ''}`;
 }
 
 /** A new cottage for a growing village. Returns its id, or null when housing is full or no plot fits. */
