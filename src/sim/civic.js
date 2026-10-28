@@ -1,5 +1,4 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
-import { ERA_LINES } from '../data/eras.js';
 import { SURNAMES } from '../data/folk.js';
 import { IDEA, IDEAS } from '../data/ideas.js';
 import { currentEra, effect, invalidateEffects } from './effects.js';
@@ -11,7 +10,7 @@ import { log } from './log.js';
 import { addAgent, nameBaby, succeed } from './people.js';
 import { makeAgent } from './setup.js';
 import { adj, glyph, mem, op } from './social.js';
-import { byJob, dayStart, isAdult, isKin, listNames, LIVE, N, numberWord, P, pick, PN, pointIn, refreshLive, rnd, S, weekday, entryPoint } from './state.js';
+import { byJob, currentAge, dayStart, isAdult, isKin, listNames, LIVE, N, numberWord, P, pick, PN, pointIn, refreshLive, rnd, S, weekday, entryPoint } from './state.js';
 
 export function standing(a){const v=LIVE.filter(b=>b!==a&&isAdult(b));return v.reduce((s,b)=>s+op(b,a),0)/Math.max(1,v.length);}
 export function ambition(a){return a.tr.diligence*.4+(1-a.tr.warmth)*.25+a.tr.temper*.15+(a.coins>40?.15:0);}
@@ -173,7 +172,7 @@ export function eraDay(){
     // the idea that opened the era may give it its own name (the Turnpike Years rather than the Canal Years)
     const by=IDEAS.filter(d=>d.opensEra===e&&S.tech[d.id].state==='built').sort((a,b)=>S.tech[b.id].builtAt-S.tech[a.id].builtAt)[0];
     if(by&&by.eraTitle)(S.eraTitles||(S.eraTitles={}))[e]=by.eraTitle;
-    S.era=e;log((by&&by.eraLine)||ERA_LINES[e],'nudge','era',{era:e});}
+    S.era=e;log((by&&by.eraLine)||currentAge().eraLines[e],'nudge','era',{era:e,age:S.age});}
 }
 export function startBuilding(id){
   const t=S.tech[id],T=IDEA[id];

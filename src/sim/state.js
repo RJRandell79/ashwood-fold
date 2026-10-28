@@ -1,6 +1,7 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { DAYS, SEASONS, SEASON_DAYS, TPD, YEAR_DAYS } from '../data/world.js';
 import { valley } from './valley.js';
+import { AGES, FIRST_AGE, useAge } from '../data/ages.js';
 
 export let S=null, LIVE=[];
 /** The places that stand in the valley: S.places, placed by src/sim/placement.js. */
@@ -43,4 +44,6 @@ export function fairOn(){return (S.fair&&S.tick>=S.fair.start&&S.tick<S.fair.end
 export function moodOf(a){return (clamp(1-(a.hunger*.45+a.tired*.3+a.lonely*.25),0,1));}
 export function numberWord(n){return ['no','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'][n]||String(n);}
 
-export function setState(v){S=v;P=v?(v.places||(v.places={})):{};return v;}
+/** The age the village is in now (src/data/ages.js). */
+export function currentAge(){return AGES[(S&&S.age)||FIRST_AGE];}
+export function setState(v){S=v;P=v?(v.places||(v.places={})):{};if(v)useAge(v.age||FIRST_AGE);return v;}

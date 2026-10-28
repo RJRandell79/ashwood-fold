@@ -28,7 +28,8 @@ export const FAVOUR_DAYS = 40;      // how long the village leans towards a favo
 export const COOLDOWN_DAYS = 30;    // after closing, the same crossroads waits this long before it can open again
 export const MAX_OPEN = 2;          // pressures can compete: at most two crossroads open at once
 
-export const CROSSROADS = [
+// The crossroads of the industrial village. Other ages have their own (src/data/ages.js).
+export const INDUSTRIAL_CROSSROADS = [
   {
     id: 'hunger', answers: 'food', when: 'grainShort', days: 5,
     title: 'Thin bellies',
@@ -87,4 +88,11 @@ export const CROSSROADS = [
   },
 ];
 
-export const CROSSROAD = Object.fromEntries(CROSSROADS.map(c => [c.id, c]));
+/** The crossroads of the age the village is in now. */
+export let CROSSROADS = INDUSTRIAL_CROSSROADS;
+/** Every crossroads of every age, by id. */
+export const CROSSROAD = Object.fromEntries(INDUSTRIAL_CROSSROADS.map(c => [c.id, c]));
+export function useCrossroads(list) {
+  CROSSROADS = list;
+  for (const c of list) CROSSROAD[c.id] = c;
+}

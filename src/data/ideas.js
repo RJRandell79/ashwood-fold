@@ -26,7 +26,8 @@
 //   opensEra                 the era that begins when it is built
 //   eraTitle, eraLine        how that era is named and announced, if this idea opens it (else src/data/eras.js)
 //   emblem                   charge added to the inventor's family arms
-export const IDEAS = [
+// The ideas of the industrial village (1750 on). Other ages have their own lists (src/data/ages.js).
+export const INDUSTRIAL_IDEAS = [
   {
     id: 'plough', answers: 'food', name: 'Heavy plough', what: 'turns the clay deeper so the South Fields yield more', hint: 'Talk of thin harvests',
     requires: [], inventorJobs: ['farmer', 'farmhand', 'smith'], backers: 5, cost: 30,
@@ -199,4 +200,12 @@ export const EFFECT_BASE = {
   farBank: 0,                // 1 = buildings may go up on the far bank of the river
 };
 
-export const IDEA = Object.fromEntries(IDEAS.map(d => [d.id, d]));
+/** The ideas of the age the village is in now. Switched by useIdeas when the age changes. */
+export let IDEAS = INDUSTRIAL_IDEAS;
+/** Every idea of every age, by id, so the annals can still name the ideas of earlier ages. */
+export const IDEA = Object.fromEntries(INDUSTRIAL_IDEAS.map(d => [d.id, d]));
+/** Makes an age's ideas the live ones, and registers them for lookup. */
+export function useIdeas(list) {
+  IDEAS = list;
+  for (const d of list) IDEA[d.id] = d;
+}
