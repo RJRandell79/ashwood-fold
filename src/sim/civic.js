@@ -4,6 +4,7 @@ import { SURNAMES } from '../data/folk.js';
 import { IDEA, IDEAS } from '../data/ideas.js';
 import { currentEra, effect, invalidateEffects } from './effects.js';
 import { easeRivals, honourInventor, raiseBuildings } from './ideas.js';
+import { noteIdea } from './crossroads.js';
 import { JOBS, MAXPOP, TPD, YEAR_DAYS } from '../data/world.js';
 import { familyKey } from './heraldry.js';
 import { log } from './log.js';
@@ -196,7 +197,7 @@ export function finishBuilding(id){
   const inv=S.agents[t.inventor];
   log(`The ${T.name.toLowerCase()} is finished: ${N(inv)}'s great scheme, ${T.what}.`,'good','tech',{tech:id,ids:[inv.id],built:1});
   for(const line of T.builtLines||[])log(line,'event','tech',{tech:id});
-  easeRivals(T);honourInventor(T,inv);
+  easeRivals(T);noteIdea(id,'built');honourInventor(T,inv);
   const stay=[],go=[];
   for(const nid of t.navvies||[]){const n=S.agents[nid];if(n.dead)continue;
     if(n.spouse>=0||LIVE.filter(b=>b!==n).reduce((s,b)=>s+op(b,n),0)/LIVE.length>25){stay.push(n);n.job='labourer';n.work='mill';n.navvy=false;}

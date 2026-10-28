@@ -10,6 +10,7 @@ import { armsOf, familyKey } from './heraldry.js';
 import { addPlace, routeLine, setCrossing } from './placement.js';
 import { log } from './log.js';
 import { SIGNALS } from './signals.js';
+import { noteIdea } from './crossroads.js';
 import { addRumour, adj, glyph, mem, op } from './social.js';
 import { LIVE, N, PN, S, byJob, household, isAdult, listNames, pick, rnd, techBuilt, techOn } from './state.js';
 
@@ -20,7 +21,7 @@ export function requiresMet(d) {
   return d.requires.every(r => (Array.isArray(r) ? r.some(techBuilt) : techBuilt(r)));
 }
 /** Whether anyone could think of the idea at all here and now (possibleWhen names a signal). */
-function possible(d) {
+export function possible(d) {
   return !d.possibleWhen || !!SIGNALS[d.possibleWhen]();
 }
 /** Building one answer to a need eases the others: ideas pressed by the same signal lose most of their pressure. */
@@ -47,7 +48,7 @@ export function pitch(a, b) {
     const t = S.tech[id]; if (t.state !== 'idea') continue;
     const stance = t.backers.includes(a.id) ? 1 : t.opponents.includes(a.id) ? -1 : 0; if (!stance) continue;
     if (t.backers.includes(b.id) || t.opponents.includes(b.id)) continue;
-    if (rnd() > .28) continue;
+    if (rnd() > (t.favouredUntil > S.tick ? .42 : .28)) continue; // a favoured idea is argued for harder
     const inv = S.agents[t.inventor], d = IDEA[id], threat = threatOf(b, id);
     glyph(a, '…', 'rumour');
     if (stance > 0) {
@@ -112,7 +113,7 @@ export function raiseBuildings(d) {
 }
 
 function finish(d, t, inv, bk) {
-  t.state = 'built'; t.builtAt = S.tick; invalidateEffects(); raiseBuildings(d); easeRivals(d);
+  t.state = 'built'; t.builtAt = S.tick; invalidateEffects(); raiseBuildings(d); easeRivals(d); noteIdea(d.id, 'built');
   for (const b of bk) if (b !== inv) adj(b, inv, 6);
   for (const o of t.opponents.map(i => S.agents[i])) adj(o, inv, -4);
   if (d.adoption) t.adopters = bk.filter(b => d.adoption.jobs.includes(b.job)).map(b => b.id);
@@ -131,6 +132,7 @@ function ideaDay(d) {
     for (const a of cands) { const s = inventorScore(a, d); if (s > best) { best = s; inv = a; } }
     Object.assign(t, { state: 'idea', inventor: inv.id, backers: [inv.id], opponents: [], since: S.tick, short: false });
     log(`${N(inv)} has an idea: a ${lower(d)} that ${d.what}. It will need ${d.backers} backers and ${d.cost} pennies.`, 'good', 'tech', { tech: id, ids: [inv.id], idea: 1 });
+    noteIdea(id, 'thought');
   } else if (t.state === 'idea') {
     const inv = S.agents[t.inventor];
     t.backers = t.backers.filter(i => !S.agents[i].dead); t.opponents = t.opponents.filter(i => !S.agents[i].dead);
@@ -148,12 +150,15 @@ function ideaDay(d) {
     }
     if (t.state === 'idea' && S.tick - t.since > TPD * 15) {
       const opp = t.opponents.map(i => S.agents[i]);
+      // why it failed, for the annals' follow-up on a crossroads choice
+      const why = opp.length ? `${listNames(opp.slice(0, 3))} stood against it` : t.short ? 'the backers could not find the money' : 'too few would back it';
       log(`Nothing comes of ${N(inv)}'s ${lower(d)}. ${opp.length ? `${listNames(opp.slice(0, 3))} saw to that.` : 'The village never quite took to it.'}`, 'bad', 'tech', { tech: id, fizzle: 1 });
       t.fizzles = (t.fizzles || 0) + 1;
       if (t.fizzles >= 2) {
         Object.assign(t, { state: 'abandoned', abandonedEra: S.era || 0, abandonedAt: S.tick, pressure: 0, backers: [], opponents: [] });
         log(`The village has set its face against the ${lower(d)}. Nobody will raise it again for a long while.`, 'bad', 'tech', { tech: id, abandoned: 1 });
-      } else Object.assign(t, { state: 'none', pressure: 40, backers: [], opponents: [] });
+        noteIdea(id, 'abandoned', why);
+      } else { Object.assign(t, { state: 'none', pressure: 40, backers: [], opponents: [] }); noteIdea(id, 'failed', why); }
     }
   } else if (t.state === 'built' && t.brokenUntil && t.brokenUntil <= S.tick) {
     t.brokenUntil = 0; invalidateEffects();
