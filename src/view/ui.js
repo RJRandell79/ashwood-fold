@@ -130,12 +130,15 @@ export function renderCivic(){
   c+='</div>';
   $('civic').innerHTML=h+c;
 }
+/** The family's record: when it was first set down here, and the last thing the valley remembers it for. */
+function famRecord(k){const r=S.dynasties&&S.dynasties[k];if(!r)return '';const d=r.deeds[r.deeds.length-1];
+  return `<span class="famrec">First recorded ${r.first}${r.gone?`, gone by ${r.gone}`:''}.${d?` Remembered: ${d.text}, ${d.year}.`:''}</span>`;}
 export function renderFamilies(){
   const html=familyCards().map(({k,members,live})=>{
     const ar=armsOf(k),dead=members.length-live.length,faces=(live.length?live:members).sort((x,y)=>y.age-x.age).slice(0,8);
-    return `<div class="famcard${live.length?'':' gone'}">${armsSVG(ar,62,'Arms of the '+familyPlural(k))}<div style="min-width:0"><h3>The ${familyPlural(k)}</h3><p class="motto">“${ar.motto}”</p><p class="blz">${blazon(ar)}</p><div class="faces">${faces.map(a=>`<button class="who" data-id="${a.id}" aria-label="${a.name}">${portraitSVG(a,26)}</button>`).join('')}</div><div class="count">${live.length?`${live.length} living`:'No one left'}${dead?` · ${dead} in the chapel yard`:''}</div></div></div>`;
+    return `<div class="famcard${live.length?'':' gone'}">${armsSVG(ar,62,'Arms of the '+familyPlural(k))}<div style="min-width:0"><h3>The ${familyPlural(k)}</h3><p class="motto">“${ar.motto}”</p><p class="blz">${blazon(ar)}</p><div class="faces">${faces.map(a=>`<button class="who" data-id="${a.id}" aria-label="${a.name}">${portraitSVG(a,26)}</button>`).join('')}</div><div class="count">${live.length?`${live.length} living`:'No one left'}${dead?` · ${dead} in the chapel yard`:''}${famRecord(k)}</div></div></div>`;
   }).join('');
-  const sig=familyCards().map(c=>c.k+c.live.map(a=>a.id+':'+Math.floor(a.age)+a.job).join(',')+armsOf(c.k).aug.join('')).join('|');
+  const sig=familyCards().map(c=>c.k+c.live.map(a=>a.id+':'+Math.floor(a.age)+a.job).join(',')+armsOf(c.k).aug.join('')+((S.dynasties&&S.dynasties[c.k])?S.dynasties[c.k].deeds.length+'/'+S.dynasties[c.k].gone:'')).join('|');
   if(sig!==renderFamilies.sig){renderFamilies.sig=sig;$('fams').innerHTML=html;}
 }
 export let logLen=-1, logFirst=null;

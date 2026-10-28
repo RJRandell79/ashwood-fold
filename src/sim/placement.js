@@ -2,11 +2,10 @@
 // scored against the building's placement rules (src/data/buildings.js) on the valley terrain.
 // Placement is deterministic: no draws from the simulation's dice, ties go to the first plot found.
 import { BUILDINGS, COTTAGE_FIRST, COTTAGE_HUES, HOUSE_WORD, LINES, MAX_HOMES, NAME_PARTS, STYLED_ARCHETYPES } from '../data/buildings.js';
-import { ERA_STYLES } from '../data/styles.js';
 import { effect } from './effects.js';
 import { log } from './log.js';
 import { noise, valley } from './valley.js';
-import { household, isAdult, N, P, PN, S } from './state.js';
+import { currentAge, household, isAdult, N, P, PN, S } from './state.js';
 
 const MARGIN = 1; // clear cells kept around every building, so lanes run between them
 
@@ -132,7 +131,7 @@ export function addPlace(id, defId = id, extra = {}) {
   const plot = choosePlotSomewhere(defId);
   if (!plot) return null;
   P[id] = { id, def: defId, name: extra.name || def.name, x: plot.x, y: plot.y, w: def.w, h: def.h, indoor: def.indoor, home: !!def.home, kind: def.kind,
-    era: S.era || 0, built: S.tick, ...(def.hue != null ? { hue: def.hue } : {}), ...extra };
+    age: S.age, era: S.era || 0, built: S.tick, ...(def.hue != null ? { hue: def.hue } : {}), ...extra };
   const felled = clearWood(P[id]);
   if (felled >= 10) {
     P[id].felled = felled;
@@ -169,7 +168,7 @@ export function setCrossing(kind) {
 /** Lays out the first village, in founding order. */
 export function placeFounding() {
   if (!S.crossing) placeCrossing();
-  const ids = Object.keys(BUILDINGS).filter(k => BUILDINGS[k].founding).sort((a, b) => BUILDINGS[a].founding - BUILDINGS[b].founding);
+  const ids = currentAge().founding;
   for (const id of ids) addPlace(id);
 }
 
@@ -246,10 +245,11 @@ export function routeLine(id) {
  *  a home when its household can pay for it, anything else at the parish's charge. Oldest first.
  *  Enduring buildings (the Green, the chapel, the cross) are never rebuilt; they keep their first look. */
 export function restyleSeason() {
-  const era = S.era || 0, now = ERA_STYLES[Math.min(era, ERA_STYLES.length - 1)];
+  const styles = currentAge().styles, era = S.era || 0, now = styles[Math.min(era, styles.length - 1)];
+  const styleOf = p => ((p.age && p.age !== S.age) ? null : styles[p.era || 0]);
   const dated = Object.values(P)
     .filter(p => { const d = BUILDINGS[p.def] || {}; return d.legacy !== 'enduring' && STYLED_ARCHETYPES.includes(d.archetype); })
-    .filter(p => era - (p.era || 0) >= 2 && ERA_STYLES[p.era || 0].material !== now.material)
+    .filter(p => styleOf(p) && era - (p.era || 0) >= 2 && styleOf(p).material !== now.material)
     .sort((a, b) => (a.era || 0) - (b.era || 0) || (a.built || 0) - (b.built || 0) || (a.id < b.id ? -1 : 1));
   for (const p of dated) {
     if (p.home) {

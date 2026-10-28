@@ -12,7 +12,7 @@ import { possible, requiresMet } from './ideas.js';
 import { log } from './log.js';
 import { SIGNALS } from './signals.js';
 import { adj, mem } from './social.js';
-import { isAdult, listNames, LIVE, N, rnd, S, yearOf } from './state.js';
+import { calYear, isAdult, listNames, LIVE, N, rnd, S } from './state.js';
 
 const lower = d => d.name.toLowerCase();
 
@@ -61,7 +61,7 @@ export function crossroadsDay() {
     if (t.state !== 'none') continue;
     p.status = 'faded';
     const can = LIVE.some(a => isAdult(a) && d.inventorJobs.includes(a.job));
-    log(`For all the talk of a ${lower(d)} since year ${yearOf(p.at)}, ${can ? 'nobody ever took it up' : 'there was nobody in the village with the trade to take it up'}.`, 'event', 'crossroads', { tech: p.idea, xr: p.id });
+    log(`For all the talk of a ${lower(d)} since ${calYear(p.at)}, ${can ? 'nobody ever took it up' : 'there was nobody in the village with the trade to take it up'}.`, 'event', 'crossroads', { tech: p.idea, xr: p.id });
   }
 }
 
@@ -101,10 +101,10 @@ export function noteIdea(ideaId, what, why) {
   const X = S.xr; if (!X) return;
   const p = [...X.past].reverse().find(e => e.idea === ideaId && (e.status === 'favoured' || e.status === 'thought'));
   if (!p) return;
-  const d = IDEA[ideaId], since = `since the village spoke for it in year ${yearOf(p.at)}`;
+  const d = IDEA[ideaId], since = `since the village spoke for it in ${calYear(p.at)}`;
   if (what === 'thought') { p.status = 'thought'; return; }
   if (what === 'built') { p.status = 'built'; log(`The ${lower(d)} is built, ${since}.`, 'good', 'crossroads', { tech: ideaId, xr: p.id }); }
-  if (what === 'failed') log(`The ${lower(d)} the village spoke for in year ${yearOf(p.at)} has come to nothing for now: ${why}.`, 'bad', 'crossroads', { tech: ideaId, xr: p.id });
+  if (what === 'failed') log(`The ${lower(d)} the village spoke for in ${calYear(p.at)} has come to nothing for now: ${why}.`, 'bad', 'crossroads', { tech: ideaId, xr: p.id });
   if (what === 'abandoned') { p.status = 'failed'; log(`In the end the village would not have the ${lower(d)}, ${since}: ${why}.`, 'bad', 'crossroads', { tech: ideaId, xr: p.id }); }
 }
 

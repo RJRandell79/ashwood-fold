@@ -1,6 +1,7 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { DAYS, SEASONS, SEASON_DAYS, TPD, YEAR_DAYS } from '../data/world.js';
 import { valley } from './valley.js';
+import { AGES, FIRST_AGE, useAge } from '../data/ages.js';
 
 export let S=null, LIVE=[];
 /** The places that stand in the valley: S.places, placed by src/sim/placement.js. */
@@ -13,7 +14,9 @@ export function dayOf(t=S.tick){return (Math.floor(t/TPD)+1);}
 export function yearOf(t=S.tick){return (Math.floor((dayOf(t)-1)/YEAR_DAYS)+1);}
 export function seasonOf(t=S.tick){return (Math.floor(((dayOf(t)-1)%YEAR_DAYS)/SEASON_DAYS));}
 export function dayInSeason(t=S.tick){return (((dayOf(t)-1)%SEASON_DAYS)+1);}
-export function seasonName(t=S.tick){return (`${SEASONS[seasonOf(t)]}, Year ${yearOf(t)}`);}
+/** The calendar year of tick t: the age's starting year (S.yearBase) plus the years played since. */
+export function calYear(t=S.tick){return ((S.yearBase??currentAge().startYear)+yearOf(t)-1);}
+export function seasonName(t=S.tick){return (`${SEASONS[seasonOf(t)]} ${calYear(t)}`);}
 export function weekday(t=S.tick){return (DAYS[(dayOf(t)-1)%7]);}
 export function isSunday(){return ((dayOf()-1)%7===6);}
 export function dayStart(t=S.tick){return (t-(t%TPD));}
@@ -43,4 +46,6 @@ export function fairOn(){return (S.fair&&S.tick>=S.fair.start&&S.tick<S.fair.end
 export function moodOf(a){return (clamp(1-(a.hunger*.45+a.tired*.3+a.lonely*.25),0,1));}
 export function numberWord(n){return ['no','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'][n]||String(n);}
 
-export function setState(v){S=v;P=v?(v.places||(v.places={})):{};return v;}
+/** The age the village is in now (src/data/ages.js). */
+export function currentAge(){return AGES[(S&&S.age)||FIRST_AGE];}
+export function setState(v){S=v;P=v?(v.places||(v.places={})):{};if(v)useAge(v.age||FIRST_AGE);return v;}

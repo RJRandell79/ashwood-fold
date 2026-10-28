@@ -1,17 +1,17 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
-import { ERA_LINES } from '../data/eras.js';
 import { SURNAMES } from '../data/folk.js';
 import { IDEA, IDEAS } from '../data/ideas.js';
 import { currentEra, effect, invalidateEffects } from './effects.js';
 import { easeRivals, honourInventor, raiseBuildings } from './ideas.js';
 import { noteIdea } from './crossroads.js';
+import { addDeed } from './dynasties.js';
 import { JOBS, MAXPOP, TPD, YEAR_DAYS } from '../data/world.js';
 import { familyKey } from './heraldry.js';
 import { log } from './log.js';
 import { addAgent, nameBaby, succeed } from './people.js';
 import { makeAgent } from './setup.js';
 import { adj, glyph, mem, op } from './social.js';
-import { byJob, dayStart, isAdult, isKin, listNames, LIVE, N, numberWord, P, pick, PN, pointIn, refreshLive, rnd, S, weekday, entryPoint } from './state.js';
+import { byJob, currentAge, dayStart, isAdult, isKin, listNames, LIVE, N, numberWord, P, pick, PN, pointIn, refreshLive, rnd, S, weekday, entryPoint } from './state.js';
 
 export function standing(a){const v=LIVE.filter(b=>b!==a&&isAdult(b));return v.reduce((s,b)=>s+op(b,a),0)/Math.max(1,v.length);}
 export function ambition(a){return a.tr.diligence*.4+(1-a.tr.warmth)*.25+a.tr.temper*.15+(a.coins>40?.15:0);}
@@ -93,6 +93,7 @@ export function tallyElection(){
     if(turn)line+=` Even ${N(turn[0])} voted against family.`;
   }
   log(line,'nudge','politics',{ids:order.map(c=>c.id),election:1});
+  if(inc!==win)addDeed(win,`${win.name} was chosen reeve`,'office');
 }
 export function bringCase(accused,accuser,charge,evidence,truth){
   if(!accused||accused.dead||!isAdult(accused))return;
@@ -136,7 +137,7 @@ export function decideCase(c,jurors){
     const prior=acc.convictions-1,serious=/^wrecking/.test(c.charge),fight=/fight/.test(c.charge);
     if(!fight&&((serious&&prior>=1)||prior>=2)){
       sentence=`Having stood before the court ${prior===1?'once':numberWord(prior)+' times'} before, ${N(acc)} is banished from Ashwood Fold.`;
-      exile(acc,'banished by the court');
+      exile(acc,'banished by the court');addDeed(acc,`${acc.name} was banished by the court`,'disgrace');
     }else{
       const fine=serious?15:/purse/.test(c.charge)?5:/fight/.test(c.charge)?2:3,paid=Math.min(acc.coins,fine);acc.coins-=paid;if(plf&&!plf.dead)plf.coins+=paid;
       sentence=`${reeve?N(reeve):'The court'} fines ${N(acc)} ${fine} pennies`;
@@ -173,7 +174,7 @@ export function eraDay(){
     // the idea that opened the era may give it its own name (the Turnpike Years rather than the Canal Years)
     const by=IDEAS.filter(d=>d.opensEra===e&&S.tech[d.id].state==='built').sort((a,b)=>S.tech[b.id].builtAt-S.tech[a.id].builtAt)[0];
     if(by&&by.eraTitle)(S.eraTitles||(S.eraTitles={}))[e]=by.eraTitle;
-    S.era=e;log((by&&by.eraLine)||ERA_LINES[e],'nudge','era',{era:e});}
+    S.era=e;log((by&&by.eraLine)||currentAge().eraLines[e],'nudge','era',{era:e,age:S.age});}
 }
 export function startBuilding(id){
   const t=S.tech[id],T=IDEA[id];

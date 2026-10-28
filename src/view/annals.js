@@ -10,6 +10,8 @@ import { G, cv3, draw3d, flyTo } from './three.js';
 import { $, cap, familyLine, showBtn, traitWords } from './ui.js';
 import { V } from './vstate.js';
 
+/** The calendar year of game year y. */
+export const yearName=y=>(S.yearBase??1750)+y-1;
 export function yearTitle(y,ents){
   const built=ents.find(e=>e.built);if(built)return `The Year of the ${IDEA[built.tech].name.replace(/\b\w/g,c=>c.toUpperCase())}`;
   const ban=ents.find(e=>e.c==='court'&&/banished/.test(e.h));if(ban)return `The Year ${S.agents[ban.ids[0]].first} Was Banished`;
@@ -28,7 +30,7 @@ export function yearIntro(y){
   const r=S.years[y]||{startPop:0,births:0,deaths:0,weddings:0},cur=y===yearOf();
   const endPop=cur?LIVE.length:r.startPop+r.births-r.deaths;
   const bits=[];
-  bits.push(`${cur?'This year began':`Year ${y} began`} with ${numberWord(r.startPop)} souls in Ashwood Fold${cur?` and there are ${numberWord(LIVE.length)} now`:` and ended with ${numberWord(Math.max(0,endPop))}`}.`);
+  bits.push(`${cur?'This year began':`${yearName(y)} began`} with ${numberWord(r.startPop)} souls in Ashwood Fold${cur?` and there are ${numberWord(LIVE.length)} now`:` and ended with ${numberWord(Math.max(0,endPop))}`}.`);
   const ev=[];if(r.births)ev.push(`${numberWord(r.births)} ${r.births>1?'births':'birth'}`);if(r.deaths)ev.push(`${numberWord(r.deaths)} ${r.deaths>1?'deaths':'death'}`);if(r.weddings)ev.push(`${numberWord(r.weddings)} ${r.weddings>1?'weddings':'wedding'}`);
   bits.push(ev.length?`There ${r.births+r.deaths+r.weddings>1?'were':'was'} ${ev.join(', ').replace(/, ([^,]*)$/,' and $1')}.`:'Nobody was born, married or buried.');
   if(r.harvest)bits.push(`The harvest was ${r.harvest}.`);
@@ -52,7 +54,7 @@ export function snapshot(){
 }
 export function buildStory(){
   const img=snapshot(),y0=yearOf(S.annals.length?S.annals[0].t:S.tick),y1=yearOf();
-  let html=`<h1>The Annals of Ashwood Fold</h1><p class="sub">A true account of the village, from Spring of Year 1 to ${seasonName()}</p>`;
+  let html=`<h1>The Annals of Ashwood Fold</h1><p class="sub">A true account of the village, from the spring of ${yearName(1)} to ${seasonName().replace(/^\w/,c=>c.toLowerCase())}</p>`;
   if(img)html+=`<figure><img src="${img}" alt="Ashwood Fold in ${SEASONS[seasonOf()].toLowerCase()}, as it stands today"><figcaption>Ashwood Fold as it stands, ${seasonName()}</figcaption></figure>`;
   const prologue=S.annals.filter(e=>e.c==='prologue');
   if(prologue.length)html+=`<p class="intro">${prologue.map(e=>e.h).join(' ')}</p><p class="orn">· · ·</p>`;
@@ -62,7 +64,7 @@ export function buildStory(){
     if(era!==prevEra){prevEra=era;html+=`<div class="bookhead"><span class="num">Book ${roman[era]}</span><h2>${eraName(era)}</h2></div>`;}
     const ents=S.annals.filter(e=>yearOf(e.t)===y&&e.c!=='prologue');
     if(!ents.length&&!S.years[y])continue;
-    html+=`<section class="chapter"><span class="num">Chapter ${y}</span><h2>${yearTitle(y,ents)}</h2><p class="intro">${yearIntro(y)}</p>`;
+    html+=`<section class="chapter"><span class="num">${yearName(y)}</span><h2>${yearTitle(y,ents)}</h2><p class="intro">${yearIntro(y)}</p>`;
     for(let s=0;s<4;s++){
       const capN={friend:1,fight:2,feud:2,rumour:2,crime:3,court:3,politics:3,letter:1,departure:3},seen={};
       const se=ents.filter(e=>seasonOf(e.t)===s&&!(e.c==='season'&&e.season===0)&&!/Now for the money|talks .* round to/.test(e.h)).filter(e=>{const c=capN[e.c];if(!c)return true;seen[e.c]=(seen[e.c]||0)+1;return seen[e.c]<=c;});

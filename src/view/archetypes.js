@@ -9,7 +9,7 @@
 //   chimneys  smoke sources { x, y, z, big, tech }
 //   homeSpot  where the household's banner hangs
 //   wheels    waterwheels to turn; tech parts are shown once their idea is built
-import { ERA_STYLES } from '../data/styles.js';
+import { AGES, FIRST_AGE } from '../data/ages.js';
 import { groundAt } from './terrain.js';
 
 const mats = new Map();
@@ -295,7 +295,7 @@ const BUILD = { house, long, workshop, sacred, civic, industrial, green, market,
 export function buildPlace(p, def, ctx) {
   const out = { group: new THREE.Group(), windows: new THREE.MeshBasicMaterial({ color: 0x2c3238 }), chimneys: [], wheels: [], tech: {}, rows: [], homeSpot: null };
   const fn = BUILD[def.archetype] || house;
-  const style = ERA_STYLES[Math.max(0, Math.min(ERA_STYLES.length - 1, p.era || 0))];
+  const styles = (AGES[p.age] || AGES[FIRST_AGE]).styles, style = styles[Math.max(0, Math.min(styles.length - 1, p.era || 0))];
   out.top = fn(p, def, { ...ctx, style }, out);
   return out;
 }
