@@ -14,7 +14,9 @@ export function dayOf(t=S.tick){return (Math.floor(t/TPD)+1);}
 export function yearOf(t=S.tick){return (Math.floor((dayOf(t)-1)/YEAR_DAYS)+1);}
 export function seasonOf(t=S.tick){return (Math.floor(((dayOf(t)-1)%YEAR_DAYS)/SEASON_DAYS));}
 export function dayInSeason(t=S.tick){return (((dayOf(t)-1)%SEASON_DAYS)+1);}
-export function seasonName(t=S.tick){return (`${SEASONS[seasonOf(t)]}, Year ${yearOf(t)}`);}
+/** The calendar year of tick t: the age's starting year (S.yearBase) plus the years played since. */
+export function calYear(t=S.tick){return ((S.yearBase??currentAge().startYear)+yearOf(t)-1);}
+export function seasonName(t=S.tick){return (`${SEASONS[seasonOf(t)]} ${calYear(t)}`);}
 export function weekday(t=S.tick){return (DAYS[(dayOf(t)-1)%7]);}
 export function isSunday(){return ((dayOf()-1)%7===6);}
 export function dayStart(t=S.tick){return (t-(t%TPD));}

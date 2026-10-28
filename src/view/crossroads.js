@@ -7,7 +7,7 @@ import { TPD } from '../data/world.js';
 import { autosave } from '../save/codec.js';
 import { choose, hasRoom, optionsOf, severity } from '../sim/crossroads.js';
 import { eraName } from '../sim/effects.js';
-import { S, yearOf } from '../sim/state.js';
+import { calYear, S } from '../sim/state.js';
 import { $ } from './ui.js';
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -44,7 +44,7 @@ export function renderCrossroads(force) {
   $('xrPastBox').hidden = !past.length;
   $('xrPast').innerHTML = past.map(p => {
     const c = CROSSROAD[p.id], what = p.idea ? `${STATUS[p.status] || p.status} (${IDEA[p.idea].name.toLowerCase()})` : p.result ? p.result.replace(/<[^>]+>/g, '') : STATUS[p.status] || p.status;
-    return `<li><time>Year ${yearOf(p.at)}</time> <b>${esc(c.title)}</b>: ${esc(p.label)} — ${esc(what)}</li>`;
+    return `<li><time>${calYear(p.at)}</time> <b>${esc(c.title)}</b>: ${esc(p.label)} — ${esc(what)}</li>`;
   }).join('');
 }
 
