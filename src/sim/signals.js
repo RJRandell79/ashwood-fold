@@ -19,6 +19,10 @@ export const SIGNALS = {
   weaversPoor: () => { const w = weavers(); return w.length && w.reduce((s, x) => s + x.coins, 0) / w.length < 8; },
   manyChildren: () => LIVE.filter(a => a.age >= 5 && a.age < 14).length >= 4,
   hasWeavers: () => weavers().length > 0,
+  // three or more open feuds
+  feudsRife: () => Object.values(S.pair).filter(v => v === 'feud').length >= 3,
+  // a crisis: many going hungry and next to nothing in the stores
+  famine: () => LIVE.filter(a => a.hunger > 0.8).length >= LIVE.length * 0.4 && S.stores.bread + S.stores.flour + S.stores.grain < LIVE.length * 2,
   // a works is running in the village and wants its goods carried
   worksRunning: () => effect('millHandsCap') > 0,
   // a works is running but its goods and corn still go by packhorse and cart on a bad road

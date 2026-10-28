@@ -4,6 +4,8 @@ import { CHARGE_NAMES } from '../data/heraldry.js';
 import { JOBS } from '../data/world.js';
 import { BUILDINGS, CROSSINGS, LEGACIES, LINES } from '../data/buildings.js';
 import { SIGNALS, SIGNAL_EVENTS } from './signals.js';
+import { CROSSROADS } from '../data/crossroads.js';
+import { RELIEFS } from './crossroads.js';
 
 const ANSWERS = ['food', 'connectivity', 'economy', 'social'];
 
@@ -60,6 +62,24 @@ export function validateBuildings(buildings = BUILDINGS) {
   for (const [id, b] of Object.entries(buildings)) {
     if (!LEGACIES.includes(b.legacy)) errors.push(`building ${id}: legacy must be one of ${LEGACIES.join(', ')}`);
     if (!(b.w > 0 && b.h > 0)) errors.push(`building ${id}: needs a footprint`);
+  }
+  return errors;
+}
+
+/** Checks the crossroads records: signals, ideas and reliefs they name must exist. */
+export function validateCrossroads(records = CROSSROADS) {
+  const errors = [];
+  for (const c of records) {
+    const where = `crossroads ${c.id}`;
+    if (!(c.when in SIGNALS)) errors.push(`${where}: unknown signal ${c.when}`);
+    if (!ANSWERS.includes(c.answers)) errors.push(`${where}: answers must be one of ${ANSWERS.join(', ')}`);
+    if (!c.options || !c.options.length) errors.push(`${where}: needs at least one option`);
+    for (const o of c.options || []) {
+      if (!!o.favour === !!o.relief) errors.push(`${where}: option "${o.label}" needs exactly one of favour or relief`);
+      if (o.favour && !IDEAS.some(d => d.id === o.favour)) errors.push(`${where}: favours unknown idea ${o.favour}`);
+      if (o.relief && !RELIEFS.includes(o.relief)) errors.push(`${where}: unknown relief ${o.relief}`);
+      if (!o.label || !o.intent) errors.push(`${where}: every option needs a label and an intent`);
+    }
   }
   return errors;
 }

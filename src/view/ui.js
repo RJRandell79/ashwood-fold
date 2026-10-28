@@ -7,13 +7,13 @@ import { autosave, decode, encode } from '../save/codec.js';
 import { favourite, voters } from '../sim/civic.js';
 import { armsOf, blazon, familyCards, familyKey, familyPlural } from '../sim/heraldry.js';
 import { requiresMet } from '../sim/ideas.js';
-import { nudgeFair, nudgePurse, nudgeRumour, nudgeShort, nudgeStorm, nudgeStranger } from '../sim/nudges.js';
 import { newTown } from '../sim/setup.js';
 import { op } from '../sim/social.js';
 import { byJob, childrenOf, clamp, dayInSeason, dayOf, fairOn, fmtTime, isAdult, isSunday, jobLabel, listNames, LIVE, moodOf, N, P, PN, refreshLive, S, seasonName, seasonOf, setState, surname, techBuilt, weekday } from '../sim/state.js';
 import { armsSVG, portraitSVG } from './portraits.js';
 import { G } from './three.js';
 import { V } from './vstate.js';
+import { renderCrossroads } from './crossroads.js';
 
 export function $(id){return (document.getElementById(id));}
 export function cap(s){return (s[0].toUpperCase()+s.slice(1));}
@@ -54,10 +54,6 @@ export function buildRoster(){
   const dead=S.agents.filter(a=>a.dead).sort((x,y)=>y.dead.t-x.dead.t);
   $('yardBox').hidden=!dead.length;$('yardSum').textContent=`The chapel yard and the departed (${dead.length})`;
   $('yard').innerHTML=dead.map(a=>`<button class="res" data-id="${a.id}"><span class="thumb">${portraitSVG(a,30)}</span><span><span class="nm">${a.name}<small>${Math.floor(a.dead.age)} · ${jobLabel(a)}</small></span><span class="doing">${a.dead.exiled?cap(a.dead.cause):'Died'}, ${seasonName(a.dead.t)}</span></span></button>`).join('');
-  const selEl=$('rumourSubject');const cur=selEl.value;
-  selEl.innerHTML=LIVE.filter(isAdult).map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
-  if(cur!==''&&LIVE.some(a=>String(a.id)===cur))selEl.value=cur;
-  $('nStranger').disabled=!STRANGERS.some(n=>!S.agents.some(a=>a.name===n[0]))||LIVE.length>=MAXPOP;
 }
 export function traitWords(t){
   const w=[];
@@ -162,7 +158,7 @@ export function render(force){
   if(S.fair)chips.push(`<span class="chip fair">${S.fair.harvest?'Harvest Home':fairOn()?'Fair on the Green':'Fair '+(dayOf(S.fair.start)===dayOf()?'at 10:00':'tomorrow')}</span>`);
   for(const g of S.gathers)if(g.type!=='election')chips.push(`<span class="chip ${g.type==='wedding'?'fair':''}">${{wedding:'Wedding',funeral:'Funeral',court:'Court'}[g.type]} ${S.tick>=g.start?'now':dayOf(g.start)===dayOf()?'today':'tomorrow'}</span>`);
   const live=S.rumours.filter(r=>S.tick-r.born<TPD*4).length;if(live)chips.push(`<span class="chip rumour">${live} rumour${live>1?'s':''} about</span>`);
-  if(S.spoil>0)chips.push(`<span class="chip rumour">Flour spoiled · ${Math.ceil(S.spoil/6)}h</span>`);
+  if(S.xr&&S.xr.open.length)chips.push(`<span class="chip storm">At a crossroads</span>`);
   if(isSunday())chips.push('<span class="chip">Sunday</span>');
   $('chips').innerHTML=chips.join('');
   const st=S.stores,kids=LIVE.filter(a=>a.age<14).length;
@@ -174,19 +170,13 @@ export function render(force){
   if(force||render.n%6===1)renderFamilies();
   if(force||render.n%3===1)renderCivic();
   renderLog();
-  $('nFair').disabled=!!S.fair;
+  renderCrossroads(force);
 }
 render.n=0;
 export function select(id){V.sel=id;render(true);}
 document.addEventListener('click',e=>{const w=e.target.closest('.who,.res');if(w&&w.dataset.id!=null&&!w.closest('.story'))select(+w.dataset.id);});
 export const TPS={0:0,1:3,3:9,10:30,30:90};
 document.querySelectorAll('.speed button').forEach(b=>b.addEventListener('click',()=>{V.speed=+b.dataset.speed;document.querySelectorAll('.speed button').forEach(x=>x.classList.toggle('on',x===b));}));
-$('nRumour').onclick=()=>nudgeRumour(+$('rumourSubject').value);
-$('nShort').onclick=nudgeShort;
-$('nStorm').onclick=nudgeStorm;
-$('nStranger').onclick=nudgeStranger;
-$('nFair').onclick=nudgeFair;
-$('nPurse').onclick=nudgePurse;
 export function msg(t){$('saveMsg').textContent=t;}
 $('copySave').onclick=()=>{const code=encode();
   const fallback=()=>{$('loadArea').hidden=false;$('saveText').value=code;$('saveText').select();msg('Select all the text below and copy it.');};

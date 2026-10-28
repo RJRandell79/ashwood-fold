@@ -8,7 +8,7 @@
   <header class="top">
     <div class="brand">
       <h1>Ashwood Fold</h1>
-      <p>A Lancashire village with needs, routines and long memories. Families grow, ideas take hold or fail, and the years pass. You can nudge the village, but nobody here takes orders.</p>
+      <p>A Lancashire village with needs, routines and long memories. Families grow, ideas take hold or fail, and the years pass. Now and then the village reaches a crossroads, and you may tip the balance. Nobody here takes orders.</p>
     </div>
     <div class="clock">
       <div class="when" id="when">Spring, Year 1</div>
@@ -32,20 +32,11 @@
       <p class="viewnote" id="viewNote"></p>
       <div class="stores" id="stores"></div>
 
-      <section class="nudges">
-        <h2 class="sec">Nudge the village</h2>
-        <div class="grid">
-          <div class="nudge rumour">
-            <b>Whisper a rumour</b>
-            <small>The village gossip hears it first. Trust decides who believes it.</small>
-            <div class="inline"><select id="rumourSubject" aria-label="Rumour about"></select><button class="btn" id="nRumour">Whisper</button></div>
-          </div>
-          <button class="nudge" id="nShort"><b>Spoil the flour</b><small>Weevils in the granary. Bread runs out within a day or two.</small></button>
-          <button class="nudge" id="nStorm"><b>Send a storm</b><small>Sixteen hours of rain. In autumn it flattens the standing corn.</small></button>
-          <button class="nudge" id="nStranger"><b>A stranger arrives</b><small>A pedlar takes a room at The Plough.</small></button>
-          <button class="nudge" id="nFair"><b>Hold a fair</b><small>A day of trading and merriment on the Green.</small></button>
-          <button class="nudge" id="nPurse"><b>Lose a purse</b><small>The richest villager drops their pennies. Someone finds them.</small></button>
-        </div>
+      <section class="crossroads" aria-live="polite">
+        <h2 class="sec">Crossroads</h2>
+        <p class="xr-note" id="xrNote"></p>
+        <div id="xroads"></div>
+        <details class="xr-past" id="xrPastBox" hidden><summary>Crossroads past</summary><ol id="xrPast"></ol></details>
       </section>
 
       <section class="works">

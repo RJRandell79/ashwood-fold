@@ -89,7 +89,7 @@ function score(def, x, y, v, occ, centre) {
   let dc = Math.hypot(c.x - centre.x, c.y - centre.y);
   if (far) { const e = crossingEnds(); dc = Math.hypot(c.x - e.south.x, c.y - e.south.y) + Math.hypot(e.north.x - centre.x, e.north.y - centre.y) + 2; }
   let s = R.wooded ? R.wooded * wood : -wood * 0.3;
-  if (R.centre) s += R.centre * (1 - Math.min(1, dc / 30));
+  if (R.centre) s += (R.centre + (def.home && S.infillUntil > S.tick ? 4 : 0)) * (1 - Math.min(1, dc / 30));
   if (R.edge) s += R.edge * Math.min(1, dc / 25);
   if (R.nearWater) s += R.nearWater * (1 - Math.min(1, dist / 12));
   if (R.fertile) s += R.fertile * fert;
