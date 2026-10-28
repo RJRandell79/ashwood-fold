@@ -42,7 +42,7 @@ export const AGES = {
   },
   industrial: {
     id: 'industrial', name: 'The Industrial Village', startYear: 1750,
-    eras: ERAS, eraLines: ERA_LINES, ideas: INDUSTRIAL_IDEAS, crossroads: INDUSTRIAL_CROSSROADS, styles: ERA_STYLES, cast: INDUSTRIAL_CAST,
+    eras: ERAS, eraLines: ERA_LINES, ideas: INDUSTRIAL_IDEAS, crossroads: INDUSTRIAL_CROSSROADS, styles: ERA_STYLES, cast: INDUSTRIAL_CAST, people: INDUSTRIAL_NAMES, placeNames: {},
     founding: ['square', 'chapel', 'tavern', 'market', 'hall', 'mill', 'fields', 'forge', 'bakery', 'weaving', 'garden', 'holt', 'pendle', 'barrow', 'fair', 'calder', 'greaves'],
     next: null,
   },

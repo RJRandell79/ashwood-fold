@@ -2,11 +2,12 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { IDEAS } from '../src/data/ideas.js';
+import { AGES } from '../src/data/ages.js';
 import { validateBuildings, validateIdeas } from '../src/sim/validate.js';
 
 describe('ideas are data', () => {
-  it('the idea records validate', () => {
-    expect(validateIdeas()).toEqual([]);
+  it('the idea records of every age validate', () => {
+    for (const a of Object.values(AGES)) expect(validateIdeas(a.ideas), a.id).toEqual([]);
   });
 
   it('the building records validate, and a missing legacy is caught', () => {
