@@ -11,6 +11,7 @@ import { addPlace, routeLine, setCrossing } from './placement.js';
 import { log } from './log.js';
 import { SIGNALS } from './signals.js';
 import { noteIdea } from './crossroads.js';
+import { addDeed } from './dynasties.js';
 import { addRumour, adj, glyph, mem, op } from './social.js';
 import { LIVE, N, PN, S, byJob, household, isAdult, listNames, pick, rnd, techBuilt, techOn } from './state.js';
 
@@ -103,6 +104,7 @@ export function honourInventor(d, inv) {
     ar.aug.push(d.id);
     log(`The ${fam} family add ${CHARGE_NAMES[d.emblem]} to their arms, in honour of ${N(inv)}'s ${lower(d)}.`, 'good', 'arms', { fam });
   }
+  addDeed(inv, `${inv.name} thought of the ${lower(d)}, and saw it built`, 'honour');
 }
 
 /** Puts an idea's buildings (and any canal or railway line) into the valley. */

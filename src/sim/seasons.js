@@ -3,12 +3,14 @@ import { effect } from './effects.js';
 import { raisePressure } from './signals.js';
 import { MAXPOP, TPD, YEAR_DAYS } from '../data/world.js';
 import { plan } from './life.js';
+import { recordFamilies } from './dynasties.js';
 import { log } from './log.js';
 import { arrive } from './people.js';
 import { adj, mem } from './social.js';
 import { byJob, calYear, dayOf, household, isAdult, listNames, LIVE, N, P, pick, rnd, S, seasonOf, yearOf } from './state.js';
 
 export function seasonStart(){
+  if(seasonOf()===0)recordFamilies();
   const s=seasonOf(),y=yearOf(),pop=LIVE.length;
   if(s===0){
     S.years[y]={startPop:pop,births:0,deaths:0,weddings:0,era:S.era};S.yearQ=.65+rnd()*.6;

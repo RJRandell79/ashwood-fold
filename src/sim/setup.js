@@ -3,6 +3,7 @@ import { FOLK, STRANGERS } from '../data/folk.js';
 import { IDEAS } from '../data/ideas.js';
 import { JOBS, TPD, YEAR_DAYS } from '../data/world.js';
 import { armsOf, familyKey } from './heraldry.js';
+import { recordFamilies } from './dynasties.js';
 import { log } from './log.js';
 import { checkPair } from './social.js';
 import { N, P, pointIn, refreshLive, rnd, S, setState } from './state.js';
@@ -51,6 +52,7 @@ export function newTown(seed){
   for(const a of S.agents)for(const b of S.agents)if(a!==b&&S.op[a.id][b.id]<-50)S.grudge[a.id+'-'+b.id]=1;
   S.pair['5-7']='friends';S.pair['11-12']='friends';S.pair['2-6']='feud';
   for(const a of S.agents)armsOf(familyKey(a));
+  recordFamilies();
   log(`Spring, and the first year of this chronicle. ${N(A(2))} the miller and ${N(A(6))} the farmer have not spoken civilly since the argument over grain prices last harvest.`,'event','prologue');
   log(`${N(A(3))} and ${N(A(8))} both weave for the same cloth merchant, and neither forgets it.`,'event','prologue');
   log(`Everyone knows ${N(A(5))} is sweet on ${N(A(7))}. Nobody has said so to ${N(A(6))}.`,'event','prologue');
