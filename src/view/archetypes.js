@@ -298,6 +298,24 @@ function station(p, def, ctx, out) {
   return s.base + 1.8 + rh;
 }
 
+/** A mill on the hill: a tapering tower, a cap, and sails that turn with the wheels. */
+function windmill(p, def, ctx, out) {
+  const s = site(p, ctx, out), st = ctx.style;
+  const tower = shade(new THREE.Mesh(new THREE.CylinderGeometry(0.75, 1.05, 3, 10), mat(st.timber ? st.wall : 0xcfc6ae))); tower.position.y = 1.5; s.frame.add(tower);
+  const cap = shade(new THREE.Mesh(new THREE.ConeGeometry(0.95, 0.9, 10), roofMat(st.roof))); cap.position.y = 3.45; s.frame.add(cap);
+  door(s, 1.9, 0, st.trim, 0.5, 0.9);
+  const sails = new THREE.Group();
+  for (let i = 0; i < 4; i++) {
+    const arm = new THREE.Group(); arm.rotation.z = i * Math.PI / 2;
+    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.6, 0.08), mat(0x4a3326)); stock.position.y = 1.3; arm.add(stock);
+    const cloth = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.9, 0.03), mat(0xe9e1cf)); cloth.position.set(0.3, 1.55, 0); arm.add(cloth);
+    sails.add(arm);
+  }
+  sails.position.set(0, 2.9, 1.0); sails.traverse(m => { m.castShadow = true; });
+  s.frame.add(sails); out.wheels.push(sails);
+  return s.base + 4.2;
+}
+
 /** What is left of a building no longer used: broken walls in the grass, no roof. */
 function ruin(p, def, ctx, out) {
   const s = site(p, ctx, out), w = s.lw - 0.6, d = s.ld - 0.6, stone = 0x9a9384;
@@ -309,7 +327,7 @@ function ruin(p, def, ctx, out) {
   return s.base + 1.4;
 }
 
-const BUILD = { house, long, workshop, sacred, civic, industrial, green, market, field, garden, wharf, station, ruin };
+const BUILD = { house, long, workshop, sacred, civic, industrial, green, market, field, garden, wharf, station, ruin, windmill };
 
 /** Builds the 3D form of one place. */
 export function buildPlace(p, def, ctx) {

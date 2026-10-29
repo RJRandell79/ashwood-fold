@@ -15,6 +15,7 @@
 //   placeNames           what this age calls the buildings it shares with others (the hall is the Manor House)
 //   lineage              how this age's surnames are spelt by the time of the next age
 //   houseWord            what new homes are called (Croft); otherwise cottages early on and houses later
+//   effectBase           effect values that differ from src/data/ideas.js EFFECT_BASE before any idea is built
 //   minYears, maxYears   the age may close once its last era has opened and minYears have passed, and closes
 //                        regardless after maxYears; then the interlude to `next` can begin
 //   next                 the age that follows, by way of an interlude, if any
@@ -37,7 +38,10 @@ export const AGES = {
     },
     lineage: { Holte: 'Holt', Pendle: 'Pendle', Barwe: 'Barrow', Fayreclough: 'Fairclough', Caldre: 'Calder', Greve: 'Greaves', Brewster: 'Brewster', Wryght: 'Wright' },
     houseWord: 'Croft',
-    minYears: 18, maxYears: 40,
+    effectBase: { midsummerFair: 0 },   // no fair until the village has the charter for one
+    // about two generations: ready to close after 40 years (once its last era has opened) and by 55 years
+    // regardless; with the three years' grace it is over by 1347, so the pestilence of 1349 opens the interlude
+    minYears: 40, maxYears: 55,
     next: 'industrial',
   },
   industrial: {

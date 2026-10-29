@@ -58,7 +58,8 @@ export function beginInterlude() {
   // to each family, then the rest
   const tell = e => { if (e.when && !P[e.when] && !(S.tech[e.when] && S.tech[e.when].state === 'built')) return; say(e.text.replace('{place}', P[e.when] ? P[e.when].name : '')); };
   const plagueYear = I && I.plague ? I.plague.year : Infinity;
-  for (const e of (I ? I.events : []).filter(e => e.year < plagueYear)) tell(e);
+  const after = e => e.year > endYear; // what happened while the age was played is in the annals already
+  for (const e of (I ? I.events : []).filter(e => after(e) && e.year < plagueYear)) tell(e);
   if (I && I.plague) say(I.plague.text);
   for (const r of living) {
     const honour = r.deeds.filter(d => d.kind !== 'disgrace').length;
@@ -75,7 +76,7 @@ export function beginInterlude() {
   }
 
   // --- what else happened in between ---
-  for (const e of (I ? I.events : []).filter(e => e.year >= plagueYear)) tell(e);
+  for (const e of (I ? I.events : []).filter(e => after(e) && e.year >= plagueYear)) tell(e);
 
   // --- places: by their legacy ---
   const known = new Set([...to.founding, ...to.ideas.flatMap(d => d.places || [])]);

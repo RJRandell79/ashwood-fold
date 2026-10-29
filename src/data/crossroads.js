@@ -86,6 +86,7 @@ export const INDUSTRIAL_CROSSROADS = [
       { label: 'Call a peacemaking at the chapel', intent: 'Ask the feuding families to shake hands before the village. The forgiving may; the proud may not.', relief: 'reconcile' },
       { label: 'Speak for a school', intent: 'Teach the children their letters, and the village to question idle talk. Slow to pay off.', favour: 'school' },
       { label: 'Speak for a chantry', intent: 'Pay a priest to pray for the dead and teach the children. The village would have to find his keep.', favour: 'chantry' },
+      { label: 'Talk of a parish guild', intent: 'Bind the families in a brotherhood sworn to keep the peace. Some will not join.', favour: 'guild' },
     ],
   },
 ];
@@ -104,6 +105,7 @@ export const MEDIEVAL_CROSSROADS = [
     options: [
       { label: 'Petition for a market charter', intent: "Ask the king's leave to hold a market here. It will cost money and goodwill, and the next town will not like it.", favour: 'charter' },
       { label: 'Speak for a tithe barn', intent: 'Keep the surplus dry against a bad year. It does nothing for the price.', favour: 'barn' },
+      { label: 'Ask for a fair as well', intent: 'A midsummer fair would bring buyers from three valleys. Only once there is a market.', favour: 'fair' },
     ],
   },
 ];
