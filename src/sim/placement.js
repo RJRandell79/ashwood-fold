@@ -70,11 +70,11 @@ function score(def, x, y, v, occ, centre) {
     if (o !== 4 || inside) return -Infinity;
     lane++;
   }
-  let slope = 0, flood = 0, fert = 0, dist = 0, wood = 0, maxSlope = 0, maxFlood = 0, minDist = Infinity, n = 0, foot = 0;
+  let height = 0, slope = 0, flood = 0, fert = 0, dist = 0, wood = 0, maxSlope = 0, maxFlood = 0, minDist = Infinity, n = 0, foot = 0;
   for (let yy = y; yy < y + def.h; yy++) for (let xx = x; xx < x + def.w; xx++) {
     const i = yy * v.W + xx;
     if (v.water[i]) return -Infinity;
-    slope += v.slope[i]; flood += v.flood[i]; fert += v.fertile[i]; dist += v.dist[i]; wood += wooded(v, i); n++;
+    height += v.height[i]; slope += v.slope[i]; flood += v.flood[i]; fert += v.fertile[i]; dist += v.dist[i]; wood += wooded(v, i); n++;
     maxSlope = Math.max(maxSlope, v.slope[i]); maxFlood = Math.max(maxFlood, v.flood[i]); minDist = Math.min(minDist, v.dist[i]);
     if (S.foot) foot += S.foot[i] || 0;
   }
@@ -93,6 +93,7 @@ function score(def, x, y, v, occ, centre) {
   if (R.edge) s += R.edge * Math.min(1, dc / 25);
   if (R.nearWater) s += R.nearWater * (1 - Math.min(1, dist / 12));
   if (R.fertile) s += R.fertile * fert;
+  if (R.high) { const hc = v.height[Math.floor(centre.y) * v.W + Math.floor(centre.x)]; s += R.high * Math.max(0, Math.min(1, (height / n - hc) / 4)); }
   if (R.flat) s -= R.flat * slope * 3;
   if (R.dry) s -= R.dry * flood * 3;
   if (R.road) s += R.road * (Math.min(1, foot / 60) + Math.min(1, lane / 3));

@@ -197,6 +197,8 @@ export const EFFECT_BASE = {
   canvassWeight: 1,          // multiplier on election canvassing
   childInherit: 0.6,         // how strongly children take on their parents' opinions
   lessons: null,             // the place where children go to lessons, once there is one
+  forgiveness: 1,            // multiplier on how fast grudges fade overnight
+  midsummerFair: 1,          // 1 = a midsummer fair is held on the Green each year
   farBank: 0,                // 1 = buildings may go up on the far bank of the river
 };
 
@@ -209,15 +211,42 @@ export const MEDIEVAL_IDEAS = [
     id: 'chantry', answers: 'social', name: 'Chantry school', what: 'pays a priest to sing for the dead and teach the children their letters', hint: 'Talk of the children growing up unlettered',
     places: ['chantry'],
     requires: [], inventorJobs: ['herbalist', 'reeve', 'innkeeper', 'baker'], backers: 5, cost: 35,
-    pressure: { base: 0.2, when: { manyChildren: 2 }, on: { rumourSpread: 20 } },
+    pressure: { base: 0.06, when: { manyChildren: 1.5 }, on: { rumourSpread: 20 } },
     effects: { rumourTrust: { mul: 0.7 }, rumourDoubtChance: { set: 0.2 }, juryBias: { set: 0.4 }, childInherit: { set: 0.4 }, lessons: { set: 'chantry' } },
     emblem: 'book',
+  },
+  {
+    id: 'windmill', answers: 'food', name: 'Windmill', what: 'grinds corn on the hill when the river runs low or the lord\'s mill is busy', hint: 'Grumbling about the queue at the lord\'s mill',
+    places: ['windmill'],
+    requires: [], inventorJobs: ['miller', 'labourer', 'smith', 'farmer'], backers: 6, cost: 45, buildDays: 3,
+    pressure: { base: 0.04, when: { flourShort: 3 }, on: { shelvesBare: 25 } },
+    threatens: { miller: 0.5 },
+    effects: { grindRate: { mul: 1.4 } },
+    builtLines: ['Sails turn on the hill above the village. The lord\'s miller does not like it.'],
+    emblem: 'millwheel',
+  },
+  {
+    id: 'guild', answers: 'social', name: 'Parish guild', what: 'binds its brothers and sisters to keep the peace, bury the poor and pray for the dead', hint: 'Talk of the guilds in the towns, and how they settle quarrels',
+    places: ['guildhall'],
+    requires: [], inventorJobs: ['herbalist', 'innkeeper', 'baker', 'weaver', 'reeve'], backers: 7, cost: 40, buildDays: 3,
+    pressure: { base: 0.04, when: { feudsRife: 3 } },
+    effects: { forgiveness: { mul: 1.5 }, juryBias: { mul: 0.8 } },
+    builtLines: ['The guild keeps its first feast in its new hall, and old enemies sit at the same board.'],
+    emblem: 'rose',
+  },
+  {
+    id: 'fair', answers: 'economy', name: 'Fair charter', what: 'adds a midsummer fair to the market, three days of trade and merriment every year', hint: 'Talk of the great fairs, and the money that changes hands',
+    requires: ['charter'], inventorJobs: ['reeve', 'innkeeper', 'carter', 'baker'], backers: 6, cost: 40,
+    pressure: { base: 0.06, when: { granaryFullAtHarvest: 2 } },
+    effects: { midsummerFair: { set: 1 }, springMigrants: { set: 2 } },
+    builtLines: ['The fair charter is read out at the market cross. The alewife brews twice as much.'],
+    emblem: 'star',
   },
   {
     id: 'charter', answers: 'economy', name: 'Market charter', what: "lets the village hold a market every week, by the king's leave", hint: 'Talk of the market at the next town, and the tolls paid there',
     places: ['market'],
     requires: [], inventorJobs: ['reeve', 'baker', 'innkeeper', 'farmer'], backers: 6, cost: 50,
-    pressure: { base: 0.35, when: { granaryFullAtHarvest: 3, hasWeavers: 0.3 } },
+    pressure: { base: 0.12, when: { granaryFullAtHarvest: 3, hasWeavers: 0.2 } },
     effects: { carterWage: { set: 0.09 }, springMigrants: { set: 1 }, migrantJob: { set: 'carter' }, migrantReason: { set: 'to trade at the new market' } },
     builtLines: ['A stone cross is raised where the market will stand.'],
     opensEra: 1,
@@ -227,7 +256,7 @@ export const MEDIEVAL_IDEAS = [
     id: 'fulling', answers: 'economy', name: 'Fulling mill', what: "beats the cloth by water power instead of by men's feet", hint: "The weavers' cloth waits weeks for the walkers",
     places: ['fulling'],
     requires: ['charter'], inventorJobs: ['miller', 'weaver', 'smith'], backers: 6, cost: 70, buildDays: 5,
-    pressure: { base: 0.3, when: { hasWeavers: 0.5, weaversPoor: 1.5 } },
+    pressure: { base: 0.09, when: { hasWeavers: 0.3, weaversPoor: 1.2 } },
     threatens: { labourer: 0.4 },
     effects: { weaverWage: { mul: 1.5 } },
     builtLines: ['The great hammers of the fulling mill can be heard from the Green.'],

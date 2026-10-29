@@ -4,6 +4,7 @@
 import { STRANGERS } from '../data/folk.js';
 import { MAXPOP, TPD } from '../data/world.js';
 import { log } from './log.js';
+import { effect } from './effects.js';
 import { addAgent } from './people.js';
 import { makeAgent } from './setup.js';
 import { dayInSeason, dayStart, entryPoint, LIVE, N, P, pointIn, rnd, S, seasonOf } from './state.js';
@@ -26,7 +27,7 @@ export function strangerArrives() {
 export function eventsDay() {
   const season = seasonOf();
   if ((season === 0 || season === 1) && rnd() < 0.02) strangerArrives();
-  if (season === 1 && dayInSeason() === 3 && !S.fair) {
+  if (season === 1 && dayInSeason() === 3 && !S.fair && effect('midsummerFair')) {
     S.fair = { start: dayStart() + TPD + 60, end: dayStart() + TPD + 120 };
     log('The crier announces the midsummer fair on the Green tomorrow.', 'event', null, { place: 'square' });
   }

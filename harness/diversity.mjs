@@ -10,7 +10,7 @@ import { FOLK } from '../src/data/folk.js';
 import { valley } from '../src/sim/valley.js';
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
-const n = Number(arg('--seeds', 20)), years = Number(arg('--years', 65)), out = arg('--markdown', null);
+const n = Number(arg('--seeds', 20)), years = Number(arg('--years', 90)), out = arg('--markdown', null);
 // every idea of every age, once each, labelled by age where they differ
 const ALL = []; for (const a of Object.values(AGES)) for (const d of a.ideas) if (!ALL.some(x => x.d === d && x.age === a.id)) ALL.push({ d, age: a.id });
 const yearOf = t => Math.floor(t / TPD / YEAR_DAYS) + 1;

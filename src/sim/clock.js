@@ -19,7 +19,7 @@ import { LIVE, S, dayInSeason, dayOf, dayStart, listNames, refreshLive, seasonOf
 export function midnight(){
   refreshLive();
   for(const a of LIVE)for(const b of S.agents){if(a===b)continue;const o=S.op[a.id][b.id];
-    if(o<0)S.op[a.id][b.id]=Math.min(0,o+(.5+a.tr.forgive*2.5)*(1-a.tr.temper*.5));
+    if(o<0)S.op[a.id][b.id]=Math.min(0,o+(.5+a.tr.forgive*2.5)*(1-a.tr.temper*.5)*effect('forgiveness'));
     else if(o>25&&!b.dead)S.op[a.id][b.id]=o-.6;}
   // children take on their parents' loves and hates
   const inherit=effect('childInherit');

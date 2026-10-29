@@ -16,7 +16,8 @@ function working() {
 
 function compute(name, who) {
   if (!(name in EFFECT_BASE)) throw new Error(`unknown effect: ${name}`);
-  let v = EFFECT_BASE[name];
+  const ageBase = (AGES[S.age] || AGES[FIRST_AGE]).effectBase;
+  let v = ageBase && name in ageBase ? ageBase[name] : EFFECT_BASE[name];
   for (const d of working()) {
     const e = d.effects && d.effects[name];
     if (!e || (e.while && !techOn(e.while))) continue;

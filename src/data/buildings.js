@@ -15,6 +15,7 @@
 //     riverbank          must touch the river bank (true)
 //     fertile, flat, dry prefer good soil / level ground / ground that does not flood (weight)
 //     wooded             prefer standing woodland, to fell it (weight); otherwise woodland counts against a plot
+//     high               prefer ground well above the settlement, where the wind is (weight)
 //     road               prefer well-trodden ground (weight)
 //     near, away         { kind or building id: weight }  prefer to be close to / far from
 //     line               must stand beside a line (canal, railway)
@@ -78,6 +79,10 @@ export const BUILDINGS = {
               place: { centre: 2, near: { sacred: 4 } } },
   // What is left of a building the valley no longer uses: low walls in the grass. Its name and size are
   // the old building's; it stands where it stood (made by the interludes, src/sim/interlude.js).
+  windmill: { name: 'the Windmill', legacy: 'adaptable', w: 3, h: 3, indoor: true, kind: 'work', archetype: 'windmill',
+              place: { high: 4, edge: 1, dry: 2, away: { home: 1, sacred: 1 }, maxSlope: 0.5 } },
+  guildhall: { name: 'the Guild Hall', legacy: 'adaptable', w: 4, h: 3, indoor: true, kind: 'civic', archetype: 'civic', features: ['chimney'],
+              place: { centre: 3, near: { square: 2, sacred: 1 } } },
   ruin:     { name: 'the ruins', legacy: 'enduring', w: 4, h: 3, indoor: false, kind: 'open', archetype: 'ruin', place: {} },
   tollhouse: { name: 'the Toll House', legacy: 'adaptable', w: 3, h: 3, indoor: true, kind: 'civic', archetype: 'house', features: ['chimney'],
               place: { line: 'turnpike', centre: 3 } },

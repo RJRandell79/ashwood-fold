@@ -12,7 +12,7 @@ import { decode, encode } from '../src/save/codec.js';
 /** Runs a manor village until its age closes, then lets the centuries pass. */
 function toInterlude(seed) {
   let before = null;
-  run(seed, { years: 45, onYear: s => { if (!before && s.age === 'medieval' && interludeReady()) before = JSON.parse(JSON.stringify(s)); } });
+  run(seed, { years: 62, onYear: s => { if (!before && s.age === 'medieval' && interludeReady()) before = JSON.parse(JSON.stringify(s)); } });
   return before;
 }
 
@@ -74,5 +74,15 @@ describe('the first interlude', () => {
     setState(back);
     for (let i = 0; i < TICKS_PER_YEAR; i++) tick();
     expect(checkInvariants(S)).toEqual([]);
+  });
+});
+
+describe('the manor village runs for about two generations', () => {
+  it('it cannot close before forty years, and closes by 1348', () => {
+    let closed = null, readyFrom = null;
+    run(4, { years: 62, onYear: (s, y) => { if (s.age === 'medieval' && interludeReady() && !readyFrom) readyFrom = y; if (s.age === 'industrial' && !closed) closed = y; } });
+    expect(readyFrom).toBeGreaterThanOrEqual(40);
+    expect(closed).toBeTruthy();
+    expect(S.history.ages[0].endYear).toBeLessThanOrEqual(1348);
   });
 });
