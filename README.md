@@ -26,7 +26,9 @@ npm install
 npm run build        # writes dist/ashwood-fold.html, one self-contained page
 npm test             # valley and placement, old saves (v5 included), save codes, invariants over long runs
 npm run harness      # balance report: 5 whole games of 90 years (--seeds 1,2,3 --years 60)
-npm run diversity    # how different the histories are: ideas, eras, layouts, families (--seeds 20)
+npm run diversity    # whole games compared: eras, ideas set aside, population, families and buildings
+                     # across the interlude, valley shape against outcome, what nudges change
+                     # (--seeds 8 --policies never,random,first; --json/--from to save and re-report)
 npm run nudges       # crossroads: the same villages never nudged, always nudged, nudged at random
 node harness/compare.mjs --base ../other-checkout   # behaviour report against another branch
 ```
