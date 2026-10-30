@@ -79,6 +79,11 @@ export function foodDay(){
       log(`The granary is nearly empty. ${N(r)} has the money for corn from the next valley, and keeps it.`,'bad','crime',{ids:[r.id]});}
   }
   if(S.cartRefused&&dayOf()-S.cartRefused>5)S.cartRefused=0;
+  // with no baker, households bake their own at the oven: less than a baker would, but enough to live on
+  if(pop&&!LIVE.some(a=>a.job==='baker')&&S.stores.flour>=1){
+    const c=Math.min(S.stores.flour,pop*.6,Math.max(0,40-S.stores.bread));S.stores.flour-=c;S.stores.bread+=c;
+    if(!S.homeBaking){S.homeBaking=S.tick;log(`With no baker in the village, every household bakes its own bread at ${P.bakery?P.bakery.name:'the oven'}.`,'event','work',{place:'bakery'});}
+  }else if(S.homeBaking&&LIVE.some(a=>a.job==='baker'))S.homeBaking=0;
 }
 export function collectDues(){
   const reeve=byJob('reeve');if(!reeve)return;const short=[];

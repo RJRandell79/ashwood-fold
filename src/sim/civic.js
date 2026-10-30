@@ -78,7 +78,9 @@ export function tallyElection(){
   if(cands.length>1){S.election=e;for(const v of voters()){const f=favourite(v,true);if(f!=null&&votes[f]!=null){votes[f]++;ballots.push([v,S.agents[f]]);mem(v,S.agents[f],'voted for');}}S.election=null;}
   const order=[...cands].sort((x,y)=>votes[y.id]-votes[x.id]||y.age-x.age),win=order[0];
   if(inc&&inc!==win){inc.job=inc.prevJob&&inc.prevJob!=='reeve'?inc.prevJob:'labourer';inc.work=JOBS[inc.job];}
-  if(win.job!=='reeve'){win.prevJob=win.job;win.job='reeve';win.work='hall';}
+  // the new reeve leaves their trade: if no one else follows it, someone must take it up (or a stranger
+  // be sent for), or a village can lose its only baker to the Moot Hall and starve beside a full granary
+  if(win.job!=='reeve'){const was=win.job;win.prevJob=was;win.job='reeve';win.work='hall';succeed({...win,job:was});}
   S.reeveSince=S.tick;S.lastElection={t:S.tick,res:order.map(c=>[c.id,votes[c.id]])};
   for(const [v,c] of ballots)if(c===win)adj(win,v,3);
   for(const l of order.slice(1)){adj(l,win,-8*(.5+l.tr.temper));if(l.tr.temper>.6&&rnd()<.5)mem(l,win,'stole the election from me');}
