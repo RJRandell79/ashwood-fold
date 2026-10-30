@@ -3,7 +3,7 @@
 // design review of 30 October asked for: eras reached, ideas abandoned, population over time, family
 // survival, building survival across the interlude, how the valley's shape bears on what it becomes,
 // and what nudging changes across a whole game.
-//   node harness/diversity.mjs [--seeds 8] [--years 90] [--policies never,random] [--jobs N] [--markdown out.md]
+//   node harness/diversity.mjs [--seeds 8] [--years 110] [--policies never,random] [--jobs N] [--markdown out.md]
 //                              [--json raw.json] [--from raw.json]
 // Each seed is played once per policy. The first policy is the baseline the others are compared with.
 import fs from 'node:fs';
@@ -14,7 +14,7 @@ import { AGES } from '../src/data/ages.js';
 
 async function main() {
   const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
-  const n = Number(arg('--seeds', 8)), years = Number(arg('--years', 90)), out = arg('--markdown', null);
+  const n = Number(arg('--seeds', 8)), years = Number(arg('--years', 110)), out = arg('--markdown', null);
   const policies = arg('--policies', 'never,random').split(',');
   const jobs = Math.max(1, Number(arg('--jobs', os.availableParallelism ? os.availableParallelism() : os.cpus().length)));
   const queue = [];

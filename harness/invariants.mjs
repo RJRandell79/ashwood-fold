@@ -1,4 +1,5 @@
 import { valley } from '../src/sim/valley.js';
+import { ESSENTIAL } from '../src/data/world.js';
 
 // Checks that should hold at any moment of any run. Returns a list of problems (empty = fine).
 export function checkInvariants(S) {
@@ -55,5 +56,8 @@ export function checkInvariants(S) {
   for (let i = 1; i < S.annals.length; i++) if (S.annals[i].t < S.annals[i - 1].t) { bad.push('annals are out of order'); break; }
   if (S.era < 0 || S.era > 4) bad.push(`era out of range (${S.era})`);
   for (const e of S.annals) if (/\bundefined\b|\bNaN\b|\[object Object\]/.test(e.h)) { bad.push(`broken text in the annals: ${e.h.replace(/<[^>]+>/g, '').slice(0, 90)}`); break; }
+  // every essential trade is followed by someone, or the village knows it is looking for someone
+  const live = S.agents.filter(a => !a.dead);
+  if (live.length) for (const job of ESSENTIAL) if (job !== 'reeve' && !live.some(a => a.job === job) && !(S.vacant || []).some(v => v.job === job)) bad.push(`no one is the ${job}, and no one is being sought`);
   return bad;
 }

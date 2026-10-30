@@ -15,8 +15,9 @@ export function seasonStart(){
   if(s===0){
     S.years[y]={startPop:pop,births:0,deaths:0,weddings:0,era:S.era,age:S.age,cal:calYear()};S.yearQ=.65+rnd()*.6;
     log(`Spring comes to Ashwood Fold in ${calYear()}, with ${pop} souls in the village.`,'event','season',{season:0});
-    if(LIVE.filter(isAdult).length<12)arrive(pick(['labourer','farmhand','weaver']),'looking for work');
-    const extra=effect('springMigrants');
+    const come=effect('strangersCome');
+    if(LIVE.filter(isAdult).length<12&&(come>=1||rnd()<come))arrive(pick(['labourer','farmhand','weaver']),'looking for work');
+    const extra=come>=1?effect('springMigrants'):Math.floor(effect('springMigrants')*come);
     for(let i=0;i<extra&&LIVE.length<MAXPOP-2;i++)arrive(effect('migrantJob'),effect('migrantReason'));
   }else if(s===1)log(`Summer. The corn stands green in the South Fields.`,'event');
   else if(s===2){S.harvest=0;log(`Autumn, and the harvest begins.`,'event');}
@@ -29,7 +30,7 @@ export function seasonStart(){
 }
 export function weatherDay(){
   if(S.storm>0)return;
-  const s=seasonOf(),p=[.04,.05,.12,.09][s];
+  const s=seasonOf(),p=[.04,.05,.12,.09][s]*effect('stormChance');
   if(rnd()<p){S.storm=60+Math.floor(rnd()*36);stormHits(true);}
 }
 export function stormHits(natural){
@@ -79,12 +80,17 @@ export function foodDay(){
       log(`The granary is nearly empty. ${N(r)} has the money for corn from the next valley, and keeps it.`,'bad','crime',{ids:[r.id]});}
   }
   if(S.cartRefused&&dayOf()-S.cartRefused>5)S.cartRefused=0;
+  // with no baker, households bake their own at the oven: less than a baker would, but enough to live on
+  if(pop&&!LIVE.some(a=>a.job==='baker')&&S.stores.flour>=1){
+    const c=Math.min(S.stores.flour,pop*.6,Math.max(0,40-S.stores.bread));S.stores.flour-=c;S.stores.bread+=c;
+    if(!S.homeBaking){S.homeBaking=S.tick;log(`With no baker in the village, every household bakes its own bread at ${P.bakery?P.bakery.name:'the oven'}.`,'event','work',{place:'bakery'});}
+  }else if(S.homeBaking&&LIVE.some(a=>a.job==='baker'))S.homeBaking=0;
 }
 export function collectDues(){
   const reeve=byJob('reeve');if(!reeve)return;const short=[];
   const homes=[...new Set(LIVE.map(a=>a.home))].filter(h=>h!=='tavern'&&h!==reeve.home);
   for(const h of homes){const adults=household(h).filter(isAdult).sort((x,y)=>y.coins-x.coins);if(!adults.length)continue;const payer=adults[0];
-    const due=2+Math.max(0,payer.coins-20)*.05;if(payer.coins>=2){payer.coins-=due;reeve.coins+=Math.min(2,due);}
+    const due=(2+Math.max(0,payer.coins-20)*.05)*effect('duesRate');if(payer.coins>=2){payer.coins-=due;reeve.coins+=Math.min(2,due);}
     else{short.push(payer);adj(reeve,payer,-10);adj(payer,reeve,-12);mem(payer,reeve,'demanded dues I could not pay');mem(reeve,payer,'could not pay their dues to');}}
   if(short.length)log(`Dues day. ${listNames(short)} could not pay ${N(reeve)} the two pennies owed to the manor.`,'bad');
   else log(`Dues day. Every household paid ${N(reeve)} in full, with varying grace.`,'event');

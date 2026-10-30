@@ -5,7 +5,8 @@
 // Record fields
 //   from, to             the ages it joins (src/data/ages.js)
 //   title                the annals chapter's title
-//   plague               the year and words for the great mortality that tests every family
+//   plague               the year and words for the great mortality that tests every family; `again` is said
+//                        instead when the village lived through it (the `condition`) before the age closed
 //   events               what else happened, in order. `when` names a building or idea that must have
 //                        existed for the line to be told; {place} is that building's name at the time.
 //   lostWords, keptWords how the annals say a family was lost or came through (chosen by the dice)
@@ -13,7 +14,7 @@ export const INTERLUDES = [
   {
     from: 'medieval', to: 'industrial',
     title: 'The Long Interlude',
-    plague: { year: 1349, text: 'In the summer of 1349 the pestilence came up the valley. Whole households were carried to the churchyard in a week.' },
+    plague: { year: 1349, condition: 'pestilence', text: 'In the summer of 1349 the pestilence came up the valley. Whole households were carried to the churchyard in a week.', again: 'The pestilence came back in 1361, and again in 1369, and each time it took the children born since the last.' },
     events: [
       { year: 1316, text: 'The rains of 1315 and 1316 rotted the harvest in the fields, and the hungry years that followed were remembered long after.' },
       { year: 1381, text: 'In 1381 there was talk in the alehouse of the risings in the south, and of men who would no longer work the lord\'s land for nothing.', when: 'tavern' },

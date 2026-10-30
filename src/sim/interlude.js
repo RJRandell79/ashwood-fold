@@ -60,7 +60,7 @@ export function beginInterlude() {
   const plagueYear = I && I.plague ? I.plague.year : Infinity;
   const after = e => e.year > endYear; // what happened while the age was played is in the annals already
   for (const e of (I ? I.events : []).filter(e => after(e) && e.year < plagueYear)) tell(e);
-  if (I && I.plague) say(I.plague.text);
+  if (I && I.plague) say(I.plague.again && S.conditions && S.conditions.past[I.plague.condition] != null ? I.plague.again : I.plague.text);
   for (const r of living) {
     const honour = r.deeds.filter(d => d.kind !== 'disgrace').length;
     const chance = Math.min(0.85, 0.25 + 0.1 * Math.min(r.living, 5) + 0.06 * Math.min(honour, 4));
@@ -124,7 +124,7 @@ export function beginInterlude() {
     age: to.id, era: 0, eraTitles: {}, ageEnding: null,
     stores: { grain: 160, flour: 30, bread: 30, missing: 0 }, pantry: {}, storm: 0, fair: null, rumours: [], gathers: [], cases: [],
     election: null, nextElection: next + (YEAR_DAYS + 2) * TPD, reeveSince: null, lastElection: null, vacant: [], spoil: 0, harvest: 0,
-    foot: {}, wornFor: {}, cool: {}, lastThief: -1,
+    foot: {}, wornFor: {}, cool: {}, lastThief: -1, conditions: null, homeBaking: 0,
     xr: { held: {}, open: [], past: [], era: 0, used: 0, crisisUsed: false, closedAt: {} },
   });
   const oldTech = S.tech;

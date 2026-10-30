@@ -67,6 +67,22 @@ export function validateBuildings(buildings = BUILDINGS) {
 }
 
 /** Checks the crossroads records: signals, ideas and reliefs they name must exist. */
+/** Checks historical condition records (src/data/conditions.js). */
+export function validateConditions(records) {
+  const errors = [], ids = new Set(records.map(c => c.id));
+  for (const c of records) {
+    const where = `condition ${c.id}`;
+    if (!Array.isArray(c.years) || c.years.length !== 2 || c.years[0] > c.years[1]) errors.push(`${where}: years must be [first, last]`);
+    if (!(c.chance >= 0 && c.chance <= 1)) errors.push(`${where}: chance must be between 0 and 1`);
+    if (c.after && !ids.has(c.after)) errors.push(`${where}: comes after unknown condition ${c.after}`);
+    if (!c.begin) errors.push(`${where}: needs a begin line`);
+    for (const name of Object.keys(c.effects || {})) if (!(name in EFFECT_BASE)) errors.push(`${where}: unknown effect ${name}`);
+    for (const [k, v] of Object.entries(c.stores || {})) if (!['grain', 'flour', 'bread'].includes(k) || !(v >= 0 && v <= 1)) errors.push(`${where}: stores must be shares of grain, flour or bread`);
+    if (c.mortality && !(c.mortality.cause && c.mortality.end)) errors.push(`${where}: a visitation needs a cause and an end line`);
+  }
+  return errors;
+}
+
 export function validateCrossroads(records = CROSSROADS) {
   const errors = [];
   for (const c of records) {

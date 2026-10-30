@@ -200,6 +200,10 @@ export const EFFECT_BASE = {
   forgiveness: 1,            // multiplier on how fast grudges fade overnight
   midsummerFair: 1,          // 1 = a midsummer fair is held on the Green each year
   farBank: 0,                // 1 = buildings may go up on the far bank of the river
+  stormChance: 1,            // multiplier on the chance of a storm each day
+  duesRate: 1,               // multiplier on the dues each household owes the manor
+  scarceWage: 0,             // extra pennies a day the better-off pay each labourer and field hand
+  strangersCome: 1,          // chance a stranger comes looking for work when the village is short of adults
 };
 
 // The ideas of the manor village (1290 on). Some are shared with the industrial village (the same record):
