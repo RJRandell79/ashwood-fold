@@ -15,6 +15,7 @@
 //   placeNames           what this age calls the buildings it shares with others (the hall is the Manor House)
 //   lineage              how this age's surnames are spelt by the time of the next age
 //   houseWord            what new homes are called (Croft); otherwise cottages early on and houses later
+//   conditions           the historical conditions that may strike while the age is played (src/data/conditions.js)
 //   effectBase           effect values that differ from src/data/ideas.js EFFECT_BASE before any idea is built
 //   minYears, maxYears   the age may close once its last era has opened and minYears have passed, and closes
 //                        regardless after maxYears; then the interlude to `next` can begin
@@ -24,6 +25,7 @@ import { ERAS, ERA_LINES, MEDIEVAL_ERAS, MEDIEVAL_ERA_LINES } from './eras.js';
 import { INDUSTRIAL_CAST, INDUSTRIAL_NAMES, MEDIEVAL_CAST, MEDIEVAL_NAMES, useNames } from './folk.js';
 import { INDUSTRIAL_IDEAS, MEDIEVAL_IDEAS, useIdeas } from './ideas.js';
 import { ERA_STYLES, MEDIEVAL_STYLES } from './styles.js';
+import { MEDIEVAL_CONDITIONS } from './conditions.js';
 
 export const AGES = {
   medieval: {
@@ -39,9 +41,10 @@ export const AGES = {
     lineage: { Holte: 'Holt', Pendle: 'Pendle', Barwe: 'Barrow', Fayreclough: 'Fairclough', Caldre: 'Calder', Greve: 'Greaves', Brewster: 'Brewster', Wryght: 'Wright' },
     houseWord: 'Croft',
     effectBase: { midsummerFair: 0 },   // no fair until the village has the charter for one
-    // about two generations: ready to close after 40 years (once its last era has opened) and by 55 years
-    // regardless; with the three years' grace it is over by 1347, so the pestilence of 1349 opens the interlude
-    minYears: 40, maxYears: 55,
+    conditions: MEDIEVAL_CONDITIONS,   // the wet years of 1315 to 1317, the pestilence, and the dear labour after it
+    // about two generations: ready to close after 40 years (once its last era has opened) and by 70 years
+    // regardless (decided 30 Oct), so a village slow to reach its last era lives through the pestilence
+    minYears: 40, maxYears: 70,
     next: 'industrial',
   },
   industrial: {

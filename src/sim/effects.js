@@ -2,6 +2,7 @@
 import { EFFECT_BASE, IDEAS } from '../data/ideas.js';
 import { AGES, FIRST_AGE } from '../data/ages.js';
 import { S, techOn } from './state.js';
+import { activeConditions } from './conditions.js';
 
 let version = 0;
 const cache = { state: null, tick: -1, version: -1, table: null };
@@ -22,6 +23,13 @@ function compute(name, who) {
     const e = d.effects && d.effects[name];
     if (!e || (e.while && !techOn(e.while))) continue;
     if ('set' in e) v = who && e.adopterSet !== undefined && S.tech[d.id].adopters.includes(who.id) ? e.adopterSet : e.set;
+    if ('mul' in e) v *= e.mul;
+  }
+  // historical conditions apply over the ideas (src/data/conditions.js)
+  for (const c of activeConditions()) {
+    const e = c.effects && c.effects[name];
+    if (!e) continue;
+    if ('set' in e) v = e.set;
     if ('mul' in e) v *= e.mul;
   }
   return v;

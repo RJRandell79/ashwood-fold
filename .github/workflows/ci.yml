@@ -23,7 +23,7 @@ jobs:
       - run: npm test
 
   harness:
-    name: Harness (5 seeds x 90 years)
+    name: Harness (5 seeds x 110 years)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -33,9 +33,9 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Balance report and invariants
-        run: node harness/run.mjs --seeds 1,11,23,42,77 --years 90 --json harness-report.json
+        run: node harness/run.mjs --seeds 1,11,23,42,77 --years 110 --json harness-report.json
       - name: Diversity report
-        run: node harness/diversity.mjs --seeds 8 --years 90 --markdown diversity.md && cat diversity.md >> "$GITHUB_STEP_SUMMARY"
+        run: node harness/diversity.mjs --seeds 8 --years 110 --markdown diversity.md && cat diversity.md >> "$GITHUB_STEP_SUMMARY"
       - name: Crossroads report (never, first, random)
         run: node harness/nudges.mjs --seeds 6 --years 30 --markdown nudges.md && cat nudges.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v6

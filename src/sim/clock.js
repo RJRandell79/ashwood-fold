@@ -12,6 +12,7 @@ import { interludeDay } from './interlude.js';
 import { restyleSeason } from './placement.js';
 import { log } from './log.js';
 import { gatherTick, lifeDay } from './people.js';
+import { conditionsDay, conditionsSpring } from './conditions.js';
 import { collectDues, foodDay, seasonStart, spendDay, upkeepDay, weatherDay } from './seasons.js';
 import { checkPair, encounters } from './social.js';
 import { LIVE, S, dayInSeason, dayOf, dayStart, listNames, refreshLive, seasonOf } from './state.js';
@@ -37,7 +38,8 @@ export function midnight(){
   techDay();
   crossroadsDay();
   civicDay();
-  if(dayInSeason()===1){seasonStart();if(seasonOf()===0)restyleSeason();}
+  if(dayInSeason()===1){seasonStart();if(seasonOf()===0){conditionsSpring();restyleSeason();}}
+  conditionsDay();
   if(seasonOf()===2&&dayInSeason()===5&&!S.fair){S.fair={start:dayStart()+72,end:dayStart()+126,harvest:true};}
   weatherDay();
   eventsDay();
