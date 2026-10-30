@@ -48,6 +48,10 @@ describe('the first interlude', () => {
     for (const id of ['chantry', 'fulling']) if (old[id]) expect(S.places[id].def).toBe('ruin');
     for (const s of S.history.sites) expect(old[Object.keys(old).find(k => old[k].name === s.name)]).toBeTruthy();
     expect(Object.keys(S.roads || {}).length).toBeGreaterThan(0);   // the old lanes carry on
+    // the age's record says what became of every building, and where the heart of the village was
+    const rec = S.history.ages[0], fates = Object.values(rec.places).flat();
+    expect(fates.map(f => f.id).sort()).toEqual(Object.keys(old).sort());
+    expect(rec.centre.x).toBeCloseTo(old.square.x + old.square.w / 2);
   });
 
   it('families come through as heirs, or are remembered when lost; the new cast is their heirs or namesakes', () => {

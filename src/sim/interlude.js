@@ -12,7 +12,7 @@ import { invalidateEffects } from './effects.js';
 import { armsOf, familyKey, familyPlural } from './heraldry.js';
 import { log } from './log.js';
 import { foundCast } from './setup.js';
-import { placeFounding } from './placement.js';
+import { placeFounding, settlementCentre } from './placement.js';
 import { calYear, currentAge, P, refreshLive, rnd, S, setState, yearOf } from './state.js';
 
 const AUTO_DAYS = YEAR_DAYS * 3;   // if the player does not begin the interlude, it begins on its own after three years
@@ -80,22 +80,27 @@ export function beginInterlude() {
 
   // --- places: by their legacy ---
   const known = new Set([...to.founding, ...to.ideas.flatMap(d => d.places || [])]);
-  const crofts = [];
+  const crofts = [], centre = { ...settlementCentre() };
+  // what became of each building, kept with the age's record for the annals and the diversity report
+  const fates = { stood: [], rebuilt: [], ruined: [], gone: [] }, fate = (k, p) => fates[k].push({ id: p.id, def: p.def });
   for (const p of Object.values(P)) {
     const def = BUILDINGS[p.def] || {};
-    if (p.def === 'ruin' || def.legacy === 'enduring') { if (p.def !== 'ruin') say(`${cap(p.name)} ${p.indoor || def.archetype === 'market' ? 'still stands' : 'is still there'}, as it has been since ${firstYearOf(p)}.`, { place: p.id }); continue; }
+    if (p.def === 'ruin' || def.legacy === 'enduring') { fate('stood', p); if (p.def !== 'ruin') say(`${cap(p.name)} ${p.indoor || def.archetype === 'market' ? 'still stands' : 'is still there'}, as it has been since ${firstYearOf(p)}.`, { place: p.id }); continue; }
     if (def.legacy === 'adaptable' && known.has(p.id)) {
       const was = p.name, now = (to.placeNames || {})[p.def] || def.name;
+      fate('rebuilt', p);
       Object.assign(p, { name: now, age: to.id, era: 0, rebuilt: S.tick });
       say(was === now ? `${cap(was)} still stands, rebuilt on its old footings.` : `${cap(was)} was rebuilt many times on the same footings, and is ${now} now.`, { place: p.id });
       continue;
     }
     if (def.legacy === 'adaptable') {
+      fate('ruined', p);
       Object.assign(p, { def: 'ruin', kind: 'open', indoor: false, home: false, ruinOf: p.def, wasName: p.name, name: `the ruins of ${lower(p.name)}` });
       say(`${cap(p.wasName)} fell out of use. Its walls still stand, roofless.`, { place: p.id });
       continue;
     }
     // replaceable: gone, but the valley remembers where it stood
+    fate('gone', p);
     H.sites.push({ name: p.name, def: p.def, x: p.x, y: p.y, w: p.w, h: p.h, age: from.id, year: firstYearOf(p), walls: !!p.indoor });
     if (p.home) crofts.push(p.name); else say(`Of ${p.name} nothing is left but a change in the grass.`);
     delete P[p.id];
@@ -107,7 +112,7 @@ export function beginInterlude() {
 
   // --- the people of the old age pass into the record ---
   for (const a of S.agents) if (!a.dead) a.dead = { t: S.tick, cause: 'long ago', age: a.age, longAgo: true, ageName: from.name };
-  H.ages.push({ id: from.id, endYear, families: living.map(r => ({ name: r.name, fate: r.fate, later: r.later || null })) });
+  H.ages.push({ id: from.id, endYear, centre, places: fates, families: living.map(r => ({ name: r.name, fate: r.fate, later: r.later || null, kept: kept.includes(r) })) });
   H.eraTitles[from.id] = S.eraTitles || {};
 
   // --- the clock: the next age opens in the spring of its first year ---
