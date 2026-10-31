@@ -1,7 +1,7 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
 import { effect } from './effects.js';
 import { raisePressure } from './signals.js';
-import { MAXPOP, TPD, YEAR_DAYS } from '../data/world.js';
+import { JOBS, MAXPOP, TPD, YEAR_DAYS } from '../data/world.js';
 import { plan } from './life.js';
 import { recordFamilies } from './dynasties.js';
 import { log } from './log.js';
@@ -68,7 +68,10 @@ export function foodDay(){
   // hands turn to the fields when the fields are short of them
   const field=LIVE.filter(a=>a.work==='fields').length;
   if(season!==3&&(field<3||food<pop*8)&&field<6){
-    const c=LIVE.filter(a=>isAdult(a)&&a.age<60&&['labourer','carter','pedlar','millhand','weaver'].includes(a.job)&&S.tick-(a.switched||-1e9)>TPD*YEAR_DAYS).sort((x,y)=>x.coins-y.coins)[0];
+    // a spare hand: a labourer or the like, or the second of a trade that has two (a second baker, innkeeper…)
+    const counts={};for(const a of LIVE)counts[a.job]=(counts[a.job]||0)+1;
+    const loose=a=>['labourer','carter','pedlar','millhand','weaver'].includes(a.job)||(counts[a.job]>1&&['baker','miller','innkeeper','herbalist','smith'].includes(a.job));
+    const c=LIVE.filter(a=>isAdult(a)&&a.age<60&&loose(a)&&S.tick-(a.switched||-1e9)>TPD*YEAR_DAYS).sort((x,y)=>x.coins-y.coins)[0];
     if(c&&rnd()<.35){c.switched=S.tick;c.prevJob=c.job;c.job='farmhand';c.work='fields';log(`${N(c)} leaves ${c.prevJob} work for the South Fields. There are too few hands at the harvest.`,'event','work',{ids:[c.id]});}
   }
   // a cartload of corn from the next valley, if anyone will pay for it
@@ -82,6 +85,19 @@ export function foodDay(){
       log(`The granary is nearly empty. ${N(r)} has the money for corn from the next valley, and keeps it.`,'bad','crime',{ids:[r.id]});}
   }
   if(S.cartRefused&&dayOf()-S.cartRefused>5)S.cartRefused=0;
+  // when corn waits at the mill or flour at the oven and the trade cannot keep up (too old, too few),
+  // someone goes to help: a spare hand from a trade with more than one, or a labourer
+  for(const [job,need] of [['miller',S.stores.grain>pop*6&&S.stores.flour<pop],['baker',S.stores.flour>pop*2&&S.stores.bread<pop*.5]]){
+    const key='help-'+job;if(!need||S.tick<(S.cool[key]||0))continue;
+    const doing=LIVE.filter(a=>a.job===job);if(doing.length>=3)continue;
+    const counts={};for(const a of LIVE)counts[a.job]=(counts[a.job]||0)+1;
+    const spare=LIVE.filter(a=>isAdult(a)&&a.age<60&&a.job!==job&&a.job!=='reeve'&&(['labourer','pedlar','carter','weaver'].includes(a.job)||(counts[a.job]>1&&['baker','miller','smith','weaver','innkeeper','herbalist'].includes(a.job)))).sort((x,y)=>y.tr.diligence-x.tr.diligence)[0];
+    S.cool[key]=S.tick+YEAR_DAYS*TPD;
+    if(!spare)continue;
+    spare.prevJob=spare.job;spare.job=job;spare.work=JOBS[job];
+    const old=doing.sort((x,y)=>y.age-x.age)[0];
+    log(old?`${N(old)} can no longer keep up at ${PN(JOBS[job])}, and ${N(spare)} goes to help.`:`${N(spare)} takes on ${PN(JOBS[job])}.`,'event','work',{ids:[spare.id],place:JOBS[job]});
+  }
   // with no baker, households bake their own at the oven: less than a baker would, but enough to live on
   if(pop&&!LIVE.some(a=>a.job==='baker')&&S.stores.flour>=1){
     const c=Math.min(S.stores.flour,pop*.6,Math.max(0,40-S.stores.bread));S.stores.flour-=c;S.stores.bread+=c;

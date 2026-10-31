@@ -1,18 +1,18 @@
 // What a family leaves behind across an interlude (src/sim/legacy.js): the odds, and how the annals say it.
-//   standing        rose, fell: base chances for a family that comes through; perWorth shifts both by how
-//                   the valley rated the family (wealth, offices, honours, disgraces). effect: what the
+//   standing        rose, fell: chances for a family that comes through, shifted by perRank by where the family
+//                   stood among the valley's families at the close (wealth, offices, honours, disgraces). effect: what the
 //                   heirs start with (coins multiplied and added) and how far others regard them.
 //   marriage        chance that a surviving name came down through a marriage rather than in the male line
 //   landmark        chance a lane, field or wood keeps the family's name: base, plus perHonour for each honour
 //                   (up to four). kinds: the word, whether a new house may take the name, and the annals' line.
 //   carved          chance an honoured family's arms are carved on the enduring church
-//   bonds           a feud (feeling at or below feudBelow) or friendship (at or above friendAbove) between two
-//                   families that both came through is remembered with this chance, and their heirs start at
+//   bonds           the deepest feud (feeling at or below feudBelow) and the warmest friendship (at or above
+//                   friendAbove) between two families that both came through are each remembered with this chance, and their heirs start at
 //                   `feud` or `friends` with each other
 //   lines           the annals' words
 export const LEGACY = {
   standing: {
-    rose: 0.15, fell: 0.3, perWorth: 0.12,
+    rose: 0.1, fell: 0.4, perRank: 0.3,   // rose 10–40% and fell 40–10%, from the least to the most of the valley's families
     effect: {
       rose: { coins: 1.6, add: 10, regard: 8 },
       held: { coins: 1, add: 0, regard: 0 },
@@ -32,7 +32,7 @@ export const LEGACY = {
     ],
   },
   carved: 0.5,
-  bonds: { feudBelow: -20, friendAbove: 30, chance: 0.6, feud: -35, friends: 35 },
+  bonds: { feudBelow: -15, friendAbove: 45, chance: 0.6, feud: -35, friends: 35 },
   lines: {
     standing: {
       rose: 'The {fam} did well out of the centuries: they hold more land than any family in the valley now.',

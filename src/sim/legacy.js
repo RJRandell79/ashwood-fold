@@ -30,12 +30,14 @@ function worth(r) {
 export function rollLegacies(living, kept) {
   const L = LEGACY, out = { landmarks: [], carved: [], bonds: [] };
   const used = new Set(((S.history && S.history.landmarks) || []).map(l => l.name));
+  // where each family stood in the valley at the close, from 0 (the least) to 1 (the most)
+  const ranked = living.map(r => [r, worth(r)]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
+  const rank = r => (ranked.length > 1 ? ranked.indexOf(r) / (ranked.length - 1) : 0.5);
   for (const r of living) {
-    const score = worth(r), honours = r.deeds.filter(d => d.kind !== 'disgrace').length;
-    // standing, for those who come through
+    const honours = r.deeds.filter(d => d.kind !== 'disgrace').length;
+    // standing, for those who come through: the well placed are likelier to rise, the poor to fall
     if (kept.includes(r)) {
-      const rose = clamp(L.standing.rose + L.standing.perWorth * score, 0.05, 0.6);
-      const fell = clamp(L.standing.fell - L.standing.perWorth * score, 0.1, 0.5);
+      const rose = L.standing.rose + L.standing.perRank * rank(r), fell = L.standing.fell - L.standing.perRank * rank(r);
       const u = rnd();
       r.standing = u < rose ? 'rose' : u < rose + fell ? 'fell' : 'held';
       r.how = rnd() < L.marriage ? 'marriage' : 'descent';
@@ -59,12 +61,12 @@ export function rollLegacies(living, kept) {
       out.carved.push({ family: r.name, place: hall.id });
     }
   }
-  // feuds and friendships between families that both came through
-  for (let i = 0; i < kept.length; i++) for (let j = i + 1; j < kept.length; j++) {
-    const a = kept[i], b = kept[j], v = feeling(a.name, b.name);
-    const kind = v <= L.bonds.feudBelow ? 'feud' : v >= L.bonds.friendAbove ? 'friends' : null;
-    if (kind && rnd() < L.bonds.chance) out.bonds.push({ a: a.name, b: b.name, kind });
-  }
+  // the deepest feud and the warmest friendship between families that both came through may be remembered
+  const pairs = [];
+  for (let i = 0; i < kept.length; i++) for (let j = i + 1; j < kept.length; j++) pairs.push({ a: kept[i].name, b: kept[j].name, v: feeling(kept[i].name, kept[j].name) });
+  const feud = pairs.filter(p => p.v <= L.bonds.feudBelow).sort((x, y) => x.v - y.v)[0];
+  const friends = pairs.filter(p => p.v >= L.bonds.friendAbove).sort((x, y) => y.v - x.v)[0];
+  for (const [p, kind] of [[feud, 'feud'], [friends, 'friends']]) if (p && rnd() < L.bonds.chance) out.bonds.push({ a: p.a, b: p.b, kind });
   return out;
 }
 
