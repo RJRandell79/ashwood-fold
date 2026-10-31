@@ -102,7 +102,7 @@ export function summarise(seed, { years = 90, policy = 'never' } = {}) {
       landmarks: closed.families.filter(f => f.landmark).length,
       landmarksLost: closed.families.filter(f => f.landmark && !f.kept).length,
       carved: closed.families.filter(f => f.carved).length,
-      bonds: (closed.bonds || []).map(b => b.kind),
+      bonds: (closed.bondsKept || []).map(b => (b.newcomers ? `${b.kind} (newcomers)` : b.kind)),
     } : null,
     buildings: closed && closed.places ? {
       stood: closed.places.stood.length, rebuilt: closed.places.rebuilt.length, ruined: closed.places.ruined.length, gone: closed.places.gone.length,

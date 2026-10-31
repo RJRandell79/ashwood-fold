@@ -6,9 +6,11 @@
 //   landmark        chance a lane, field or wood keeps the family's name: base, plus perHonour for each honour
 //                   (up to four). kinds: the word, whether a new house may take the name, and the annals' line.
 //   carved          chance an honoured family's arms are carved on the enduring church
-//   bonds           the deepest feud (feeling at or below feudBelow) and the warmest friendship (at or above
-//                   friendAbove) between two families that both came through are each remembered with this chance, and their heirs start at
-//                   `feud` or `friends` with each other
+//   bonds           the deepest feud (the most grudges held between their members, at least feudGrudges) and
+//                   the warmest friendship (average feeling at or above friendAbove) between two families in the valley at the close are each remembered with this
+//                   chance. A feud passes to whoever holds both names by descent, marriage or with the land
+//                   (feudPasses); a friendship only to true heirs (friendshipPasses). They start at `feud` or
+//                   `friends` with each other.
 //   lines           the annals' words
 export const LEGACY = {
   standing: {
@@ -32,7 +34,11 @@ export const LEGACY = {
     ],
   },
   carved: 0.5,
-  bonds: { feudBelow: -15, friendAbove: 45, chance: 0.6, feud: -35, friends: 35 },
+  bonds: {
+    feudGrudges: 1, friendAbove: 95, chance: 0.8, feud: -35, friends: 35,
+    feudPasses: ['descent', 'marriage', 'land'],   // decided 31 Oct: newcomers who took the land take up the feud
+    friendshipPasses: ['descent', 'marriage'],
+  },
   lines: {
     standing: {
       rose: 'The {fam} did well out of the centuries: they hold more land than any family in the valley now.',
@@ -41,6 +47,7 @@ export const LEGACY = {
     },
     carved: 'In {place} the arms of the {fam} are still carved above the door.',
     feud: 'The {a} and the {b} have quarrelled for as long as anyone can remember, though no one now knows why.',
+    feudLand: 'The {a} and the {b} have never got on. The {oa} and the {ob} quarrelled before them, and whoever holds that land seems to take up the quarrel with it.',
     friends: 'The {a} and the {b} have always stood by each other, as their grandfathers\' grandfathers did.',
     descent: 'The {fam} are the oldest family in the valley: there have been {old} here since {first}.',
     marriage: 'The {fam} are an old name in the valley, though the line ran out in a daughter long ago, and her husband took the name with the land.',

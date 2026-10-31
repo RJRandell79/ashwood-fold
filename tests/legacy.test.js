@@ -15,13 +15,15 @@ describe('family legacies', () => {
     run(2, { years: 20 });
     const [a, b] = families();
     const A = S.agents.filter(x => !x.dead && familyKey(x) === a.name), B = S.agents.filter(x => !x.dead && familyKey(x) === b.name);
-    for (const x of A) for (const y of B) { S.op[x.id][y.id] = -70; S.op[y.id][x.id] = -70; }
+    for (const x of A) for (const y of B) { S.op[x.id][y.id] = -70; S.op[y.id][x.id] = -70; S.grudge[`${x.id}-${y.id}`] = 1; }
     const keep = LEGACY.bonds.chance; LEGACY.bonds.chance = 1;
     let out;
     try { out = rollLegacies([a, b], [a, b]); } finally { LEGACY.bonds.chance = keep; }
-    expect(out.bonds).toEqual([{ a: a.name, b: b.name, kind: 'feud' }]);
+    expect(out.bonds[0]).toEqual({ a: a.name, b: b.name, kind: 'feud' });   // the deepest feud comes first
     for (const x of A) for (const y of B) S.op[x.id][y.id] = 0;
-    applyLegacies(out, [a, b]);
+    expect(applyLegacies(out, [a, b], n => ({ fam: n, how: 'land' }))).toHaveLength(1);   // newcomers on the land take up the feud
+    expect(applyLegacies({ bonds: [{ a: a.name, b: b.name, kind: 'friends' }] }, [], n => ({ fam: n, how: 'land' }))).toHaveLength(0);   // but not the friendship
+    expect(applyLegacies({ bonds: [{ a: a.name, b: b.name, kind: 'feud' }] }, [], n => ({ fam: n, how: 'name' }))).toHaveLength(0);   // nor a name with no tie
     for (const x of A) for (const y of B) expect(S.op[x.id][y.id]).toBeLessThan(-20);
     for (const r of [a, b]) { expect(['rose', 'held', 'fell']).toContain(r.standing); expect(['descent', 'marriage']).toContain(r.how); }
   });
