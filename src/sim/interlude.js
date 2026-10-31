@@ -7,7 +7,9 @@ import { AGES } from '../data/ages.js';
 import { BUILDINGS } from '../data/buildings.js';
 import { interludeFor } from '../data/interludes.js';
 import { TPD, YEAR_DAYS } from '../data/world.js';
+import { LEGACY } from '../data/legacy.js';
 import { recordFamilies } from './dynasties.js';
+import { applyLegacies, legacyLine, rollLegacies } from './legacy.js';
 import { invalidateEffects } from './effects.js';
 import { armsOf, familyKey, familyPlural } from './heraldry.js';
 import { log } from './log.js';
@@ -74,6 +76,8 @@ export function beginInterlude() {
     r.later = later;
     say(`The ${plural(r.name)} ${r.fate}.${later !== r.name ? ` By ${to.startYear} the name was spelt ${later}.` : ''}`);
   }
+  // what each family leaves behind, rolled apart from whether it came through (src/sim/legacy.js)
+  const leg = rollLegacies(living, kept);
 
   // --- what else happened in between ---
   for (const e of (I ? I.events : []).filter(e => after(e) && e.year >= plagueYear)) tell(e);
@@ -86,17 +90,30 @@ export function beginInterlude() {
   for (const p of Object.values(P)) {
     const def = BUILDINGS[p.def] || {};
     if (p.def === 'ruin' || def.legacy === 'enduring') { fate('stood', p); if (p.def !== 'ruin') say(`${cap(p.name)} ${p.indoor || def.archetype === 'market' ? 'still stands' : 'is still there'}, as it has been since ${firstYearOf(p)}.`, { place: p.id }); continue; }
-    if (def.legacy === 'adaptable' && known.has(p.id)) {
+    // a building the next age still needs is usually rebuilt on its footings, less often the more worn
+    // it was; otherwise it falls to ruin and the next age builds its own elsewhere
+    const worn = Math.min(1, p.wear || 0);
+    if (def.legacy === 'adaptable' && known.has(p.id) && rnd() < 0.9 - 0.35 * worn) {
       const was = p.name, now = (to.placeNames || {})[p.def] || def.name;
       fate('rebuilt', p);
-      Object.assign(p, { name: now, age: to.id, era: 0, rebuilt: S.tick });
+      Object.assign(p, { name: now, age: to.id, era: 0, rebuilt: S.tick, wear: rnd() * 0.4, decay: 0 });
       say(was === now ? `${cap(was)} still stands, rebuilt on its old footings.` : `${cap(was)} was rebuilt many times on the same footings, and is ${now} now.`, { place: p.id });
+      continue;
+    }
+    if (def.legacy === 'adaptable' && !known.has(p.id) && rnd() < 0.25) {
+      fate('gone', p);
+      H.sites.push({ name: p.name, def: p.def, x: p.x, y: p.y, w: p.w, h: p.h, age: from.id, year: firstYearOf(p), walls: true });
+      say(`${cap(p.name)} fell out of use, and its stones went into the field walls. Only a hump in the grass shows where it stood.`);
+      delete P[p.id];
       continue;
     }
     if (def.legacy === 'adaptable') {
       fate('ruined', p);
-      Object.assign(p, { def: 'ruin', kind: 'open', indoor: false, home: false, ruinOf: p.def, wasName: p.name, name: `the ruins of ${lower(p.name)}` });
-      say(`${cap(p.wasName)} fell out of use. Its walls still stand, roofless.`, { place: p.id });
+      const again = known.has(p.id), id = again ? `ruin-${p.id}` : p.id, old = p.id;
+      const ruin = { ...p, id, def: 'ruin', kind: 'open', indoor: false, home: false, ruinOf: p.def, wasName: p.name, name: `the ruins of ${lower(p.name)}` };
+      if (again) delete P[old];
+      P[id] = ruin;
+      say(again ? `${cap(ruin.wasName)} fell into ruin, and when the valley needed one again it was built afresh elsewhere.` : `${cap(ruin.wasName)} fell out of use. Its walls still stand, roofless.`, { place: id });
       continue;
     }
     // replaceable: gone, but the valley remembers where it stood
@@ -106,13 +123,16 @@ export function beginInterlude() {
     delete P[p.id];
   }
   if (crofts.length) say(`Of ${crofts.length > 1 ? `${crofts[0]} and the other ${crofts.length - 1} homes of those days` : crofts[0]} nothing remains but low banks in the grass.`);
+  for (const c of leg.carved) say(legacyLine('carved', S.dynasties[c.family]), { place: c.place });
+  for (const l of leg.landmarks) say(legacyLine('landmark', S.dynasties[l.family], l));
   if (S.crossing) say(S.crossing.kind !== 'ford' ? 'The bridge was mended many times, and still carries the lane over the river.' : 'The ford is still the only way over the river.');
   const lanes = Object.keys(S.roads || {}).length;
   if (lanes) say('The old lanes are still the ways through the village, though few remember who first wore them.');
 
   // --- the people of the old age pass into the record ---
   for (const a of S.agents) if (!a.dead) a.dead = { t: S.tick, cause: 'long ago', age: a.age, longAgo: true, ageName: from.name };
-  H.ages.push({ id: from.id, endYear, centre, places: fates, families: living.map(r => ({ name: r.name, fate: r.fate, later: r.later || null, kept: kept.includes(r) })) });
+  H.ages.push({ id: from.id, endYear, centre, places: fates, bonds: leg.bonds, families: living.map(r => ({ name: r.name, fate: r.fate, later: r.later || null, kept: kept.includes(r), standing: r.standing || null, how: r.how || null, landmark: r.landmark || null, carved: r.carved || null })) });
+  H.landmarks = [...(H.landmarks || []), ...leg.landmarks.map(l => ({ ...l, from: from.id, to: to.id }))];
   H.eraTitles[from.id] = S.eraTitles || {};
 
   // --- the clock: the next age opens in the spring of its first year ---
@@ -158,15 +178,18 @@ export function beginInterlude() {
     const old = kept.find(r => r.later === fam) || living.concat(Object.values(S.dynasties || {})).find(r => ((from.lineage || {})[r.name] || r.name) === fam && r.name !== fam);
     const rec = S.dynasties[fam];
     if (!old || !rec) continue;
+    const how = kept.includes(old) ? old.how || 'descent' : rnd() < 0.6 ? 'land' : 'name';
     if (kept.includes(old)) {
-      Object.assign(rec, { first: old.first, descends: old.name, deeds: [...old.deeds, ...rec.deeds] });
+      Object.assign(rec, { first: old.first, descends: old.name, how, standing: old.standing, landmark: old.landmark || null, carved: old.carved || null, deeds: [...old.deeds, ...rec.deeds] });
       armsOf(fam);
-      say(`The ${plural(fam)} are the oldest family in the valley: there have been ${plural(old.name)} here since ${old.first}.`);
-    } else {
-      rec.namesake = old.name;
-      say(`The ${plural(fam)} are newcomers, though they took their name from the old ${plural(old.name)}' land.`);
-    }
+    } else Object.assign(rec, { namesake: old.name, how, landmark: old.landmark || null, carved: old.carved || null });
+    say(LEGACY.lines[how].replace('{fam}', plural(fam)).replace('{old}', plural(old.name)).replace('{first}', old.first));
+    if (kept.includes(old) && old.standing && old.standing !== 'held') say(legacyLine('standing', old));
   }
+  // the heirs take up their families' standing and their old quarrels and friendships
+  applyLegacies(leg, kept);
+  const laterOf = n => (kept.find(r => r.name === n) || {}).later || n;
+  for (const b of leg.bonds) if (S.agents.some(a => !a.dead && familyKey(a) === laterOf(b.a)) && S.agents.some(a => !a.dead && familyKey(a) === laterOf(b.b))) say(legacyLine('bond', null, { ...b, a: laterOf(b.a), b: laterOf(b.b) }));
   refreshLive();
   return true;
 }

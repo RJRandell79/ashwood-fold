@@ -108,6 +108,12 @@ function report(R, policies, n, years) {
     ['New families bearing an old name only', span(fam.map(r => r.families.namesakes))],
     ['Old lines still living at the end', span(fam.map(r => r.families.heirsLiving))],
     ['Distinct sets of surviving families', `${new Set(fam.map(r => r.families.kept.slice().sort().join(','))).size} of ${fam.length}`],
+    ['How the new families came by old names (all villages)', tally(fam.flatMap(r => r.families.how || []))],
+    ['Standing of those who came through (all villages)', tally(fam.flatMap(r => r.families.standing || []))],
+    ['Families whose name is left on a lane, field or wood', span(fam.map(r => r.families.landmarks || 0))],
+    ['… of them families that were lost', span(fam.map(r => r.families.landmarksLost || 0))],
+    ['Families whose arms are carved in the church', span(fam.map(r => r.families.carved || 0))],
+    ['Old feuds and friendships carried into the next age (all villages)', tally(fam.flatMap(r => r.families.bonds || []))],
   ] : [['No village reached the interlude', '–']]);
 
   // 5. buildings across the interlude
@@ -119,6 +125,9 @@ function report(R, policies, n, years) {
     ['Fallen to ruin', span(bld.map(r => r.buildings.ruined))],
     ['Gone, their sites remembered', span(bld.map(r => r.buildings.gone))],
     ['New buildings that stand on an old site', span(bld.map(r => r.buildings.onOldSites))],
+    ['Needed again but built afresh elsewhere', span(bld.map(r => r.buildings.builtAfresh || 0))],
+    ['Rebuildings through a whole game (worn out or out of date)', span(base.map(r => r.rebuilds || 0))],
+    ['Buildings left falling down for want of money', span(base.map(r => r.decayed || 0))],
     ['How far the heart of the village moved (cells)', span(bld.map(r => r.buildings.heartMoved))],
   ] : [['No village reached the interlude', '–']]);
 
@@ -166,6 +175,8 @@ function report(R, policies, n, years) {
   L.push(broken ? `**${broken} runs broke invariants.**` : 'All runs kept their invariants.');
   return L.join('\n') + '\n';
 }
+
+function tally(xs) { const c = {}; for (const x of xs) c[x] = (c[x] || 0) + 1; return Object.entries(c).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ') || '–'; }
 
 function deathRows(rs) {
   const c = {}; for (const r of rs) for (const [k, v] of Object.entries(r.deaths)) c[k] = (c[k] || 0) + v;

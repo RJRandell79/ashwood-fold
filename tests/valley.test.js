@@ -7,7 +7,8 @@ import { canonical } from '../harness/canonical.mjs';
 import { valley, VW, VH } from '../src/sim/valley.js';
 import { IDEAS } from '../src/data/ideas.js';
 import { migrate } from '../src/sim/setup.js';
-import { S, setState } from '../src/sim/state.js';
+import { LIVE, S, setState } from '../src/sim/state.js';
+import { restyleSeason } from '../src/sim/placement.js';
 import { tick } from '../src/sim/clock.js';
 
 describe('the valley', () => {
@@ -83,11 +84,25 @@ describe('the river and the eras', () => {
     }
     expect(crossed).toBeGreaterThan(0);
   });
-  it('old buildings are rebuilt in newer styles as the eras pass', () => {
+  it('buildings wear, and are rebuilt in the style of the day when worn out and someone can pay', () => {
     run(1, { years: 30, age: 'industrial' });
     const rebuilt = Object.values(S.places).filter(p => p.rebuilt);
     expect(rebuilt.length).toBeGreaterThan(3);
-    for (const p of rebuilt) expect(p.era).toBeGreaterThanOrEqual(2);
+    for (const p of rebuilt) expect(p.wear).toBeLessThan(1);
     for (const id of ['square', 'chapel', 'market']) expect(S.places[id].rebuilt, `${id} is enduring`).toBeUndefined();
+    // a worn-out workshop is rebuilt in the present era's style, at someone's charge
+    const shop = S.places.forge, purse = LIVE.reduce((s, a) => s + a.coins, 0);
+    Object.assign(shop, { wear: 0.99, era: 0 });
+    for (const p of Object.values(S.places)) if (p !== shop && p.wear) p.wear = 0;
+    restyleSeason();
+    expect(shop.wear).toBe(0);
+    expect(shop.era).toBe(S.era);
+    expect(LIVE.reduce((s, a) => s + a.coins, 0)).toBeLessThan(purse);
+    // with no one able to pay, it is left falling down
+    Object.assign(shop, { wear: 0.99, era: 0 });
+    for (const a of LIVE) a.coins = 0;
+    restyleSeason();
+    expect(shop.wear).toBeGreaterThanOrEqual(1);
+    expect(shop.decay).toBeTruthy();
   });
 });
