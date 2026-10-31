@@ -1,4 +1,5 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
+import { showPlace } from './placecard.js';
 import { eraName } from '../sim/effects.js';
 import { AGES } from '../data/ages.js';
 import { interludeFor } from '../data/interludes.js';
@@ -95,7 +96,7 @@ $('closeStory').onclick=closeStory;
 // "Show" on a chronicle or annals entry: close the book if it is open, then go to the place in the valley.
 document.addEventListener('click',e=>{const b=e.target.closest('.show');if(!b)return;e.preventDefault();
   if(!$('story').hidden)closeStory();
-  if(flyTo(b.dataset.place))cv3.scrollIntoView({behavior:'smooth',block:'center'});});
+  if(flyTo(b.dataset.place)){cv3.scrollIntoView({behavior:'smooth',block:'center'});if(b.dataset.place!=='crossing')showPlace(b.dataset.place);}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('story').hidden)closeStory();});
 $('copyStory').onclick=()=>{
   const book=$('book').cloneNode(true);book.querySelectorAll('figure').forEach(f=>f.remove());

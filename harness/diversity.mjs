@@ -18,7 +18,8 @@ async function main() {
   const policies = arg('--policies', 'never,random').split(',');
   const jobs = Math.max(1, Number(arg('--jobs', os.availableParallelism ? os.availableParallelism() : os.cpus().length)));
   const queue = [];
-  for (const policy of policies) for (let s = 1; s <= n; s++) queue.push({ seed: s * 7919, years, policy });
+  const memory = arg('--memory', 'on') !== 'off';   // --memory off: a valley that forgets, to compare with
+  for (const policy of policies) for (let s = 1; s <= n; s++) queue.push({ seed: s * 7919, years, policy, memory });
   // --json saves the raw records; --from reports on saved records without playing again
   const from = arg('--from', null), json = arg('--json', null);
   const results = from ? JSON.parse(fs.readFileSync(from, 'utf8')) : await pool(queue, jobs);
@@ -129,6 +130,9 @@ function report(R, policies, n, years) {
     ['Rebuildings through a whole game (worn out or out of date)', span(base.map(r => r.rebuilds || 0))],
     ['Buildings left falling down for want of money', span(base.map(r => r.decayed || 0))],
     ['How far the heart of the village moved (cells)', span(bld.map(r => r.buildings.heartMoved))],
+    ['New buildings that had a counterpart in the old village', span(bld.map(r => r.buildings.kinCount ?? 0))],
+    ['… mean distance from where their kind stood (cells)', span(bld.map(r => r.buildings.kinDist))],
+    ['… share standing on or beside it (within 3 cells)', span(bld.map(r => r.buildings.kinNear == null ? null : Math.round(r.buildings.kinNear * 100)))],
   ] : [['No village reached the interlude', '–']]);
 
   // 6. the valley's shape and what it became

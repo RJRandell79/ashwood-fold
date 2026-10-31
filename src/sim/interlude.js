@@ -86,7 +86,7 @@ export function beginInterlude() {
   const known = new Set([...to.founding, ...to.ideas.flatMap(d => d.places || [])]);
   const crofts = [], centre = { ...settlementCentre() };
   // what became of each building, kept with the age's record for the annals and the diversity report
-  const fates = { stood: [], rebuilt: [], ruined: [], gone: [] }, fate = (k, p) => fates[k].push({ id: p.id, def: p.def });
+  const fates = { stood: [], rebuilt: [], ruined: [], gone: [] }, fate = (k, p) => fates[k].push({ id: p.id, def: p.def, x: p.x, y: p.y, w: p.w, h: p.h, kind: p.kind, home: !!p.home });
   for (const p of Object.values(P)) {
     const def = BUILDINGS[p.def] || {};
     if (p.def === 'ruin' || def.legacy === 'enduring') { fate('stood', p); if (p.def !== 'ruin') say(`${cap(p.name)} ${p.indoor || def.archetype === 'market' ? 'still stands' : 'is still there'}, as it has been since ${firstYearOf(p)}.`, { place: p.id }); continue; }
@@ -96,13 +96,13 @@ export function beginInterlude() {
     if (def.legacy === 'adaptable' && known.has(p.id) && rnd() < 0.9 - 0.35 * worn) {
       const was = p.name, now = (to.placeNames || {})[p.def] || def.name;
       fate('rebuilt', p);
-      Object.assign(p, { name: now, age: to.id, era: 0, rebuilt: S.tick, wear: rnd() * 0.4, decay: 0 });
+      Object.assign(p, { name: now, age: to.id, era: 0, rebuilt: null, wear: rnd() * 0.4, decay: 0, record: { ...(p.record || {}), was: was !== now ? was : null, keptFrom: firstYearOf(p) } });
       say(was === now ? `${cap(was)} still stands, rebuilt on its old footings.` : `${cap(was)} was rebuilt many times on the same footings, and is ${now} now.`, { place: p.id });
       continue;
     }
     if (def.legacy === 'adaptable' && !known.has(p.id) && rnd() < 0.25) {
       fate('gone', p);
-      H.sites.push({ name: p.name, def: p.def, x: p.x, y: p.y, w: p.w, h: p.h, age: from.id, year: firstYearOf(p), walls: true });
+      H.sites.push({ name: p.name, def: p.def, x: p.x, y: p.y, w: p.w, h: p.h, kind: p.kind, home: !!p.home, age: from.id, year: firstYearOf(p), walls: true });
       say(`${cap(p.name)} fell out of use, and its stones went into the field walls. Only a hump in the grass shows where it stood.`);
       delete P[p.id];
       continue;
@@ -118,7 +118,7 @@ export function beginInterlude() {
     }
     // replaceable: gone, but the valley remembers where it stood
     fate('gone', p);
-    H.sites.push({ name: p.name, def: p.def, x: p.x, y: p.y, w: p.w, h: p.h, age: from.id, year: firstYearOf(p), walls: !!p.indoor });
+    H.sites.push({ name: p.name, def: p.def, x: p.x, y: p.y, w: p.w, h: p.h, kind: p.kind, home: !!p.home, age: from.id, year: firstYearOf(p), walls: !!p.indoor });
     if (p.home) crofts.push(p.name); else say(`Of ${p.name} nothing is left but a change in the grass.`);
     delete P[p.id];
   }

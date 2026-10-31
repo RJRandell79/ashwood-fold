@@ -180,7 +180,7 @@ export function eraDay(){
 }
 export function startBuilding(id){
   const t=S.tech[id],T=IDEA[id];
-  t.state='building';t.doneAt=dayStart()+TPD*T.buildDays+60;t.navvies=[];raiseBuildings(T);
+  t.state='building';t.doneAt=dayStart()+TPD*T.buildDays+60;t.navvies=[];raiseBuildings(T,S.agents[t.inventor]);
   const inv=S.agents[t.inventor];
   log(`Work begins on the ${T.name.toLowerCase()}, ${N(inv)}'s great scheme. It will take ${T.buildDays} days.`,'good','tech',{tech:id});
   for(let i=0;i<(T.navvies||0);i++){

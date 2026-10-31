@@ -21,7 +21,7 @@ export function freeHome(){
 }
 /** Moves someone into a home; 'new' builds a cottage first. Returns the home they end up in. */
 export function setHome(a,home){
-  if(home==='new'){const id=buildCottage();if(id)log(`A new cottage goes up: ${PN(id)}.`,'event','work',{place:id});home=id||a.home||'tavern';}
+  if(home==='new'){const id=buildCottage(a.name);if(id)log(`A new cottage goes up: ${PN(id)}${P[id].record&&P[id].record.why?`, ${P[id].record.why}`:''}.`,'event','work',{place:id});home=id||a.home||'tavern';}
   a.home=home;return home;
 }
 export function nameBaby(sex,sur){

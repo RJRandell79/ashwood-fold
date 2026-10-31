@@ -124,3 +124,10 @@ export const CROSSINGS = {
 export const LEGACIES = ['replaceable', 'adaptable', 'enduring'];
 // Archetypes whose look follows the era style, so rebuilding them shows (the rest keep their first look).
 export const STYLED_ARCHETYPES = ['house', 'long', 'workshop', 'civic'];
+
+// Inherited influence (decided 30 Oct): the valley remembers where things stood, and a new building is drawn
+// to where its kind stood in an earlier age, on the remembered site itself or beside the ruin of it.
+//   site    weight for standing on the remembered site of a building of the same kind (same building, or
+//           both homes, or both fields), falling off with distance out to `reach` cells
+//   ruin    weight for standing beside the ruin of the same building, out to `reach`
+export const MEMORY = { site: 3, ruin: 2.5, reach: 10 };

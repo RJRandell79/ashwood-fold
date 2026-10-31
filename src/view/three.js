@@ -15,6 +15,7 @@ import { armsSVG } from './portraits.js';
 import { groundAt, leafMaterials, makeGround, makeTrees } from './terrain.js';
 import { $, select } from './ui.js';
 import { V } from './vstate.js';
+import { hidePlace, refreshPlace, showPlace } from './placecard.js';
 
 // Light and visibility, shared by the scene and the loop.
 export function darkness(h){const [r,s]=LIGHT[seasonOf()];if(h<r-1.5||h>=s+2)return .55;if(h<r+.5)return .55*(r+.5-h)/2;if(h>=s)return .55*(h-s)/2;return 0;}
@@ -96,7 +97,7 @@ function addPlace3d(id){
   for(const c of b.chimneys){c.id=id;c.puffs=puffsFor(c);}
   let nm=p.name.replace(/^the /,'');if(p.home)nm=nm.replace(/ (Cottage|House|Farmhouse)( \w+)?$/,'');
   const lb=makeLabel(nm,{h:p.home?.7:.85});lb.position.set(p.x+p.w/2-W.O.x,b.top+.7,p.y+p.h/2-W.O.y);b.group.add(lb);b.label=lb;
-  b.key=placeKey(p);W.root.add(b.group);W.places[id]=b;
+  b.key=placeKey(p);b.group.userData.place=id;W.root.add(b.group);W.places[id]=b;
 }
 /** What a place's 3D form depends on: rebuilt, renamed, fallen to ruin, or worn to another stage. */
 const placeKey=p=>`${p.age}|${p.era}|${p.def}|${p.name}|${wearStage(p)}`;
@@ -105,11 +106,13 @@ function removePlace3d(id){const W=G.world,b=W.places[id];W.root.remove(b.group)
 /** Brings the scene into line with S.places and S.lines: new buildings go up, lost ones come down. */
 function syncPlaces(){
   const W=G.world;
-  for(const id in W.places)if(P[id]&&W.places[id].key!==placeKey(P[id]))removePlace3d(id);
+  let changed=false;
+  for(const id in W.places)if(P[id]&&W.places[id].key!==placeKey(P[id])){removePlace3d(id);changed=true;}
   for(const id in P)if(!W.places[id])addPlace3d(id);
   const ck=S.crossing&&S.crossing.kind;
   if(ck&&(!W.crossing||W.crossing.kind!==ck)){if(W.crossing)W.root.remove(W.crossing.group);W.crossing=buildCrossing(crossingEnds(),ck,W.v,W.O);W.root.add(W.crossing.group);}
-  for(const id in W.places)if(!P[id])removePlace3d(id);
+  for(const id in W.places)if(!P[id]){removePlace3d(id);changed=true;}
+  if(changed)refreshPlace();
   for(const id in (S.lines||{}))if(!W.lines[id]){const L=(LINE_BUILDERS[id]||buildTurnpike)(S.lines[id],W.v,W.O);W.root.add(L.group);W.lines[id]=L;}
   for(const id in W.lines)if(!(S.lines&&S.lines[id])){W.root.remove(W.lines[id].group);delete W.lines[id];}
   const sig=Object.keys(P).join(',')+'|'+Object.keys(W.lines).join(',')+'|'+Object.keys(S.cleared||{}).length+'|'+Object.keys(S.roads||{}).length;
@@ -297,6 +300,11 @@ export function pick3d(e){
     for(const id in G.agents){const m=G.agents[id];if(!m.g.visible)continue;sv.setFromMatrixPosition(m.head.matrixWorld).project(G.camera);
       const px=(sv.x+1)/2*r.width,py=(1-sv.y)/2*r.height,d=Math.hypot(px-(e.clientX-r.left),py-(e.clientY-r.top));if(d<bd){bd=d;best=+id;}}
     if(best>=0)select(best);
+    else{ // no one there: the building under the pointer, if any, shows its record
+      const groups=Object.values(G.world.places).map(b=>b.group),h=G.ray.intersectObjects(groups,true)[0];
+      let o=h&&h.object;while(o&&!(o.userData&&o.userData.place))o=o.parent;
+      if(o)showPlace(o.userData.place);else hidePlace();
+    }
   }
 }
 export function syncFollow(){$('vFollow').classList.toggle('on',follow);$('vFollow').setAttribute('aria-pressed',follow);}

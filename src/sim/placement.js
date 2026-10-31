@@ -1,12 +1,12 @@
 // Where buildings go. The game, not the player, chooses every site: each candidate plot is
 // scored against the building's placement rules (src/data/buildings.js) on the valley terrain.
 // Placement is deterministic: no draws from the simulation's dice, ties go to the first plot found.
-import { BUILDINGS, COTTAGE_FIRST, COTTAGE_HUES, HOUSE_WORD, LINES, MAX_HOMES, NAME_PARTS, STYLED_ARCHETYPES } from '../data/buildings.js';
+import { BUILDINGS, COTTAGE_FIRST, COTTAGE_HUES, HOUSE_WORD, LINES, MAX_HOMES, MEMORY, NAME_PARTS, STYLED_ARCHETYPES } from '../data/buildings.js';
 import { effect } from './effects.js';
 import { TPD, YEAR_DAYS } from '../data/world.js';
 import { log } from './log.js';
 import { noise, valley } from './valley.js';
-import { currentAge, household, isAdult, LIVE, N, P, PN, rnd, S } from './state.js';
+import { calYear, currentAge, household, isAdult, LIVE, N, P, PN, rnd, S } from './state.js';
 
 const MARGIN = 1; // clear cells kept around every building, so lanes run between them
 
@@ -58,8 +58,59 @@ function clearWood(p) {
   return n;
 }
 
-/** Scores one plot, or returns -Infinity if the building cannot stand there. */
-function score(def, x, y, v, occ, centre) {
+// What the chronicle says for the rule that weighed most in choosing a plot.
+const KIND_WORDS = { home: 'the houses', sacred: 'the church', works: 'the works', field: 'the fields', market: 'the market', civic: 'the hall', work: 'the workshops', open: 'the Green' };
+const WHY = {
+  memory: m => (m.on ? `on the site of ${m.name}` : `near where ${m.name} once stood`),
+  ruin: m => `beside ${m.name}`,
+  riverbank: () => 'on the riverbank', nearWater: () => 'near the river',
+  centre: () => (P.square ? 'near the Green' : 'in the middle of the village'), edge: () => 'at the edge of the village',
+  fertile: () => 'on the best of the soil', wooded: () => 'where the wood was thickest', high: () => 'on the high ground, where the wind is',
+  road: () => 'on the well-trodden way', line: id => `beside ${(LINES[id] || {}).name || 'the line'}`, far: () => 'over the river',
+};
+function whyHere(terms) {
+  const ranked = Object.entries(terms).filter(([, t]) => t[0] > 0.3).sort((a, b) => b[1][0] - a[1][0]);
+  const say = ([k, t]) => (k.startsWith('near:') ? `near ${P[k.slice(5)] ? P[k.slice(5)].name : KIND_WORDS[k.slice(5)] || k.slice(5)}` : WHY[k] ? WHY[k](t[1]) : null);
+  const first = ranked.find(r => say(r));
+  if (!first) return null;
+  let why = say(first);
+  // the past is worth saying even when it was not the strongest reason
+  const past = ranked.find(r => (r[0] === 'memory' || r[0] === 'ruin') && r !== first && r[1][0] >= 1);
+  if (past) why += `, and ${say(past)}`;
+  return why;
+}
+
+/** Whether a remembered site (or a ruin) is of the same kind as the building being placed. */
+function sameKind(defId, def, s) {
+  const was = BUILDINGS[s.def] || {};
+  return s.def === defId || (def.home && (s.home ?? was.home)) || (def.kind === 'field' && (s.kind ?? was.kind) === 'field');
+}
+/** The pull of the past on a plot: the remembered sites and ruins of the building's own kind. Adds named
+ *  terms to `terms` when given, so the chronicle can say why a building stands where it does. */
+function memoryPull(defId, def, rect, terms) {
+  const H = S.history;
+  if (!H || !H.sites) return 0;
+  let s = 0, best = 0, what = null;
+  for (const site of H.sites) {
+    if (!sameKind(defId, def, site)) continue;
+    const d = gap(rect, site), w = MEMORY.site * (1 - Math.min(1, d / MEMORY.reach));
+    if (w > best) { best = w; what = { kind: 'site', name: site.name, on: d < 1 }; }
+  }
+  s += best;
+  let ruin = 0, rw = null;
+  for (const p of Object.values(P)) {
+    if (p.def !== 'ruin' || p.ruinOf !== defId) continue;
+    const w = MEMORY.ruin * (1 - Math.min(1, gap(rect, p) / MEMORY.reach));
+    if (w > ruin) { ruin = w; rw = { kind: 'ruin', name: p.name }; }
+  }
+  s += ruin;
+  if (terms) { if (what) terms.memory = [best, what]; if (rw) terms.ruin = [ruin, rw]; }
+  return s;
+}
+
+/** Scores one plot, or returns -Infinity if the building cannot stand there. With `terms`, records how
+ *  much each rule added, by name, for the place's record. */
+function score(def, x, y, v, occ, centre, terms = null, defId = null) {
   const R = def.place || {}, rect = { x, y, w: def.w, h: def.h };
   if (x - MARGIN < 0 || y - MARGIN < 0 || x + def.w + MARGIN > v.W || y + def.h + MARGIN > v.H) return -Infinity;
   let lane = 0;
@@ -88,17 +139,22 @@ function score(def, x, y, v, occ, centre) {
   const c = centreOf(rect);
   let dc = Math.hypot(c.x - centre.x, c.y - centre.y);
   if (far) { const e = crossingEnds(); dc = Math.hypot(c.x - e.south.x, c.y - e.south.y) + Math.hypot(e.north.x - centre.x, e.north.y - centre.y) + 2; }
-  let s = R.wooded ? R.wooded * wood : -wood * 0.3;
-  if (R.centre) s += (R.centre + (def.home && S.infillUntil > S.tick ? 4 : 0)) * (1 - Math.min(1, dc / 30));
-  if (R.edge) s += R.edge * Math.min(1, dc / 25);
-  if (R.nearWater) s += R.nearWater * (1 - Math.min(1, dist / 12));
-  if (R.fertile) s += R.fertile * fert;
-  if (R.high) { const hc = v.height[Math.floor(centre.y) * v.W + Math.floor(centre.x)]; s += R.high * Math.max(0, Math.min(1, (height / n - hc) / 4)); }
+  const T = terms || {}, add = (k, v) => { if (terms) T[k] = [v]; return v; };
+  let s = R.wooded ? add('wooded', R.wooded * wood) : -wood * 0.3;
+  if (R.centre) s += add('centre', (R.centre + (def.home && S.infillUntil > S.tick ? 4 : 0)) * (1 - Math.min(1, dc / 30)));
+  if (R.edge) s += add('edge', R.edge * Math.min(1, dc / 25));
+  if (R.nearWater) s += add('nearWater', R.nearWater * (1 - Math.min(1, dist / 12)));
+  if (R.riverbank) add('riverbank', 3);
+  if (R.line && terms) T.line = [3, R.line];
+  if (R.fertile) s += add('fertile', R.fertile * fert);
+  if (R.high) { const hc = v.height[Math.floor(centre.y) * v.W + Math.floor(centre.x)]; s += add('high', R.high * Math.max(0, Math.min(1, (height / n - hc) / 4))); }
   if (R.flat) s -= R.flat * slope * 3;
   if (R.dry) s -= R.dry * flood * 3;
-  if (R.road) s += R.road * (Math.min(1, foot / 60) + Math.min(1, lane / 3));
-  for (const [k, w] of Object.entries(R.near || {})) { const d = nearest(rect, k); if (d < Infinity) s += w * (1 - Math.min(1, d / 15)); }
+  if (R.road) s += add('road', R.road * (Math.min(1, foot / 60) + Math.min(1, lane / 3)));
+  for (const [k, w] of Object.entries(R.near || {})) { const d = nearest(rect, k); if (d < Infinity) { const v2 = w * (1 - Math.min(1, d / 15)); s += v2; if (terms) T['near:' + k] = [v2]; } }
   for (const [k, w] of Object.entries(R.away || {})) { const d = nearest(rect, k); if (d < Infinity) s -= w * (1 - Math.min(1, d / 12)); }
+  if (far && terms) T.far = [2.5];
+  if (defId) s += memoryPull(defId, def, rect, terms);
   return s;
 }
 
@@ -109,7 +165,7 @@ export function choosePlot(defId) {
     let best = null, bs = -Infinity;
     const x0 = Math.max(0, Math.floor(centre.x - R)), x1 = Math.min(v.W - def.w, Math.ceil(centre.x + R));
     const y0 = Math.max(0, Math.floor(centre.y - R)), y1 = Math.min(v.H - def.h, Math.ceil(centre.y + R));
-    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const s = score(def, x, y, v, occ, centre); if (s > bs) { bs = s; best = { x, y }; } }
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const s = score(def, x, y, v, occ, centre, null, defId); if (s > bs) { bs = s; best = { x, y }; } }
     if (best) return best;
   }
   return null;
@@ -126,16 +182,22 @@ function choosePlotSomewhere(defId) {
 }
 
 /** Builds a place of the given kind and records it in S.places. Returns the place, or null if nowhere fits. */
-export function addPlace(id, defId = id, extra = {}) {
+export function addPlace(id, defId = id, { by = null, ...extra } = {}) {
   if (P[id]) return P[id];
   const def = BUILDINGS[defId];
   if (!def) throw new Error(`unknown building ${defId}`);
   const plot = choosePlotSomewhere(defId);
   if (!plot) return null;
+  // why here: the rules that weighed most for the chosen plot (src/data/buildings.js `place`, and MEMORY)
+  const terms = {}, v = theValley();
+  score(def, plot.x, plot.y, v, occupancy(v), settlementCentre(), terms, defId);
   P[id] = { id, def: defId, name: extra.name || (currentAge().placeNames || {})[defId] || def.name, x: plot.x, y: plot.y, w: def.w, h: def.h, indoor: def.indoor, home: !!def.home, kind: def.kind,
     age: S.age, era: S.era || 0, built: S.tick, ...(def.hue != null ? { hue: def.hue } : {}), ...extra };
-  // building over the site of something from an earlier age turns up its footings
   const H = S.history, here = P[id];
+  const over = H && H.sites && H.sites.find(s => s.x < here.x + here.w && here.x < s.x + s.w && s.y < here.y + here.h && here.y < s.y + s.h);
+  // the place's record: who built it, why it stands here, what stood here before, and when
+  here.record = { by, why: P.square && P.square !== here ? whyHere(terms) : 'where the first hearth was lit', over: over ? over.name : null, overYear: over ? over.year : null, year: calYear(), age: S.age };
+  // building over the site of something from an earlier age turns up its footings
   const site = H && H.sites && H.sites.find(s => !s.found && s.walls && s.x < here.x + here.w && here.x < s.x + s.w && s.y < here.y + here.h && here.y < s.y + s.h);
   if (site && S.agents.some(a => !a.dead)) {
     site.found = S.tick;
@@ -200,10 +262,10 @@ export function cottageName(n, era = S.era || 0) {
 }
 
 /** A new cottage for a growing village. Returns its id, or null when housing is full or no plot fits. */
-export function buildCottage() {
+export function buildCottage(by = null) {
   if (!cottagesLeft()) return null;
   const n = S.cottages || 0, id = `cottage${n + 1}`;
-  const p = addPlace(id, 'cottage', { name: cottageName(n), hue: COTTAGE_HUES[n % COTTAGE_HUES.length] });
+  const p = addPlace(id, 'cottage', { name: cottageName(n), hue: COTTAGE_HUES[n % COTTAGE_HUES.length], by });
   if (!p) return null;
   S.cottages = n + 1;
   return id;

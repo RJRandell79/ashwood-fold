@@ -212,3 +212,10 @@ h2.sec{font-size:22px;margin-bottom:10px}
 .famrec{display:block;margin-top:3px;color:var(--muted);font-size:12.5px;line-height:1.35}
 .xr.closing{border-color:var(--accent);border-width:2px}
 .chapter.interlude{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0;font-style:italic}
+
+/* a building's record, over the corner of the valley view */
+.placecard{position:absolute;left:12px;bottom:12px;max-width:min(340px,calc(100% - 24px));background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:10px 34px 8px 14px;box-shadow:0 2px 10px rgba(0,0,0,.18);font-size:14px;line-height:1.4}
+.placecard h3{margin:0 0 4px;font-family:var(--display,'IM Fell English',serif);font-weight:400;font-size:19px}
+.placecard p{margin:0 0 5px}
+.placecard .pcclose{position:absolute;top:4px;right:6px;border:0;background:none;font-size:20px;line-height:1;cursor:pointer;color:inherit;padding:4px 6px}
+@media (max-width:600px){.placecard{left:8px;right:8px;bottom:8px;max-width:none}}
