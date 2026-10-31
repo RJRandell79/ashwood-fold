@@ -9,11 +9,13 @@ import { S, refreshLive, setState } from './sim/state.js';
 import { G, draw3d, start3d } from './view/three.js';
 import { TPS, render } from './view/ui.js';
 import { V } from './view/vstate.js';
+import { watchInterludes } from './view/interludeScene.js';
 
 export let acc=0, last=performance.now(), lastUI=0;
 export function frame(now){
   const dt=Math.min(.25,(now-last)/1000);last=now;acc+=dt*TPS[V.speed];let n=0;
   while(acc>=1&&n<60){tick();acc-=1;n++;}if(n>=60)acc=0;
+  watchInterludes();
   if(G)draw3d(V.speed?acc:1,dt);
   if(now-lastUI>450){render();lastUI=now;}
   requestAnimationFrame(frame);

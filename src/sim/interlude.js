@@ -86,7 +86,7 @@ export function beginInterlude() {
   const known = new Set([...to.founding, ...to.ideas.flatMap(d => d.places || [])]);
   const crofts = [], centre = { ...settlementCentre() };
   // what became of each building, kept with the age's record for the annals and the diversity report
-  const fates = { stood: [], rebuilt: [], ruined: [], gone: [] }, fate = (k, p) => fates[k].push({ id: p.id, def: p.def, x: p.x, y: p.y, w: p.w, h: p.h, kind: p.kind, home: !!p.home });
+  const fates = { stood: [], rebuilt: [], ruined: [], gone: [] }, fate = (k, p) => fates[k].push({ id: p.id, def: p.def, name: p.name, x: p.x, y: p.y, w: p.w, h: p.h, kind: p.kind, home: !!p.home });
   for (const p of Object.values(P)) {
     const def = BUILDINGS[p.def] || {};
     if (p.def === 'ruin' || def.legacy === 'enduring') { fate('stood', p); if (p.def !== 'ruin') say(`${cap(p.name)} ${p.indoor || def.archetype === 'market' ? 'still stands' : 'is still there'}, as it has been since ${firstYearOf(p)}.`, { place: p.id }); continue; }
