@@ -174,11 +174,13 @@ export function beginInterlude() {
   const before = S.agents.length;
   foundCast({ ...to.cast, prologue: to.cast.prologue.map(l => l.replace(/^Spring, and the first year of this chronicle\. /, '')) });
   // heirs and namesakes: each new family that bears an old name
+  const succ = {};
   for (const fam of new Set(S.agents.slice(before).map(familyKey))) {
     const old = kept.find(r => r.later === fam) || living.concat(Object.values(S.dynasties || {})).find(r => ((from.lineage || {})[r.name] || r.name) === fam && r.name !== fam);
     const rec = S.dynasties[fam];
     if (!old || !rec) continue;
     const how = kept.includes(old) ? old.how || 'descent' : rnd() < 0.6 ? 'land' : 'name';
+    succ[old.name] = { fam, how };
     if (kept.includes(old)) {
       Object.assign(rec, { first: old.first, descends: old.name, how, standing: old.standing, landmark: old.landmark || null, carved: old.carved || null, deeds: [...old.deeds, ...rec.deeds] });
       armsOf(fam);
@@ -186,10 +188,11 @@ export function beginInterlude() {
     say(LEGACY.lines[how].replace('{fam}', plural(fam)).replace('{old}', plural(old.name)).replace('{first}', old.first));
     if (kept.includes(old) && old.standing && old.standing !== 'held') say(legacyLine('standing', old));
   }
-  // the heirs take up their families' standing and their old quarrels and friendships
-  applyLegacies(leg, kept);
-  const laterOf = n => (kept.find(r => r.name === n) || {}).later || n;
-  for (const b of leg.bonds) if (S.agents.some(a => !a.dead && familyKey(a) === laterOf(b.a)) && S.agents.some(a => !a.dead && familyKey(a) === laterOf(b.b))) say(legacyLine('bond', null, { ...b, a: laterOf(b.a), b: laterOf(b.b) }));
+  // the heirs take up their families' standing, and whoever holds the old names and land takes up the old
+  // quarrels (true heirs the friendships too)
+  const bonds = applyLegacies(leg, kept, n => succ[n] || null);
+  for (const b of bonds) say(legacyLine('bond', null, b));
+  H.ages[H.ages.length - 1].bondsKept = bonds.map(b => ({ kind: b.kind, newcomers: b.newcomers }));
   refreshLive();
   return true;
 }

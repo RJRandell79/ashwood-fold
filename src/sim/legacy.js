@@ -61,12 +61,19 @@ export function rollLegacies(living, kept) {
       out.carved.push({ family: r.name, place: hall.id });
     }
   }
-  // the deepest feud and the warmest friendship between families that both came through may be remembered
+  // the deepest feud and the warmest friendship in the valley at the close may be remembered. Whether they
+  // reach the next age depends on who holds each family's name and land then (applyLegacies)
+  // feuds are counted over every family of the age, living or not: a quarrel can run down the generations
+  // and outlast the people who began it, and pass with a name or the land to whoever comes after
+  const ofAge = Object.values(S.dynasties || {}).filter(r => (r.age || S.age) === S.age);
   const pairs = [];
-  for (let i = 0; i < kept.length; i++) for (let j = i + 1; j < kept.length; j++) pairs.push({ a: kept[i].name, b: kept[j].name, v: feeling(kept[i].name, kept[j].name) });
-  const feud = pairs.filter(p => p.v <= L.bonds.feudBelow).sort((x, y) => x.v - y.v)[0];
-  const friends = pairs.filter(p => p.v >= L.bonds.friendAbove).sort((x, y) => y.v - x.v)[0];
-  for (const [p, kind] of [[feud, 'feud'], [friends, 'friends']]) if (p && rnd() < L.bonds.chance) out.bonds.push({ a: p.a, b: p.b, kind });
+  for (let i = 0; i < ofAge.length; i++) for (let j = i + 1; j < ofAge.length; j++) pairs.push({ a: ofAge[i].name, b: ofAge[j].name, v: feeling(ofAge[i].name, ofAge[j].name), g: grudges(ofAge[i].name, ofAge[j].name) });
+  // a feud is held grudges between the families, not a low average: a village grows fond of itself over
+  // the years, and one family's quarrel with another shows in a few people, not all of them
+  // candidates deepest first: applyLegacies keeps the first of each kind whose names someone still holds
+  const feuds = pairs.filter(p => p.g >= L.bonds.feudGrudges).sort((x, y) => y.g - x.g || x.v - y.v);
+  const friends = pairs.filter(p => p.v >= L.bonds.friendAbove).sort((x, y) => y.v - x.v);
+  for (const [list, kind] of [[feuds, 'feud'], [friends, 'friends']]) if (list.length && rnd() < L.bonds.chance) for (const p of list) out.bonds.push({ a: p.a, b: p.b, kind });
   return out;
 }
 
@@ -78,14 +85,26 @@ function feeling(fa, fb) {
   return n ? s / n : 0;
 }
 
+/** How many grudges were held between two families' members this age, either way. */
+function grudges(fa, fb) {
+  const ours = x => !(x.dead && x.dead.longAgo);   // this age's people, living or dead
+  const A = S.agents.filter(x => ours(x) && familyKey(x) === fa), B = S.agents.filter(x => ours(x) && familyKey(x) === fb);
+  let n = 0;
+  for (const x of A) for (const y of B) n += (S.grudge[`${x.id}-${y.id}`] ? 1 : 0) + (S.grudge[`${y.id}-${x.id}`] ? 1 : 0);
+  return n;
+}
+
 /** The enduring building that carries the families' arms: the church, if it stands. */
 function carvingPlace() {
   const enduring = Object.values(P).filter(p => p.indoor && (BUILDINGS[p.def] || {}).legacy === 'enduring');
   return enduring.find(p => p.def === 'chapel') || enduring[0] || null;
 }
 
-/** Once the next age's people are in the valley: standing and old bonds take hold of the heirs. */
-export function applyLegacies(out, families) {
+/** Once the next age's people are in the valley: standing and old bonds take hold of the heirs.
+ *  `successor(oldName)` gives the family that now holds an old family's name, and how ({ fam, how }), or
+ *  null. A feud passes to whoever holds the name by descent, marriage or with the land (decided 31 Oct:
+ *  newcomers take up the old feuds); a friendship only to true heirs. Returns the bonds that took hold. */
+export function applyLegacies(out, families, successor) {
   const L = LEGACY, heirs = fam => S.agents.filter(a => !a.dead && familyKey(a) === fam);
   for (const r of families) {
     const now = heirs(r.later || r.name);
@@ -96,11 +115,19 @@ export function applyLegacies(out, families) {
       for (const b of S.agents) if (!b.dead && familyKey(b) !== familyKey(a)) S.op[b.id][a.id] += s.regard;
     }
   }
+  const took = [];
   for (const bond of out.bonds) {
-    const later = n => (families.find(r => r.name === n) || {}).later || n;
-    const A = heirs(later(bond.a)), B = heirs(later(bond.b)), v = bond.kind === 'feud' ? L.bonds.feud : L.bonds.friends;
+    if (took.some(t => t.kind === bond.kind)) continue;   // one feud and one friendship at most
+    const sa = successor(bond.a), sb = successor(bond.b);
+    if (!sa || !sb || sa.fam === sb.fam) continue;
+    const ok = bond.kind === 'feud' ? L.bonds.feudPasses : L.bonds.friendshipPasses;
+    if (!ok.includes(sa.how) || !ok.includes(sb.how)) continue;
+    const A = heirs(sa.fam), B = heirs(sb.fam), v = bond.kind === 'feud' ? L.bonds.feud : L.bonds.friends;
+    if (!A.length || !B.length) continue;
     for (const x of A) for (const y of B) { S.op[x.id][y.id] = v + Math.round((rnd() - 0.5) * 10); S.op[y.id][x.id] = v + Math.round((rnd() - 0.5) * 10); if (bond.kind === 'feud') { S.grudge[`${x.id}-${y.id}`] = 1; S.grudge[`${y.id}-${x.id}`] = 1; } }
+    took.push({ ...bond, newA: sa.fam, newB: sb.fam, newcomers: sa.how === 'land' || sb.how === 'land' });
   }
+  return took;
 }
 
 /** The annals' line for a family's standing, landmark, carving or bond. */
@@ -109,6 +136,6 @@ export function legacyLine(kind, r, extra) {
   if (kind === 'standing') return L.standing[r.standing].replace('{fam}', pl(r.later || r.name));
   if (kind === 'landmark') return extra.line.replace('{name}', extra.name).replace('{fam}', pl(r.name));
   if (kind === 'carved') return L.carved.replace('{fam}', pl(r.name)).replace('{place}', P[r.carved].name);
-  if (kind === 'bond') return L[extra.kind].replace('{a}', pl(extra.a)).replace('{b}', pl(extra.b));
+  if (kind === 'bond') return L[extra.kind === 'feud' && extra.newcomers ? 'feudLand' : extra.kind].replace('{a}', pl(extra.newA)).replace('{b}', pl(extra.newB)).replace('{oa}', pl(extra.a)).replace('{ob}', pl(extra.b));
   return '';
 }

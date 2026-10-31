@@ -19,11 +19,35 @@ export function mat(c) {
   return mats.get(c);
 }
 export const roofMats = [];
+let building = null;   // the place being built, so its roofs can be let go when it comes down
 function roofMat(c) {
   const m = new THREE.MeshLambertMaterial({ color: c });
   m.userData.base = new THREE.Color(c);
   roofMats.push(m);
+  if (building) building.roofMats.push(m);
   return m;
+}
+/** Lets go of a place's roof materials when it is taken down (they are recoloured each season). */
+export function releaseRoofs(out) {
+  for (const m of out.roofMats || []) { const i = roofMats.indexOf(m); if (i >= 0) roofMats.splice(i, 1); m.dispose(); }
+}
+
+// --- wear (src/sim/placement.js): 0 sound, 1 worn and patched, 2 falling down -----------------------
+/** How worn a place looks. */
+export function wearStage(p) {
+  const w = p.wear || 0;
+  return p.decay || w >= 1 ? 2 : w >= 0.55 ? 1 : 0;
+}
+const WEATHERED = new THREE.Color(0x46432f), GRIME = new THREE.Color(0x645d4e);   // moss and soot
+/** A colour dulled by weather: roofs darken and lose their colour, walls take on grime. */
+function weathered(c, stage, roof) {
+  if (!stage) return c;
+  return new THREE.Color(c).lerp(roof ? WEATHERED : GRIME, (roof ? [0, 0.35, 0.65] : [0, 0.15, 0.32])[stage]).getHex();
+}
+/** The visual dice for one place: its look never touches the simulation's dice. */
+function placeDice(id) {
+  let h = 2166136261; for (const c of id) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  return () => { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); h ^= h >>> 16; return (h >>> 0) / 4294967296; };
 }
 export function prism(w, d, h) {
   const x = w / 2, z = d / 2, g = new THREE.BufferGeometry();
@@ -70,7 +94,7 @@ function site(p, ctx, out) {
     group.add(plinth);
   }
   out.group.add(group);
-  return { group, frame, base: hi, lw, ld, cx, cy, style: ctx.style };
+  return { group, frame, base: hi, lw, ld, cx, cy, style: ctx.style, wear: ctx.wear || 0, dice: ctx.dice };
 }
 /** Turns a point in a building's local frame into world coordinates. */
 function toWorld(s, x, y, z) {
@@ -79,7 +103,11 @@ function toWorld(s, x, y, z) {
 }
 
 function walls(s, w, h, d, colour) {
-  const m = shade(box(w, h, d, colour)); m.position.y = h / 2; s.frame.add(m);
+  const m = shade(box(w, h, d, weathered(colour, s.wear, false))); m.position.y = h / 2; s.frame.add(m);
+  if (s.wear >= 2) { // fallen stones and a slipped timber at the foot of a wall
+    for (let i = 0; i < 3; i++) { const st = shade(box(0.22, 0.14, 0.18, 0x8a8478)); st.position.set((s.dice() - 0.5) * w, 0.07, d / 2 + 0.2 + s.dice() * 0.25); st.rotation.y = s.dice() * 3; s.frame.add(st); }
+    const beam = shade(box(0.1, 0.1, Math.min(1.6, h * 0.9), 0x4a3a2c)); beam.position.set(w / 2 + 0.12, h * 0.4, d * 0.2); beam.rotation.x = 0.5; s.frame.add(beam);
+  }
   if (s.style && s.style.timber) { // a timber frame shows on the faces: posts and a rail
     for (const z of [d / 2 + 0.015, -d / 2 - 0.015]) {
       for (const x of [-w / 2 + 0.06, -w / 6, w / 6, w / 2 - 0.06]) { const post = new THREE.Mesh(new THREE.PlaneGeometry(0.12, h), mat(s.style.trim)); post.position.set(x, h / 2, z); if (z < 0) post.rotation.y = Math.PI; s.frame.add(post); }
@@ -89,16 +117,35 @@ function walls(s, w, h, d, colour) {
   return m;
 }
 function gable(s, w, d, y, pitch, colour, alongX = w >= d) {
-  const r = shade(new THREE.Mesh(prism((alongX ? w : d) + 0.35, (alongX ? d : w) + 0.35, Math.min(w, d) * pitch), roofMat(colour)));
-  r.position.y = y;
-  if (!alongX) r.rotation.y = Math.PI / 2;
-  s.frame.add(r);
-  return Math.min(w, d) * pitch;
+  const L = (alongX ? w : d) + 0.35, D = (alongX ? d : w) + 0.35, H = Math.min(w, d) * pitch;
+  const g = new THREE.Group();
+  g.add(shade(new THREE.Mesh(prism(L, D, H), roofMat(weathered(colour, s.wear, true)))));
+  if (s.wear) {
+    // patches of newer thatch or odd slates on a worn roof; dark holes and a sag on one falling down
+    const tilt = Math.atan2(D / 2, H);
+    const spot = (u, side, size, c) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size * 0.7), mat(c));
+      m.rotation.order = 'YXZ'; m.rotation.y = side > 0 ? 0 : Math.PI; m.rotation.x = -tilt;
+      const t = 0.35 + s.dice() * 0.3;   // how far down the slope, from ridge (0) to eaves (1)
+      m.position.set(u, H * (1 - t) + 0.03, side * (D / 2 * t + 0.03));
+      g.add(m);
+    };
+    const fresh = new THREE.Color(colour).lerp(new THREE.Color(0xd8c38a), 0.35).getHex();
+    for (let i = 0; i < 2; i++) spot((s.dice() - 0.5) * L * 0.7, i ? -1 : 1, 0.6 + s.dice() * 0.3, fresh);
+    if (s.wear >= 2) {
+      for (let i = 0; i < 3; i++) spot((s.dice() - 0.5) * L * 0.6, i % 2 ? -1 : 1, 0.6 + s.dice() * 0.35, 0x1d1a17);
+      g.scale.y = 0.75; g.rotation.z = (s.dice() < 0.5 ? -1 : 1) * (0.05 + s.dice() * 0.04);
+    }
+  }
+  g.position.y = y;
+  if (!alongX) g.rotation.y = Math.PI / 2;
+  s.frame.add(g);
+  return H * (s.wear >= 2 ? 0.75 : 1);
 }
 function hipped(s, w, d, y, h, colour) {
-  const r = shade(new THREE.Mesh(new THREE.ConeGeometry(Math.hypot(w, d) / 2 + 0.2, h, 4), roofMat(colour)));
+  const r = shade(new THREE.Mesh(new THREE.ConeGeometry(Math.hypot(w, d) / 2 + 0.2, h, 4), roofMat(weathered(colour, s.wear, true))));
   r.rotation.y = Math.PI / 4;
-  r.scale.set(w / Math.hypot(w, d) * 1.414, 1, d / Math.hypot(w, d) * 1.414);
+  r.scale.set(w / Math.hypot(w, d) * 1.414, s.wear >= 2 ? 0.85 : 1, d / Math.hypot(w, d) * 1.414);
   r.position.y = y + h / 2;
   s.frame.add(r);
   return h;
@@ -331,9 +378,10 @@ const BUILD = { house, long, workshop, sacred, civic, industrial, green, market,
 
 /** Builds the 3D form of one place. */
 export function buildPlace(p, def, ctx) {
-  const out = { group: new THREE.Group(), windows: new THREE.MeshBasicMaterial({ color: 0x2c3238 }), chimneys: [], wheels: [], tech: {}, rows: [], homeSpot: null };
+  const out = { group: new THREE.Group(), windows: new THREE.MeshBasicMaterial({ color: 0x2c3238 }), chimneys: [], wheels: [], tech: {}, rows: [], homeSpot: null, roofMats: [] };
   const fn = BUILD[def.archetype] || house;
   const styles = (AGES[p.age] || AGES[FIRST_AGE]).styles, style = styles[Math.max(0, Math.min(styles.length - 1, p.era || 0))];
-  out.top = fn(p, def, { ...ctx, style }, out);
+  building = out;
+  try { out.top = fn(p, def, { ...ctx, style, wear: wearStage(p), dice: placeDice(p.id) }, out); } finally { building = null; }
   return out;
 }

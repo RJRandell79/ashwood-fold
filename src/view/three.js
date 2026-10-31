@@ -8,7 +8,7 @@ import { op } from '../sim/social.js';
 import { byJob, clamp, hourOf, household, hueOf, isAdult, LIVE, P, S, seasonOf, techBuilt, techOn } from '../sim/state.js';
 import { crossingEnds } from '../sim/placement.js';
 import { valley } from '../sim/valley.js';
-import { buildPlace, mat, roofMats } from './archetypes.js';
+import { buildPlace, mat, releaseRoofs, roofMats, wearStage } from './archetypes.js';
 import { along, buildCanal, buildCrossing, buildRailway, buildTurnpike } from './lines.js';
 const LINE_BUILDERS={canal:buildCanal,railway:buildRailway,turnpike:buildTurnpike};
 import { armsSVG } from './portraits.js';
@@ -96,14 +96,16 @@ function addPlace3d(id){
   for(const c of b.chimneys){c.id=id;c.puffs=puffsFor(c);}
   let nm=p.name.replace(/^the /,'');if(p.home)nm=nm.replace(/ (Cottage|House|Farmhouse)( \w+)?$/,'');
   const lb=makeLabel(nm,{h:p.home?.7:.85});lb.position.set(p.x+p.w/2-W.O.x,b.top+.7,p.y+p.h/2-W.O.y);b.group.add(lb);b.label=lb;
-  b.key=`${p.age}|${p.era}|${p.def}|${p.name}`;W.root.add(b.group);W.places[id]=b;
+  b.key=placeKey(p);W.root.add(b.group);W.places[id]=b;
 }
-function removePlace3d(id){const W=G.world,b=W.places[id];W.root.remove(b.group);b.group.traverse(o=>{if(o.geometry)o.geometry.dispose();});
+/** What a place's 3D form depends on: rebuilt, renamed, fallen to ruin, or worn to another stage. */
+const placeKey=p=>`${p.age}|${p.era}|${p.def}|${p.name}|${wearStage(p)}`;
+function removePlace3d(id){const W=G.world,b=W.places[id];W.root.remove(b.group);b.group.traverse(o=>{if(o.geometry)o.geometry.dispose();});releaseRoofs(b);
   for(const c of b.chimneys)for(const s of c.puffs){G.scene.remove(s);}delete W.places[id];}
 /** Brings the scene into line with S.places and S.lines: new buildings go up, lost ones come down. */
 function syncPlaces(){
   const W=G.world;
-  for(const id in W.places)if(P[id]&&W.places[id].key!==`${P[id].age}|${P[id].era}|${P[id].def}|${P[id].name}`)removePlace3d(id); // rebuilt, renamed or fallen to ruin
+  for(const id in W.places)if(P[id]&&W.places[id].key!==placeKey(P[id]))removePlace3d(id);
   for(const id in P)if(!W.places[id])addPlace3d(id);
   const ck=S.crossing&&S.crossing.kind;
   if(ck&&(!W.crossing||W.crossing.kind!==ck)){if(W.crossing)W.root.remove(W.crossing.group);W.crossing=buildCrossing(crossingEnds(),ck,W.v,W.O);W.root.add(W.crossing.group);}
