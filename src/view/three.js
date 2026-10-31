@@ -180,16 +180,20 @@ export function applySeason(s){
   const ch=SEASON_CROP.height[s];
   for(const id in G.world.places)for(const r of G.world.places[id].rows){r.scale.y=ch;r.position.y=r.userData.ground+.25*ch;}
 }
+/** Functions run every frame once the scene matches the village (src/view/interlude.js). */
+export const frameHooks=[];
 export function draw3d(al,dt){
   if(!G)return;
   G.time+=dt;
   if(!G.world||G.world.seed!==S.valley.seed)buildWorld();
   const W=G.world,v=W.v,O=W.O;
   syncPlaces();
+  for(const f of frameHooks)f(dt);   // e.g. the interlude scene, after the village is in step and before it is drawn
   const season=seasonOf();if(season!==G.seasonSeen)applySeason(season);
   if(G.time-W.footT>2){W.footT=G.time;W.ground.colourise(season,S.foot,S.roads);}
   const [rise,set]=LIGHT[season];
-  const h=hourOf()+(V.speed?al/6:0),f=(h-rise+.5)/(set-rise+1),day=clamp(Math.sin(Math.PI*f),0,1)*(f>0&&f<1?1:0),storm=S.storm>0;
+  const h=(G.hour??hourOf())+(V.speed?al/6:0),   // G.hour: a scene may hold the light at an hour of its own
+   f=(h-rise+.5)/(set-rise+1),day=clamp(Math.sin(Math.PI*f),0,1)*(f>0&&f<1?1:0),storm=S.storm>0;
   const winterDim=season===3?.8:1,T=G.target;
   if(day>0){G.sun.position.set(T.x+Math.cos(Math.PI*f)*-34,T.y+6+Math.sin(Math.PI*f)*(season===3?22:season===1?38:32),T.z+14);G.sun.color.copy(lerpC(0xffa45c,0xfff3dc,day*1.6));G.sun.intensity=(.2+.6*Math.pow(day,.5))*(storm?.45:1)*winterDim;}
   else{G.sun.position.set(T.x-18,T.y+30,T.z-12);G.sun.color.set(0x8fa6dd);G.sun.intensity=.22;}
@@ -226,7 +230,7 @@ export function draw3d(al,dt){
   const sa=S.agents[V.sel];
   for(const id in G.agents){const a=S.agents[id];if(!a||a.dead){G.agents[id].g.visible=false;}}
   for(const a of LIVE){
-    const m=agentMesh(a),vis=visibleA(a);m.g.visible=vis;if(!vis)continue;
+    const m=agentMesh(a),vis=visibleA(a)&&!G.hideAgents;m.g.visible=vis;if(!vis)continue;   // a scene may clear the lanes
     const hu=hueOf(a);if(hu!==m.hue){m.hue=hu;m.mat.color.setHSL(hu/360,.55,.48);}
     const sc=a.age<4?.45:a.age<14?.5+a.age*.035:a.age>70?.94:1;m.fig.scale.setScalar(sc);
     m.glyph.position.y=1.85*sc+.2;m.tag.position.y=2.45*sc+.2;

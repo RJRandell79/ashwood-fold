@@ -219,3 +219,21 @@ h2.sec{font-size:22px;margin-bottom:10px}
 .placecard p{margin:0 0 5px}
 .placecard .pcclose{position:absolute;top:4px;right:6px;border:0;background:none;font-size:20px;line-height:1;cursor:pointer;color:inherit;padding:4px 6px}
 @media (max-width:600px){.placecard{left:8px;right:8px;bottom:8px;max-width:none}}
+
+/* the interlude: the valley holds still while the centuries pass (src/view/interludeScene.js) */
+.scene{position:absolute;inset:0;pointer-events:none;z-index:5}
+.scene .sc-year{position:absolute;top:10px;left:0;right:0;text-align:center;font:400 52px/1 var(--display);color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.55);font-variant-numeric:tabular-nums}
+.scene .sc-line{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);width:min(560px,calc(100% - 32px));display:flex;gap:10px;align-items:center;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:10px 14px;font-size:16px;line-height:1.4;box-shadow:0 2px 12px rgba(0,0,0,.2);opacity:0}
+.scene .sc-line svg{flex:none}
+.scene .sc-line.in{animation:scIn .5s ease forwards}
+@keyframes scIn{from{opacity:0;transform:translate(-50%,6px)}to{opacity:1;transform:translate(-50%,0)}}
+.scene button{pointer-events:auto;font:500 14px var(--body);border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:4px;padding:6px 12px;cursor:pointer}
+.scene .sc-skip{position:absolute;right:12px;bottom:12px}
+.scene .sc-card{pointer-events:auto;position:absolute;left:50%;top:72px;transform:translateX(-50%);width:min(460px,calc(100% - 24px));max-height:calc(100% - 84px);overflow:auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:14px 18px;box-shadow:0 4px 18px rgba(0,0,0,.25);font-size:15px}
+.scene .sc-card h3{font-size:24px;margin:0 0 2px}
+.scene .sc-card .sc-sub,.scene .sc-card .sc-lost{color:var(--muted);margin:0 0 8px}
+.scene .sc-card table{width:100%;border-collapse:collapse;margin:4px 0 10px}
+.scene .sc-card th{text-align:left;font-weight:600;color:var(--muted);font-size:13px;border-bottom:1px solid var(--line);padding:2px 6px 4px 0}
+.scene .sc-card td{padding:3px 6px 3px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.scene .sc-card p svg{vertical-align:-4px}
+@media (max-width:600px){.scene .sc-year{font-size:38px}.scene .sc-line{bottom:54px;font-size:15px}.scene .sc-card{top:auto;bottom:8px;transform:translateX(-50%);max-height:calc(100% - 64px)}}
