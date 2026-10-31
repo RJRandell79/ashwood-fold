@@ -13,7 +13,7 @@ import { SIGNALS } from './signals.js';
 import { noteIdea } from './crossroads.js';
 import { addDeed } from './dynasties.js';
 import { addRumour, adj, glyph, mem, op } from './social.js';
-import { LIVE, N, PN, S, byJob, household, isAdult, listNames, pick, rnd, techBuilt, techOn } from './state.js';
+import { LIVE, N, P, PN, S, byJob, household, isAdult, listNames, pick, rnd, techBuilt, techOn } from './state.js';
 
 const lower = d => d.name.toLowerCase();
 
@@ -108,14 +108,20 @@ export function honourInventor(d, inv) {
 }
 
 /** Puts an idea's buildings (and any canal or railway line) into the valley. */
-export function raiseBuildings(d) {
+/** Puts up an idea's buildings, lines or crossing. `by` is whose idea it was, for the places' records;
+ *  the chronicle says where each building went, and why there. */
+export function raiseBuildings(d, by = null) {
   if (d.line) routeLine(d.line);
   if (d.crossing) setCrossing(d.crossing);
-  for (const b of d.places || []) addPlace(b);
+  for (const b of d.places || []) {
+    const had = !!P[b], p = addPlace(b, b, { by: by ? by.name : null });
+    if (p && !had && p.record && p.record.why) log(`${cap(p.name)} ${p.kind === 'field' ? 'are laid out' : 'goes up'} ${p.record.why}.`, 'event', 'work', { place: b });
+  }
 }
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
 function finish(d, t, inv, bk) {
-  t.state = 'built'; t.builtAt = S.tick; invalidateEffects(); raiseBuildings(d); easeRivals(d); noteIdea(d.id, 'built');
+  t.state = 'built'; t.builtAt = S.tick; invalidateEffects(); raiseBuildings(d, inv); easeRivals(d); noteIdea(d.id, 'built');
   for (const b of bk) if (b !== inv) adj(b, inv, 6);
   for (const o of t.opponents.map(i => S.agents[i])) adj(o, inv, -4);
   if (d.adoption) t.adopters = bk.filter(b => d.adoption.jobs.includes(b.job)).map(b => b.id);

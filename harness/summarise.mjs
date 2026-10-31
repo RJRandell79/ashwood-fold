@@ -10,7 +10,7 @@ import { AGES, FIRST_AGE } from '../src/data/ages.js';
 import { valley } from '../src/sim/valley.js';
 import { lineDifficulty, settlementCentre } from '../src/sim/placement.js';
 import { calYear } from '../src/sim/state.js';
-import { LINES } from '../src/data/buildings.js';
+import { BUILDINGS, LINES, MEMORY } from '../src/data/buildings.js';
 
 const YEAR_TICKS = TPD * YEAR_DAYS;
 const yearOf = t => Math.floor(t / YEAR_TICKS) + 1;
@@ -33,7 +33,13 @@ export function geography(seed) {
 }
 
 /** One whole game from `seed` under a crossroads `policy`, for `years` game years. */
-export function summarise(seed, { years = 90, policy = 'never' } = {}) {
+export function summarise(seed, { years = 90, policy = 'never', memory = true } = {}) {
+  const keep = { ...MEMORY };
+  if (!memory) Object.assign(MEMORY, { site: 0, ruin: 0 });   // to compare with a valley that forgets
+  try { return play(seed, years, policy); } finally { Object.assign(MEMORY, keep); }
+}
+
+function play(seed, years, policy) {
   const taken = [], offered = new Set(), name = `_count${counter++}`;
   POLICIES[name] = s => {
     const answer = POLICIES[policy](s);
@@ -110,6 +116,7 @@ export function summarise(seed, { years = 90, policy = 'never' } = {}) {
       heartMoved: closed.centre ? Math.hypot(centre.x - closed.centre.x, centre.y - closed.centre.y) : null,
       onOldSites: (H.sites || []).filter(s => s.found).length,
       builtAfresh: Object.keys(S.places).filter(id => id.startsWith('ruin-')).length,
+      ...inheritance(S, closed),
     } : null,
     geo: { ...geography(S.valley.seed), canal: lineDifficulty(WATERWAY) },
     farBank: Object.values(S.places).filter(p => { const v = valley(S.valley.seed); return p.y + p.h / 2 > v.riverY(p.x + p.w / 2); }).length,
@@ -117,4 +124,21 @@ export function summarise(seed, { years = 90, policy = 'never' } = {}) {
     rebuilds: notes.filter(e => e.rebuild).length, storms: notes.filter(e => e.storm).length, decayed: notes.filter(e => e.decay).length,
     offered: offered.size, taken,
   };
+}
+
+/** How far the new age's buildings stand from where their kind stood in the old: for each building of
+ *  the new age that had a counterpart (the same building, or both homes, or both fields), the distance
+ *  between them, and whether it stands on or beside the old one (within 3 cells). */
+function inheritance(S, closed) {
+  const old = Object.values(closed.places).flat().filter(f => f.x != null);
+  const gap = (a, b) => Math.hypot(Math.max(0, a.x - (b.x + b.w), b.x - (a.x + a.w)), Math.max(0, a.y - (b.y + b.h), b.y - (a.y + a.h)));
+  const same = (p, f) => f.def === p.def || (p.home && f.home) || (p.kind === 'field' && f.kind === 'field');
+  const dists = [];
+  for (const p of Object.values(S.places)) {
+    if (p.age !== S.age || p.def === 'ruin' || (p.record && p.record.keptFrom)) continue;   // new in this age only, not kept from the old
+    const kin = old.filter(f => same(p, f));
+    if (!kin.length) continue;
+    dists.push(Math.min(...kin.map(f => gap(p, f))));
+  }
+  return { kinDist: dists.length ? dists.reduce((a, b) => a + b, 0) / dists.length : null, kinNear: dists.length ? dists.filter(d => d <= 3).length / dists.length : null, kinCount: dists.length };
 }
