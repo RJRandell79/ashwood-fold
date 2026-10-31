@@ -6,8 +6,9 @@ import { plan } from './life.js';
 import { recordFamilies } from './dynasties.js';
 import { log } from './log.js';
 import { arrive } from './people.js';
+import { stormDamage } from './placement.js';
 import { adj, mem } from './social.js';
-import { byJob, calYear, dayOf, household, isAdult, listNames, LIVE, N, P, pick, rnd, S, seasonOf, yearOf } from './state.js';
+import { byJob, calYear, dayOf, household, isAdult, listNames, LIVE, N, P, pick, PN, rnd, S, seasonOf, yearOf } from './state.js';
 
 export function seasonStart(){
   if(seasonOf()===0)recordFamilies();
@@ -39,6 +40,7 @@ export function stormHits(natural){
   else if(natural)log('Black clouds roll in over the fells and a storm breaks over Ashwood Fold.','event');
   if(s===2&&!effect('protectsHarvest')&&S.stores.grain>20){const lost=Math.round(S.stores.grain*.08);S.stores.grain-=lost;S.harvest=Math.max(0,S.harvest-lost);raisePressure('cornFlattened');
     log(`The rain lays the standing corn flat. ${lost} sheaves are spoiled in the field.`,'bad','season');}
+  if(natural&&rnd()<.15){const hit=stormDamage(pick);if(hit)log(`The wind ${hit.thatch?'tears the thatch from':'lifts the slates from'} ${PN(hit.p.id)}.`,'bad','season',{place:hit.p.id});}
   for(const a of LIVE)if(!P[a.act.place].indoor)plan(a);
 }
 export function upkeepDay(){

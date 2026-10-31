@@ -50,7 +50,7 @@ export function summarise(seed, { years = 90, policy = 'never' } = {}) {
       places.push(Object.keys(st.places).length);
       eraAt.push(`${st.age}:${st.era}`);
       // annals are capped in length, so keep what each year adds
-      for (const e of st.annals) if (e.t > seen) notes.push({ t: e.t, c: e.c, era: e.era, age: e.age, tech: e.tech, fizzle: e.fizzle, abandoned: e.abandoned });
+      for (const e of st.annals) if (e.t > seen) notes.push({ t: e.t, c: e.c, era: e.era, age: e.age, tech: e.tech, fizzle: e.fizzle, abandoned: e.abandoned, rebuild: /rebuilt in/.test(e.h), storm: /thatch from|slates from/.test(e.h), decay: /falling down/.test(e.h) });
       if (st.annals.length) seen = Math.max(seen, st.annals[st.annals.length - 1].t);
     },
   });
@@ -97,16 +97,24 @@ export function summarise(seed, { years = 90, policy = 'never' } = {}) {
       heirs: dyn.filter(r => r.descends).length,
       namesakes: dyn.filter(r => r.namesake).length,
       heirsLiving: dyn.filter(r => r.descends && S.agents.some(a => !a.dead && a.name.split(' ').slice(1).join(' ') === r.name)).length,
+      how: dyn.filter(r => r.how && (r.descends || r.namesake)).map(r => r.how),
+      standing: closed.families.filter(f => f.kept).map(f => f.standing),
+      landmarks: closed.families.filter(f => f.landmark).length,
+      landmarksLost: closed.families.filter(f => f.landmark && !f.kept).length,
+      carved: closed.families.filter(f => f.carved).length,
+      bonds: (closed.bonds || []).map(b => b.kind),
     } : null,
     buildings: closed && closed.places ? {
       stood: closed.places.stood.length, rebuilt: closed.places.rebuilt.length, ruined: closed.places.ruined.length, gone: closed.places.gone.length,
       ruins: Object.values(S.places).filter(p => p.def === 'ruin').length,
       heartMoved: closed.centre ? Math.hypot(centre.x - closed.centre.x, centre.y - closed.centre.y) : null,
       onOldSites: (H.sites || []).filter(s => s.found).length,
+      builtAfresh: Object.keys(S.places).filter(id => id.startsWith('ruin-')).length,
     } : null,
     geo: { ...geography(S.valley.seed), canal: lineDifficulty(WATERWAY) },
     farBank: Object.values(S.places).filter(p => { const v = valley(S.valley.seed); return p.y + p.h / 2 > v.riverY(p.x + p.w / 2); }).length,
     crossing: S.crossing ? S.crossing.kind : null,
+    rebuilds: notes.filter(e => e.rebuild).length, storms: notes.filter(e => e.storm).length, decayed: notes.filter(e => e.decay).length,
     offered: offered.size, taken,
   };
 }

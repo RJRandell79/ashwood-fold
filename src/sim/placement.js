@@ -6,7 +6,7 @@ import { effect } from './effects.js';
 import { TPD, YEAR_DAYS } from '../data/world.js';
 import { log } from './log.js';
 import { noise, valley } from './valley.js';
-import { currentAge, household, isAdult, N, P, PN, S } from './state.js';
+import { currentAge, household, isAdult, LIVE, N, P, PN, rnd, S } from './state.js';
 
 const MARGIN = 1; // clear cells kept around every building, so lanes run between them
 
@@ -179,7 +179,8 @@ export function setCrossing(kind) {
 export function placeFounding() {
   if (!S.crossing) placeCrossing();
   const ids = currentAge().founding;
-  for (const id of ids) addPlace(id);
+  // the founding buildings are of different ages already: some newly mended, some due for it
+  for (const id of ids) { const fresh = !P[id]; const p = addPlace(id); if (p && fresh && wears(p)) p.wear = rnd() * 0.5; }
 }
 
 /** True while another home may be built: homes are capped for the named cast (MAX_HOMES). */
@@ -187,6 +188,10 @@ export const cottagesLeft = () => Object.values(P).filter(p => p.home).length < 
 
 /** The name of the n-th cottage built (0-based), in an order set by the valley's seed. */
 export function cottageName(n, era = S.era || 0) {
+  // the first new houses of an age take the names an old family left on its holding (src/sim/legacy.js)
+  const folds = ((S.history && S.history.landmarks) || []).filter(l => l.house && l.to === S.age).map(l => l.name);
+  if (n < folds.length) return folds[n];
+  n -= folds.length;
   const word = currentAge().houseWord;
   if (!word && n < COTTAGE_FIRST.length) return `${COTTAGE_FIRST[n]} Cottage`;
   const order = NAME_PARTS.map((w, i) => [noise(i * 3.7 + 0.5, 11.5, S.valley.seed), w]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
@@ -252,32 +257,52 @@ export function routeLine(id) {
   return ys;
 }
 
-/** Each spring one building that is two eras out of date may be rebuilt in the style of the present:
- *  a home when its household can pay for it, anything else at the parish's charge. Oldest first.
- *  Enduring buildings (the Green, the chapel, the cross) are never rebuilt; they keep their first look. */
+/** How fast a building wears: its style's rate, varied a little from building to building. */
+export function wearRate(p) {
+  const styles = currentAge().styles, st = p.age && p.age !== S.age ? null : styles[Math.min(p.era || 0, styles.length - 1)];
+  let h = 0; for (const c of p.id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return ((st && st.wears) || 0.03) * (0.8 + 0.4 * ((h % 1000) / 1000));
+}
+/** Buildings that wear and may be rebuilt: everything but what endures, and open ground. */
+export const wears = p => { const d = BUILDINGS[p.def] || {}; return d.legacy !== 'enduring' && STYLED_ARCHETYPES.includes(d.archetype); };
+
+/** Each spring buildings wear, and up to two are rebuilt in the style of the day (decided 30 Oct: by
+ *  condition, not by timetable): those worn out, or worn and out of date, when someone can pay. A home is
+ *  paid for by its household; anything else by whoever in the village is best able. Enduring buildings
+ *  (the Green, the church, the cross) keep their first look. */
 export function restyleSeason() {
   const styles = currentAge().styles, era = S.era || 0, now = styles[Math.min(era, styles.length - 1)];
-  const styleOf = p => ((p.age && p.age !== S.age) ? null : styles[p.era || 0]);
-  const dated = Object.values(P)
-    .filter(p => { const d = BUILDINGS[p.def] || {}; return d.legacy !== 'enduring' && STYLED_ARCHETYPES.includes(d.archetype); })
-    .filter(p => styleOf(p) && era - (p.era || 0) >= 2 && styleOf(p).material !== now.material)
-    .sort((a, b) => (a.era || 0) - (b.era || 0) || (a.built || 0) - (b.built || 0) || (a.id < b.id ? -1 : 1));
-  for (const p of dated) {
-    if (p.home) {
-      const payer = household(p.id).filter(isAdult).sort((a, b) => b.coins - a.coins)[0];
-      if (!payer || payer.coins < 14) continue;
-      payer.coins -= 8;
-      rebuild(p, era);
-      log(`${N(payer)} has ${PN(p.id)} pulled down and rebuilt in ${now.material}.`, 'event', 'work', { ids: [payer.id], place: p.id });
-      return p.id;
+  const dated = p => (p.age && p.age !== S.age) || (era - (p.era || 0) >= 2 && styles[p.era || 0].material !== now.material);
+  const places = Object.values(P).filter(wears);
+  for (const p of places) p.wear = Math.min(1.5, (p.wear || 0) + wearRate(p));
+  const due = places.filter(p => p.wear >= 1 || (dated(p) && p.wear >= 0.6))
+    .sort((a, b) => b.wear - a.wear || (a.built || 0) - (b.built || 0) || (a.id < b.id ? -1 : 1));
+  const done = [];
+  for (const p of due) {
+    if (done.length >= 2) break;
+    const why = p.wear >= 1 ? 'worn out' : 'dated';
+    const payers = (p.home ? household(p.id) : LIVE).filter(isAdult).sort((a, b) => b.coins - a.coins);
+    const cost = p.home ? 8 : 12, payer = payers.find(a => a.coins >= cost + 6);
+    if (!payer) {
+      if (why === 'worn out' && !p.decay) { p.decay = S.tick; log(`${cap(PN(p.id))} is falling down, and no one can pay to mend it.`, 'bad', 'work', { place: p.id }); }
+      continue;
     }
-    {
-      rebuild(p, era);
-      const how = BUILDINGS[p.def].legacy === 'adaptable' ? 'is rebuilt on its old footings' : 'is pulled down and rebuilt';
-      log(`${PN(p.id).replace(/^the /, 'The ')} ${how} in ${now.material}.`, 'event', 'work', { place: p.id });
-      return p.id;
-    }
+    payer.coins -= cost;
+    rebuild(p, era);
+    const how = why === 'worn out' ? `is worn out, and ${N(payer)} pays to have it rebuilt in ${now.material}` : `is pulled down and rebuilt in ${now.material}, at ${N(payer)}'s charge`;
+    log(`${cap(PN(p.id))} ${how}.`, 'event', 'work', { ids: [payer.id], place: p.id });
+    done.push(p.id);
   }
-  return null;
+  return done[0] || null;
 }
-function rebuild(p, era) { p.era = era; p.rebuilt = S.tick; }
+function rebuild(p, era) { Object.assign(p, { era, age: S.age, wear: 0, rebuilt: S.tick, decay: 0 }); }
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** A storm takes its toll of one building. */
+export function stormDamage(pickOne) {
+  const places = Object.values(P).filter(wears);
+  if (!places.length) return null;
+  const p = pickOne(places), styles = currentAge().styles, st = styles[Math.min(p.era || 0, styles.length - 1)];
+  p.wear = Math.min(1.5, (p.wear || 0) + 0.2);
+  return { p, thatch: !st || /thatch/.test(st.material) };
+}

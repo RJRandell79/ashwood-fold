@@ -42,10 +42,15 @@ describe('the first interlude', () => {
       const legacy = (BUILDINGS[p.def] || {}).legacy;
       if (legacy === 'enduring') expect(S.places[id], `${id} endures`).toBeTruthy();
       if (legacy === 'enduring') expect(S.places[id].name).toBe(p.name);
-      if (legacy === 'adaptable') expect(S.places[id], `${id} is rebuilt or a ruin`).toBeTruthy();
+      // adaptable: rebuilt where it stood, or a ruin (and, if the next age needs one, a new one elsewhere),
+      // or carried off for its stone and remembered as a site
+      if (legacy === 'adaptable') {
+        const here = S.places[id], ruin = S.places[`ruin-${id}`], site = S.history.sites.find(s => s.name === p.name);
+        expect(!!(here && here.def !== 'ruin' && here.x === p.x && here.y === p.y) || !!(here && here.def === 'ruin') || !!ruin || !!site, `${id} has a fate`).toBe(true);
+        if (ruin) expect(here && here.def, `${id} is built afresh`).toBe(p.def);
+      }
     }
-    expect(S.places.hall.name).toBe('the Moot Hall');               // the Manor House, rebuilt on its footings
-    for (const id of ['chantry', 'fulling']) if (old[id]) expect(S.places[id].def).toBe('ruin');
+    expect(S.places.hall.name).toBe('the Moot Hall');               // the Manor House, on its footings or afresh
     for (const s of S.history.sites) expect(old[Object.keys(old).find(k => old[k].name === s.name)]).toBeTruthy();
     expect(Object.keys(S.roads || {}).length).toBeGreaterThan(0);   // the old lanes carry on
     // the age's record says what became of every building, and where the heart of the village was
@@ -85,7 +90,7 @@ describe('the manor village runs for about two generations', () => {
   it('it cannot close before forty years, and closes by about 1360', () => {
     let closed = null, readyFrom = null;
     run(4, { years: 75, onYear: (s, y) => { if (s.age === 'medieval' && interludeReady() && !readyFrom) readyFrom = y; if (s.age === 'industrial' && !closed) closed = y; } });
-    expect(readyFrom).toBeGreaterThanOrEqual(40);
+    expect(readyFrom).toBeGreaterThanOrEqual(39);   // onYear(y) runs at the close of game year y: the age's 40th year begins
     expect(closed).toBeTruthy();
     expect(S.history.ages[0].endYear).toBeLessThanOrEqual(1362);
   });
