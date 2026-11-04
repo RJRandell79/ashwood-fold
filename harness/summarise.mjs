@@ -56,7 +56,7 @@ function play(seed, years, policy) {
       places.push(Object.keys(st.places).length);
       eraAt.push(`${st.age}:${st.era}`);
       // annals are capped in length, so keep what each year adds
-      for (const e of st.annals) if (e.t > seen) notes.push({ t: e.t, c: e.c, era: e.era, age: e.age, tech: e.tech, fizzle: e.fizzle, abandoned: e.abandoned, ruledOut: e.ruledOut, rebuild: /rebuilt in/.test(e.h), storm: /thatch from|slates from/.test(e.h), decay: /falling down/.test(e.h) });
+      for (const e of st.annals) if (e.t > seen) notes.push({ t: e.t, c: e.c, era: e.era, age: e.age, tech: e.tech, fizzle: e.fizzle, abandoned: e.abandoned, tpl: template(e.h), ruledOut: e.ruledOut, rebuild: /rebuilt in/.test(e.h), storm: /thatch from|slates from/.test(e.h), decay: /falling down/.test(e.h) });
       if (st.annals.length) seen = Math.max(seen, st.annals[st.annals.length - 1].t);
     },
   });
@@ -123,6 +123,7 @@ function play(seed, years, policy) {
     crossing: S.crossing ? S.crossing.kind : null,
     ruledOut: notes.filter(e => e.ruledOut).map(e => e.tech), closed: Object.entries(S.tech).filter(([, t]) => t.closed).map(([id]) => id),
     left: Object.values(S.agents).filter(a => a.dead && /Manchester/.test(a.dead.cause || '')).length,
+    ...repetition(notes),
     rebuilds: notes.filter(e => e.rebuild).length, storms: notes.filter(e => e.storm).length, decayed: notes.filter(e => e.decay).length,
     offered: offered.size, taken,
   };
@@ -143,4 +144,17 @@ function inheritance(S, closed) {
     dists.push(Math.min(...kin.map(f => gap(p, f))));
   }
   return { kinDist: dists.length ? dists.reduce((a, b) => a + b, 0) / dists.length : null, kinNear: dists.length ? dists.filter(d => d <= 3).length / dists.length : null, kinCount: dists.length };
+}
+
+/** An annals line with its names and numbers taken out, so lines that say the same thing count as one. */
+function template(h) {
+  return String(h).replace(/<span class="who"[^>]*>[^<]*<\/span>/g, 'X').replace(/<[^>]+>/g, '').replace(/\b[A-Z][a-z]+(?: [A-Z][a-z]+)?\b/g, 'X').replace(/\d+/g, '#').trim();
+}
+/** How repetitive the annals are: the share of entries whose wording the village has used five times or
+ *  more already, and the lines it repeats most. */
+function repetition(notes) {
+  const counts = new Map();
+  let repeated = 0;
+  for (const e of notes) { const c = (counts.get(e.tpl) || 0) + 1; counts.set(e.tpl, c); if (c > 5) repeated++; }
+  return { repeated: notes.length ? repeated / notes.length : 0, entries: notes.length, topLines: [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8) };
 }

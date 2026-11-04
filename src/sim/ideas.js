@@ -161,8 +161,8 @@ function fail(d, t, inv, opp, cost) {
   const why = reason === 'opposed' ? `${listNames(opp.slice(0, 3))} stood against it` : reason === 'money' ? `the backers could not find the ${cost} pennies` : 'too few would back it';
   const said = reason === 'opposed' ? `${N(lead)} saw to that${opp.length > 1 ? `, with ${listNames(opp.filter(o => o !== lead).slice(0, 2))}` : ''}.${before ? ` The ${familyPlural(fam)} have stood against new things before: ${before.text}, in ${before.year}.` : ''}`
     : reason === 'money' ? `The backers could not find the ${cost} pennies between them.` : 'The village never quite took to it.';
-  log(`Nothing comes of ${N(inv)}'s ${lower(d)}. ${said}`, 'bad', 'tech', { tech: id, fizzle: 1, why: reason, ids: lead ? [inv.id, lead.id] : [inv.id] });
-  if (reason === 'opposed') addDeed(lead, `${lead.name} stood against the ${lower(d)}`, 'opposed');
+  const e = log(`Nothing comes of ${N(inv)}'s ${lower(d)}. ${said}`, 'bad', 'tech', { tech: id, fizzle: 1, why: reason, ids: lead ? [inv.id, lead.id] : [inv.id], because: before && before.n ? [before.n] : [], fam: reason === 'opposed' ? fam : undefined });
+  if (reason === 'opposed') addDeed(lead, `${lead.name} stood against the ${lower(d)}`, 'opposed', e && e.n);
   t.fizzles = (t.fizzles || 0) + 1;
   if (t.fizzles >= 2) {
     Object.assign(t, { state: 'abandoned', abandonedEra: S.era || 0, abandonedAt: S.tick, pressure: 0, backers: [], opponents: [], lostWhy: reason, lostTo: fam || null });

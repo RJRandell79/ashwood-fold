@@ -237,3 +237,16 @@ h2.sec{font-size:22px;margin-bottom:10px}
 .scene .sc-card td{padding:3px 6px 3px 0;border-bottom:1px solid var(--line);vertical-align:top}
 .scene .sc-card p svg{vertical-align:-4px}
 @media (max-width:600px){.scene .sc-year{font-size:38px}.scene .sc-line{bottom:54px;font-size:15px}.scene .sc-card{top:auto;bottom:8px;transform:translateX(-50%);max-height:calc(100% - 64px)}}
+
+/* the annals' connections (src/view/annals.js): the year's main story, links back to causes, threads */
+#book .lead{font-size:1.08em;border-left:3px solid var(--line);padding-left:10px}
+#book .cause{font:500 12px var(--body);color:var(--muted);text-decoration:underline dotted;white-space:nowrap;margin-left:2px}
+#book .ent.flash{animation:entFlash 2s ease}
+@keyframes entFlash{0%,40%{background:rgba(224,164,58,.35)}100%{background:transparent}}
+#book .thread{margin:14px 0}
+#book .thread h3{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin:0 0 4px}
+#book .thread h3 span{font:400 13px var(--body);color:var(--muted)}
+#book .thread ol{list-style:none;margin:0;padding:0}
+#book .thread li{display:flex;gap:10px;padding:3px 0;border-bottom:1px solid var(--line)}
+#book .thread .ty{flex:none;width:3.2em;color:var(--muted);font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){#book .ent.flash{animation:none;background:rgba(224,164,58,.25)}}

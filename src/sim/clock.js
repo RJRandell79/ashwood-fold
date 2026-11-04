@@ -15,7 +15,7 @@ import { gatherTick, lifeDay } from './people.js';
 import { conditionsDay, conditionsSpring } from './conditions.js';
 import { collectDues, foodDay, seasonStart, spendDay, upkeepDay, weatherDay } from './seasons.js';
 import { checkPair, encounters } from './social.js';
-import { LIVE, S, dayInSeason, dayOf, dayStart, listNames, refreshLive, seasonOf } from './state.js';
+import { LIVE, S, dayInSeason, pick, dayOf, dayStart, listNames, refreshLive, seasonOf } from './state.js';
 
 export function midnight(){
   refreshLive();
@@ -55,7 +55,7 @@ export function tick(){
   if(S.spoil>0){S.spoil--;if(S.spoil===0)log('The weevils are finally smoked out of the Watermill. Good flour again.','event');}
   if(S.storm>0){S.storm--;if(S.storm===0)log(seasonOf()===3?'The snow stops falling. Children are out on the Green within the hour.':'The storm blows itself out. The lanes steam in the sun.','event');}
   if(S.fair){
-    if(S.tick===S.fair.start)log(S.fair.harvest?'Harvest Home on the Green: the last sheaf is carried in, and the fiddler strikes up.':'The fair opens on the Green: ribbons, a fiddler, and a pie stall.','good',S.fair.harvest?null:'event');
+    if(S.tick===S.fair.start)log(S.fair.harvest?'Harvest Home on the Green: the last sheaf is carried in, and the fiddler strikes up.':pick(['The fair opens on the Green: ribbons, a fiddler, and a pie stall.','Fair day. Stalls fill the Green, and the alehouse does a roaring trade.','The fair comes round again: pedlars, a dancing bear, and more noise than the rest of the year together.']),'good',S.fair.harvest?null:'event');
     if(S.tick===S.fair.end){log(S.fair.harvest?'Harvest Home is over for another year.':'The fair packs up for another year.','event');S.fair=null;}
   }
   gatherTick();

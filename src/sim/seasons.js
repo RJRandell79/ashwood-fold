@@ -15,7 +15,7 @@ export function seasonStart(){
   const s=seasonOf(),y=yearOf(),pop=LIVE.length;
   if(s===0){
     S.years[y]={startPop:pop,births:0,deaths:0,weddings:0,era:S.era,age:S.age,cal:calYear()};S.yearQ=.65+rnd()*.6;
-    log(`Spring comes to Ashwood Fold in ${calYear()}, with ${pop} souls in the village.`,'event','season',{season:0});
+    log(pick([`Spring comes to Ashwood Fold in ${calYear()}, with ${pop} souls in the village.`,`${calYear()} opens with ${pop} souls in the village and the lambs in the fields.`,`The year turns: ${calYear()}, and ${pop} people in Ashwood Fold.`,`Spring of ${calYear()}. There are ${pop} souls in the village, and the ground is soft for the plough.`]),'event','season',{season:0});
     const come=effect('strangersCome');
     if(LIVE.filter(isAdult).length<12&&(come>=1||rnd()<come))arrive(pick(['labourer','farmhand','weaver']),'looking for work');
     const extra=come>=1?effect('springMigrants'):Math.floor(effect('springMigrants')*come);
@@ -26,7 +26,8 @@ export function seasonStart(){
     const ratio=S.harvest/Math.max(1,pop*22),verdict=ratio<.8?'thin':ratio<1.15?'fair':'fine';
     S.years[y].harvest=verdict;
     if(verdict==='thin'){raisePressure('thinHarvest');}
-    log(`Winter sets in. The harvest was ${verdict}: ${Math.round(S.harvest)} sheaves brought in for ${pop} mouths${verdict==='thin'?'. It will be a hungry winter.':'.'}`,verdict==='thin'?'bad':'event','season',{season:3,harvest:verdict});
+    const sheaves=`${Math.round(S.harvest)} sheaves for ${pop} mouths`;
+    log(verdict==='thin'?pick([`Winter sets in after a thin harvest, ${sheaves}. It will be a hungry winter.`,`The harvest was thin: ${sheaves}. People are counting what is left in the granary.`]):verdict==='fine'?pick([`Winter sets in. The harvest was fine: ${sheaves}.`,`A good year in the fields: ${sheaves}, and the granary full going into winter.`,`The barns are full: ${sheaves}. Nobody will go hungry this winter.`]):pick([`Winter sets in. The harvest was fair: ${sheaves}.`,`A middling harvest, ${sheaves}. It will do.`]),verdict==='thin'?'bad':'event','season',{season:3,harvest:verdict});
   }
 }
 export function weatherDay(){
@@ -36,7 +37,7 @@ export function weatherDay(){
 }
 export function stormHits(natural){
   const s=seasonOf();
-  if(s===3)log(natural?'A blizzard sweeps down off the fells. The lanes fill with snow.':'Snow and wind lash Ashwood Fold.','event',natural?'season':null);
+  if(s===3)log(natural?pick(['A blizzard sweeps down off the fells. The lanes fill with snow.','Snow comes in the night, and the village wakes to drifts against the doors.','A hard frost, then snow. Nobody goes further than they must.']):'Snow and wind lash Ashwood Fold.','event',natural?'season':null);
   else if(natural)log('Black clouds roll in over the fells and a storm breaks over Ashwood Fold.','event');
   if(s===2&&!effect('protectsHarvest')&&S.stores.grain>20){const lost=Math.round(S.stores.grain*.08);S.stores.grain-=lost;S.harvest=Math.max(0,S.harvest-lost);raisePressure('cornFlattened');
     log(`The rain lays the standing corn flat. ${lost} sheaves are spoiled in the field.`,'bad','season');}

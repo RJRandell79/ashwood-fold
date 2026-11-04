@@ -15,9 +15,9 @@ function record(fam) {
 }
 
 /** Notes something a member of the family did that the valley will remember. */
-export function addDeed(a, text, kind) {
+export function addDeed(a, text, kind, n) {
   const r = record(familyKey(a));
-  r.deeds.push({ year: calYear(), text, kind });
+  r.deeds.push({ year: calYear(), text, kind, ...(n ? { n } : {}) });
   if (r.deeds.length > 12) r.deeds.splice(0, r.deeds.length - 12);
 }
 
