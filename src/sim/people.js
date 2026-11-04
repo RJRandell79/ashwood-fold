@@ -169,14 +169,17 @@ export function gatherTick(){
           if(home==='tavern'&&fh)home=fh;
           home=setHome(x,home);setHome(y,home);
           const away=LIVE.filter(a=>isAdult(a)&&!came.includes(a)&&(isKin(a,x)||isKin(a,y)||Math.min(op(a,x),op(a,y))<-35)).slice(0,3);
-          log(`${N(x)} and ${N(y)} were married at the Chapel, with ${came.length>LIVE.length*.6?'most of the village':came.length>3?`${came.length} people`:'only a handful'} looking on.${away.length?` ${listNames(away)} stayed away.`:''} They will live at ${PN(home)}.`,'good','wedding',{ids:[x.id,y.id],place:'chapel'});
+          const crowd=came.length>LIVE.length*.6?'most of the village':came.length>3?`${came.length} people`:'only a handful',church=PN('chapel'),stay=away.length?` ${listNames(away)} stayed away.`:'';
+          log(pick([`${N(x)} and ${N(y)} were married at ${church}, with ${crowd} looking on.${stay} They will live at ${PN(home)}.`,`${N(x)} wed ${N(y)} at ${church}.${came.length>LIVE.length*.6?' The whole village turned out.':` ${came.length} came to see it.`}${stay} They set up house at ${PN(home)}.`,`A wedding at ${church}: ${N(x)} and ${N(y)}, before ${crowd}.${stay} Home for them now is ${PN(home)}.`,`${N(x)} and ${N(y)} are wed at ${church}, with ${crowd} there.${stay} They will live at ${PN(home)}.`]),'good','wedding',{ids:[x.id,y.id],place:'chapel'});
         }
       }else if(g.type==='election'){tallyElection();
       }else if(g.type==='court'){const js=g.jurors.map(i=>S.agents[i]).filter(j=>!j.dead);for(const c of g.cases)decideCase(c,js);
       }else{
         const d=S.agents[g.who];
         const away=LIVE.filter(a=>isAdult(a)&&!came.includes(a)&&(isKin(a,d)||op(a,d)<-40)).slice(0,3);
-        log(`${N(d)} was buried in the chapel yard. ${came.length>LIVE.length*.6?'Nearly the whole village came.':came.length>2?`${came.length} mourners stood at the graveside.`:'Few came.'}${away.length?` ${listNames(away)} did not.`:''}`,'life','funeral',{ids:[d.id]});
+        const age=Math.floor(d.age),many=came.length>LIVE.length*.6,few=came.length<=2,stay=away.length?` ${listNames(away)} did not.`:'';
+        const at=age<1?'not a year old':age<14?`only ${age}`:`aged ${age}`;
+        log(age<14?pick([`${N(d)} was buried in the chapel yard, ${at}.${few?' Only the family came.':` ${came.length} stood at the graveside.`}${stay}`,`A small grave in the chapel yard for ${N(d)}, ${at}.${stay}`]):pick([`${N(d)} was buried in the chapel yard, ${at}. ${many?'Nearly the whole village came.':!few?`${came.length} mourners stood at the graveside.`:'Few came.'}${stay}`,`They laid ${N(d)} in the chapel yard, ${at}. ${many?'The whole village walked behind.':!few?`${came.length} followed.`:'Hardly anyone followed.'}${stay}`,`${N(d)}, ${at}, went into the ground beside the chapel. ${many?'There was hardly room for the mourners.':!few?`${came.length} came to see it done.`:'It was a thin gathering.'}${stay}`]),'life','funeral',{ids:[d.id]});
       }
       S.gathers.splice(S.gathers.indexOf(g),1);
     }

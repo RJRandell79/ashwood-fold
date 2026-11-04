@@ -113,7 +113,9 @@ export function gossip(a,b,place){
     b.knows.push(r.id);const subj=S.agents[r.subject];glyph(a,'…','rumour');
     if(b.id===r.subject){
       adj(b,a,-25);mem(b,a,'spread talk about me',place);glyph(b,'!','bad');
-      log(`${N(b)} hears from ${N(a)} what folk have been saying: that ${N(b)} ${r.text}. ${N(b)} is not pleased.`,'rumour','rumour',{ids:[a.id,b.id]});
+      // the first time the talk reaches its subject is the story; later tellings are only the chronicle's
+      const told=r.told=(r.told||0)+1;
+      log(told===1?pick([`${N(b)} hears from ${N(a)} what folk have been saying: that ${N(b)} ${r.text}. ${N(b)} is not pleased.`,`${N(a)} lets slip to ${N(b)} the talk going round: that ${N(b)} ${r.text}. ${N(b)} goes white.`,`So that is what they are saying. ${N(a)} tells ${N(b)} that the village thinks ${N(b)} ${r.text}.`]):pick([`${N(b)} hears it again, this time from ${N(a)}.`,`${N(a)} brings up the old talk with ${N(b)}, and gets short shrift.`]),'rumour',told===1?'rumour':null,{ids:[a.id,b.id]});
     }else{
       const trust=(op(b,a)+100)/200*effect('rumourTrust'),doubt=effect('rumourDoubtChance');
       if((op(b,subj)>50&&rnd()<.6)||(doubt>0&&rnd()<doubt)){
@@ -122,7 +124,7 @@ export function gossip(a,b,place){
       }else{
         r.reach++;adj(b,subj,-(8+18*trust));mem(b,subj,`was said to have ${r.text.replace(/^is /,'been ').replace(/^has /,'')}`.replace('have been been','have been'),place);
         if(r.reach===2)log(`${N(a)} passes it on to ${N(b)}: ${N(subj)} ${r.text}.`,'rumour');
-        else if(r.reach===5||r.reach===9){log(`By now ${r.reach} people have heard that ${N(subj)} ${r.text}.`,'rumour',r.reach===5?'rumour':null,{ids:[subj.id]});if(r.reach===5)raisePressure('rumourSpread');}
+        else if(r.reach===5||r.reach===9){log(r.reach===5?pick([`By now ${r.reach} people have heard that ${N(subj)} ${r.text}.`,`The talk has gone round: half the lane believes ${N(subj)} ${r.text}.`,`It is all over the village that ${N(subj)} ${r.text}.`]):`By now ${r.reach} people have heard that ${N(subj)} ${r.text}.`,'rumour',r.reach===5?'rumour':null,{ids:[subj.id]});if(r.reach===5)raisePressure('rumourSpread');}
       }
     }
     return true;

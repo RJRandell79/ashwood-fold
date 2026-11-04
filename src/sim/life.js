@@ -6,7 +6,7 @@ import { FARM, SPEED, TPD } from '../data/world.js';
 import { bringCase, campaignRound } from './civic.js';
 import { log } from './log.js';
 import { addRumour, adj, avoid, glyph, interact, mem, op, pull, worstFoe } from './social.js';
-import { byJob, dayOf, fairOn, hourOf, household, isAdult, isKin, isSunday, listNames, LIVE, N, P, pantryOf, pick, pointIn, rnd, S, seasonOf, stage, takePantry } from './state.js';
+import { byJob, dayOf, fairOn, hourOf, household, isAdult, isKin, isSunday, listNames, LIVE, N, P, pantryOf, PN, pick, pointIn, rnd, S, seasonOf, stage, takePantry } from './state.js';
 
 export function activeGathers(){return S.gathers.filter(g=>S.tick>=g.start&&S.tick<g.end);}
 export function gatherPull(a,g){
@@ -166,11 +166,20 @@ export function steal(a){
   if(wit.length){
     for(const w of wit){adj(w,a,kid?-8:-24);mem(w,a,'caught stealing bread','bakery');}
     adj(a,wit[0],-6);glyph(a,'!','bad');
-    log(kid?`Young ${N(a)} was caught slipping a loaf from the Bakehouse by ${listNames(wit)}.`:`${N(a)}, hungry and without a penny, was caught taking bread from the Bakehouse by ${listNames(wit)}.`,'bad','crime',{place:'bakery',ids:[a.id]});
+    // a child caught at the loaves is a story the first time and when it becomes a habit; the times
+    // between go to the running chronicle only, or the annals fill with the same small theft
+    const n=a.caught=(a.caught||0)+1,shop=PN('bakery'),who=listNames(wit);
+    if(kid){
+      const par=a.parents.map(i=>S.agents[i]).find(p=>p&&!p.dead);
+      const line=n===3&&par?pick([`${N(a)} is caught at the loaves again, the third time now, and ${who} take ${a.sex==='f'?'her':'him'} home to ${N(par)} by the ear.`,`Third time: ${who} catch young ${N(a)} with a loaf from ${shop}, and this time ${N(par)} hears of it.`])
+        :pick([`Young ${N(a)} was caught slipping a loaf from ${shop} by ${who}.`,`${who} caught young ${N(a)} with a loaf up ${a.sex==='f'?'her':'his'} sleeve at ${shop}.`,`Young ${N(a)} made a grab for the bread at ${shop}, and ${who} saw it.`,`${N(a)}, too young to know better, tried for a loaf at ${shop} under the eyes of ${who}.`]);
+      log(line,'bad',n===1||n===3?'crime':null,{place:'bakery',ids:[a.id]});
+      if(n===3&&par){adj(par,a,-6);mem(par,a,'was caught stealing bread again','bakery');}
+    }else log(pick([`${N(a)}, hungry and without a penny, was caught taking bread from ${shop} by ${who}.`,`${who} caught ${N(a)} taking bread from ${shop}. ${N(a)} had not eaten in days.`,`${N(a)} was seen lifting a loaf at ${shop}, and ${who} will say so.`]),'bad','crime',{place:'bakery',ids:[a.id]});
     if(!kid){addRumour(a.id,'is a thief',wit[0]);bringCase(a,wit[0],'stealing bread from the Bakehouse',.75,true);}
   }else{
     S.stores.missing+=2;S.lastThief=a.id;mem(a,null,'took bread from the Bakehouse unseen','bakery');
-    log(`Two loaves vanish from the Bakehouse. Nobody saw who took them.`,'event');
+    log(pick([`Two loaves vanish from ${PN('bakery')}. Nobody saw who took them.`,`Bread goes missing from ${PN('bakery')} again.`]),'event');
   }
   a.act.left=0;
 }
@@ -180,7 +189,10 @@ export function bakerNotices(a){
   if(!sus){log(`${N(a)} finds ${n} loaves missing from the Bakehouse and cannot think who would do such a thing.`,'event');return;}
   adj(a,sus,-14);mem(a,sus,'probably took bread from the Bakehouse','bakery');
   const right=S.lastThief===sus.id;
-  log(`${N(a)} counts the loaves, finds ${n} gone, and suspects ${N(sus)}${right?'. The suspicion happens to be right.':', who had nothing to do with it.'}`,'rumour','crime',{ids:[a.id,sus.id],place:'bakery'});
+  // the same baker suspecting the same neighbour is told once; after that it is only talk
+  const k=`sus${a.id}-${sus.id}`,first=!S.cool[k];S.cool[k]=1;
+  const end=right?pick(['. The suspicion happens to be right.','. For once, the right person.']):pick([`, who had nothing to do with it.`,`, who is innocent of it.`,`. ${N(sus)} never touched them.`]);
+  log(first?pick([`${N(a)} counts the loaves, finds ${n} gone, and suspects ${N(sus)}${end}`,`${n} loaves short at ${PN('bakery')}. ${N(a)} has a fair idea who, and thinks of ${N(sus)}${end}`,`${N(a)} finds ${n} loaves missing and sets the blame on ${N(sus)}${end}`]):`${N(a)} finds ${n} more loaves gone, and looks at ${N(sus)} again${end}`,'rumour',first?'crime':null,{ids:[a.id,sus.id],place:'bakery'});
   addRumour(sus.id,'has been helping themselves at the Bakehouse',a);
   bringCase(sus,a,'stealing bread from the Bakehouse',.15,right);
 }
