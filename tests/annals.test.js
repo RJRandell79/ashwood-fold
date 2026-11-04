@@ -2,7 +2,8 @@
 import { describe, it, expect } from 'vitest';
 import { run } from '../harness/lib.mjs';
 import { log } from '../src/sim/log.js';
-import { S } from '../src/sim/state.js';
+import { steal } from '../src/sim/life.js';
+import { LIVE, S } from '../src/sim/state.js';
 
 describe('the annals follow a thread', () => {
   it("numbers every entry, and chains an idea's story from its first thought", () => {
@@ -25,5 +26,18 @@ describe('the annals follow a thread', () => {
     const b = log('The second thing, because of the first.', 'event', 'event', { because: a.n });
     expect(b.because).toEqual([a.n]);
     expect(log('Just the chronicle.', 'event')).toBeNull();
+  });
+
+  it("a child's first theft and third go in the book; the ones between stay in the chronicle", () => {
+    run(5, { years: 3 });
+    const kid = LIVE.find(a => a.age < 14 && a.age > 5 && a.parents.some(i => !S.agents[i].dead));
+    expect(kid).toBeTruthy();
+    const wit = LIVE.find(a => a.age >= 18 && a !== kid);
+    for (const a of [kid, wit]) { a.at = 'bakery'; a.arrived = true; a.act = { type: 'idle', left: 1 }; }
+    const from = S.annals.length, chron = S.log.length;
+    for (let i = 0; i < 4; i++) { S.stores.bread = 20; steal(kid); }
+    const mine = S.annals.slice(from).filter(e => e.ids && e.ids.includes(kid.id));
+    expect(mine).toHaveLength(2);
+    expect(S.log.length - chron).toBe(4);
   });
 });

@@ -48,7 +48,7 @@ export function callElection(days,by){
   S.election={cands,vote,lean:{},by:!!by};
   S.gathers.push({id:S.gid++,type:'election',place:'hall',start:vote,end:vote+18});
   const names=cands.map(i=>S.agents[i]);
-  log(`${by?'With no reeve, Ashwood Fold must choose one.':`${inc?N(inc)+"'s":"The reeve's"} term is up.`} ${names.length>1?`${listNames(names)} will stand`:`${N(names[0])} stands unopposed`}. The vote is in ${days} days at the Moot Hall.`,'nudge','politics',{ids:cands});
+  log(`${by?'With no reeve, Ashwood Fold must choose one.':`${inc?N(inc)+"'s":"The reeve's"} term is up.`} ${names.length>1?`${listNames(names)} will stand`:`${N(names[0])} stands unopposed`}. The vote is in ${days} days at ${PN('hall')}.`,'nudge',by?'politics':null,{ids:cands});
 }
 export function canvass(a,b){
   const e=S.election;if(!e||a.age<18||b.age<18)return false;
@@ -85,11 +85,13 @@ export function tallyElection(){
   for(const [v,c] of ballots)if(c===win)adj(win,v,3);
   for(const l of order.slice(1)){adj(l,win,-8*(.5+l.tr.temper));if(l.tr.temper>.6&&rnd()<.5)mem(l,win,'stole the election from me');}
   let line;
-  if(cands.length===1)line=`${N(win)} is confirmed as reeve, unopposed.`;
+  if(cands.length===1)line=pick([`${N(win)} is confirmed as reeve, unopposed.`,`Nobody stands against ${N(win)}, who stays reeve.`]);
   else{
-    line=`Election day at the Moot Hall. ${N(win)} is chosen as reeve with ${votes[win.id]} votes${order.slice(1).map(c=>`, ${N(c)} ${votes[c.id]}`).join('')}.`;
+    const tally=`${votes[win.id]} votes${order.slice(1).map(c=>`, ${N(c)} ${votes[c.id]}`).join('')}`,hall=PN('hall');
+    line=inc&&inc!==win?pick([`Election day at ${hall}. ${N(win)} is chosen as reeve with ${tally}.`,`The village turns ${N(inc)} out at ${hall}. ${N(win)} is reeve now, with ${tally}.`,`A new reeve: ${N(win)}, with ${tally}, counted at ${hall}.`])
+      :inc===win?pick([`Election day at ${hall}. ${N(win)} is chosen as reeve with ${tally}, and keeps the office.`,`${N(win)} is reeve for another term: ${tally}.`,`The count at ${hall} goes ${N(win)}'s way again, ${tally}.`])
+      :`Election day at ${hall}. ${N(win)} is chosen as reeve with ${tally}.`;
     if(inc&&inc!==win)line+=` ${N(inc)} goes back to ${inc.job} work.`;
-    else if(inc===win)line+=` ${N(win)} keeps the office.`;
     if(order[1]&&votes[order[1].id]===votes[win.id])line+=` The vote is tied, and the office goes to the elder.`;
     const turn=ballots.find(([v,c])=>c===win&&!e.cands.includes(v.id)&&order.slice(1).some(l=>(isKin(v,l)||v.spouse===l.id||v.home===l.home)));
     if(turn)line+=` Even ${N(turn[0])} voted against family.`;
