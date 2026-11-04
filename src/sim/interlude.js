@@ -64,7 +64,7 @@ export function beginInterlude() {
   for (const e of (I ? I.events : []).filter(e => after(e) && e.year < plagueYear)) tell(e);
   if (I && I.plague) say(I.plague.again && S.conditions && S.conditions.past[I.plague.condition] != null ? I.plague.again : I.plague.text);
   for (const r of living) {
-    const honour = r.deeds.filter(d => d.kind !== 'disgrace').length;
+    const honour = r.deeds.filter(d => d.kind === 'honour' || d.kind === 'office').length;
     const chance = Math.min(0.85, 0.25 + 0.1 * Math.min(r.living, 5) + 0.06 * Math.min(honour, 4));
     (rnd() < chance ? kept : lost).push(r);
   }

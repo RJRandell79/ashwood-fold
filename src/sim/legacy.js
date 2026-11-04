@@ -34,7 +34,7 @@ export function rollLegacies(living, kept) {
   const ranked = living.map(r => [r, worth(r)]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
   const rank = r => (ranked.length > 1 ? ranked.indexOf(r) / (ranked.length - 1) : 0.5);
   for (const r of living) {
-    const honours = r.deeds.filter(d => d.kind !== 'disgrace').length;
+    const honours = r.deeds.filter(d => d.kind === 'honour' || d.kind === 'office').length;
     // standing, for those who come through: the well placed are likelier to rise, the poor to fall
     if (kept.includes(r)) {
       const rose = L.standing.rose + L.standing.perRank * rank(r), fell = L.standing.fell - L.standing.perRank * rank(r);

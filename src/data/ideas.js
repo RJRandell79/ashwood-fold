@@ -65,7 +65,7 @@ export const INDUSTRIAL_IDEAS = [
   {
     id: 'bridge', answers: 'connectivity', name: 'Stone bridge', what: 'carries the lane over the river, so the village can build on the far bank', hint: 'Talk of the good land across the water',
     crossing: 'bridge',
-    requires: [], inventorJobs: ['carter', 'smith', 'reeve', 'farmer'], backers: 6, cost: 60, buildDays: 6,
+    requires: [], inventorJobs: ['carter', 'smith', 'reeve', 'farmer'], backers: 6, cost: 110, buildDays: 6,
     pressure: { base: 0.02, when: { shortOfLand: 4 } },
     effects: { farBank: { set: 1 } },
     builtLines: ['Carts no longer wait for low water at the ford.'],
@@ -95,7 +95,7 @@ export const INDUSTRIAL_IDEAS = [
   {
     id: 'cottonmill', answers: 'economy', name: 'Cotton mill', what: 'spins thread by water power down by the river', hint: 'Talk of the new mills in the next valley',
     places: ['cottonmill'],
-    requires: ['shuttle', 'millstone'], inventorJobs: ['miller', 'weaver', 'smith'], backers: 8, cost: 90,
+    requires: ['shuttle', 'millstone'], inventorJobs: ['miller', 'weaver', 'smith'], backers: 8, cost: 150,
     inventorBias: { trait: 'warmth', weight: 0.25, invert: true },
     pressure: { base: 0.9, when: { hasWeavers: 0.6, weaversPoor: 1 } },
     threatens: { weaver: 1, carter: 0.3 },
@@ -117,7 +117,7 @@ export const INDUSTRIAL_IDEAS = [
   {
     id: 'canal', answers: 'connectivity', name: 'Canal', what: 'links the valley to the towns, bringing coal and corn by boat', hint: 'Talk of a canal cut through the next valley',
     line: 'canal', places: ['wharf'],
-    requires: ['cottonmill'], inventorJobs: ['carter', 'reeve', 'miller', 'smith'], backers: 9, cost: 140, buildDays: 10, navvies: 3,
+    requires: ['cottonmill'], inventorJobs: ['carter', 'reeve', 'miller', 'smith'], backers: 9, cost: 260, buildDays: 10, navvies: 3,
     pressure: { base: 0.1, when: { goodsStuck: 1.4 } },
     possibleWhen: 'canalCountry',
     ruledOut: 'An engineer comes to look at the valley for a canal, and says it cannot be done: the ground rises too steeply and too often. If goods are to come, they will come by road.',
@@ -132,7 +132,7 @@ export const INDUSTRIAL_IDEAS = [
   {
     id: 'turnpike', answers: 'connectivity', name: 'Turnpike road', what: 'makes a proper road up the valley, paid for by tolls', hint: 'Complaints about the state of the carters\' road',
     line: 'turnpike', places: ['tollhouse'],
-    requires: ['cottonmill'], inventorJobs: ['carter', 'reeve', 'innkeeper', 'smith'], backers: 7, cost: 100, buildDays: 8, navvies: 2,
+    requires: ['cottonmill'], inventorJobs: ['carter', 'reeve', 'innkeeper', 'smith'], backers: 7, cost: 180, buildDays: 8, navvies: 2,
     pressure: { base: 0.1, when: { goodsStuck: 0.9, hillCountry: 0.8 } },
     effects: { carterWage: { set: 0.09 }, winterUpkeep: { set: 0.9 }, cornCartCost: { set: 25 }, cornCartThreshold: { set: 6 } },
     builtLines: ['Coaches and carts come up the valley on the new road, and the tollkeeper does well out of all of them.'],
@@ -142,7 +142,7 @@ export const INDUSTRIAL_IDEAS = [
   },
   {
     id: 'steam', answers: 'economy', name: 'Steam engine', what: 'drives the cotton mill with coal instead of the river', hint: 'The mill wants more power than the river gives',
-    requires: [['canal', 'turnpike']], inventorJobs: ['smith', 'millhand', 'miller'], backers: 7, cost: 120, buildDays: 3,
+    requires: [['canal', 'turnpike']], inventorJobs: ['smith', 'millhand', 'miller'], backers: 7, cost: 200, buildDays: 3,
     pressure: { base: 0.3, when: { worksRunning: 1 } },
     threatens: { weaver: 1, millhand: 0.3 },
     effects: {
@@ -157,7 +157,7 @@ export const INDUSTRIAL_IDEAS = [
   {
     id: 'railway', answers: 'connectivity', name: 'Railway', what: 'puts Ashwood Fold an hour from Manchester', hint: 'Surveyors have been seen on the fells',
     line: 'railway', places: ['station'],
-    requires: ['steam'], inventorJobs: ['reeve', 'smith', 'carter', 'miller'], backers: 10, cost: 180, buildDays: 10, navvies: 4,
+    requires: ['steam'], inventorJobs: ['reeve', 'smith', 'carter', 'miller'], backers: 10, cost: 360, buildDays: 10, navvies: 4,
     possibleWhen: 'railCountry',
     ruledOut: 'Surveyors for a railway company walk the valley for a week, and go away again. The clough is too narrow and too steep for a line, they say, and the trains will pass Ashwood Fold by.',
     pressure: { base: 0.2, when: { worksRunning: 0.8 } },
@@ -176,6 +176,20 @@ export const INDUSTRIAL_IDEAS = [
 // `set` replaces the value (the most recently built idea wins), `mul` multiplies it,
 // `adopterSet` replaces it for people who have adopted that idea, and `while: id` limits
 // the effect to times when another idea is also working (steam only helps a working mill).
+// How an idea comes to be built (decided 4 Nov): only when the valley allows it, the village can pay for it,
+// and the interests of its people come together. src/sim/ideas.js reads these.
+//   reserve, share     a backer gives `share` of what they have above `reserve` pennies, kept to live on
+//   window             days an idea has to win its backers and its money, plus windowPerCost days per penny
+//   power              what each opponent weighs against the backers: everyone `base`, more for the reeve,
+//                      for the three richest in the village, and for those whose living it would take
+//   landlordMarkup     the cost goes up by this when the richest family stands against it (the land is dear)
+export const IDEA_RULES = {
+  reserve: 20, share: 0.6,
+  window: 15, windowPerCost: 0.08,
+  power: { base: 0.5, reeve: 1.5, rich: 1, threatened: 0.5 },
+  landlordMarkup: 1.3,
+};
+
 export const EFFECT_BASE = {
   farmYield: 1,              // multiplier on field work
   grindRate: 1,              // multiplier on milling
@@ -238,7 +252,7 @@ export const MEDIEVAL_IDEAS = [
   {
     id: 'guild', answers: 'social', name: 'Parish guild', what: 'binds its brothers and sisters to keep the peace, bury the poor and pray for the dead', hint: 'Talk of the guilds in the towns, and how they settle quarrels',
     places: ['guildhall'],
-    requires: [], inventorJobs: ['herbalist', 'innkeeper', 'baker', 'weaver', 'reeve'], backers: 7, cost: 40, buildDays: 3,
+    requires: [], inventorJobs: ['herbalist', 'innkeeper', 'baker', 'weaver', 'reeve'], backers: 7, cost: 55, buildDays: 3,
     pressure: { base: 0.04, when: { feudsRife: 3 } },
     effects: { forgiveness: { mul: 1.5 }, juryBias: { mul: 0.8 } },
     builtLines: ['The guild keeps its first feast in its new hall, and old enemies sit at the same board.'],
@@ -255,7 +269,7 @@ export const MEDIEVAL_IDEAS = [
   {
     id: 'charter', answers: 'economy', name: 'Market charter', what: "lets the village hold a market every week, by the king's leave", hint: 'Talk of the market at the next town, and the tolls paid there',
     places: ['market'],
-    requires: [], inventorJobs: ['reeve', 'baker', 'innkeeper', 'farmer'], backers: 6, cost: 50,
+    requires: [], inventorJobs: ['reeve', 'baker', 'innkeeper', 'farmer'], backers: 6, cost: 70,
     pressure: { base: 0.12, when: { granaryFullAtHarvest: 3, hasWeavers: 0.2 } },
     effects: { carterWage: { set: 0.09 }, springMigrants: { set: 1 }, migrantJob: { set: 'carter' }, migrantReason: { set: 'to trade at the new market' } },
     builtLines: ['A stone cross is raised where the market will stand.'],
@@ -265,7 +279,7 @@ export const MEDIEVAL_IDEAS = [
   {
     id: 'fulling', answers: 'economy', name: 'Fulling mill', what: "beats the cloth by water power instead of by men's feet", hint: "The weavers' cloth waits weeks for the walkers",
     places: ['fulling'],
-    requires: ['charter'], inventorJobs: ['miller', 'weaver', 'smith'], backers: 6, cost: 70, buildDays: 5,
+    requires: ['charter'], inventorJobs: ['miller', 'weaver', 'smith'], backers: 6, cost: 110, buildDays: 5,
     pressure: { base: 0.09, when: { hasWeavers: 0.3, weaversPoor: 1.2 } },
     threatens: { labourer: 0.4 },
     effects: { weaverWage: { mul: 1.5 } },
