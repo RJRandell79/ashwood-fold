@@ -84,7 +84,12 @@ function report(R, policies, n, years) {
     ideaRows.push([`${d.name} (${a.id})`, share(base, r => r.built[id] != null), span(base.map(r => r.built[id])), share(base, r => r.abandoned[id]), share(base, r => r.abandoned[id] && r.built[id] == null)]);
   }
   table(L, ['Idea', 'Built', 'Year built', 'Set aside at least once', 'Set aside and never built'], ideaRows);
-  table(L, ['Measure', 'Value'], Object.values(AGES).map(a => [`Ideas that fizzled per village (${a.id})`, span(base.map(r => r.fizzles[a.id] || 0))]));
+  table(L, ['Measure', 'Value'], [
+    ...Object.values(AGES).map(a => [`Ideas that fizzled per village (${a.id})`, span(base.map(r => r.fizzles[a.id] || 0))]),
+    ['Ideas the valley ruled out (all villages)', tallyOf(base.flatMap(r => r.ruledOut || []))],
+    ['Works that closed for good (all villages)', tallyOf(base.flatMap(r => r.closed || []))],
+    ['Villages where someone left for the towns', share(base, r => (r.left || 0) > 0)],
+  ]);
 
   // 3. population over time
   L.push('#### Population over time', '');
@@ -145,6 +150,7 @@ function report(R, policies, n, years) {
     ['Bridge', r => r.crossing === 'bridge'],
     ['Wood cleared', r => r.built['medieval:assart'] != null || r.built['industrial:assart'] != null],
     ['Market', r => r.built['medieval:charter'] != null],
+    ['Railway', r => r.built['industrial:railway'] != null],
   ];
   table(L, ['Feature', ...outcomes.map(o => o[0]), 'People at the end', 'Far-bank places'], features.map(([k, label]) => {
     const m = med(base.map(r => r.geo[k])), lo = base.filter(r => r.geo[k] < m), hi = base.filter(r => r.geo[k] >= m);
@@ -180,6 +186,7 @@ function report(R, policies, n, years) {
   return L.join('\n') + '\n';
 }
 
+function tallyOf(xs) { return tally(xs); }
 function tally(xs) { const c = {}; for (const x of xs) c[x] = (c[x] || 0) + 1; return Object.entries(c).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ') || '–'; }
 
 function deathRows(rs) {

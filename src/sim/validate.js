@@ -78,6 +78,7 @@ export function validateConditions(records) {
     if (!c.begin) errors.push(`${where}: needs a begin line`);
     for (const name of Object.keys(c.effects || {})) if (!(name in EFFECT_BASE)) errors.push(`${where}: unknown effect ${name}`);
     for (const [k, v] of Object.entries(c.stores || {})) if (!['grain', 'flour', 'bread'].includes(k) || !(v >= 0 && v <= 1)) errors.push(`${where}: stores must be shares of grain, flour or bread`);
+    if (c.stops && !(IDEA[c.stops.idea] && c.stops.idle && c.stops.closed && c.stops.reopened)) errors.push(`${where}: stops needs a known idea and idle, closed and reopened lines`);
     if (c.mortality && !(c.mortality.cause && c.mortality.end)) errors.push(`${where}: a visitation needs a cause and an end line`);
   }
   return errors;

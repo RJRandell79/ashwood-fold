@@ -33,7 +33,8 @@ export function stage(a){return (a.age<4?'infant':a.age<14?'child':'adult');}
 export function surname(a){return (a.name.split(' ').slice(1).join(' '));}
 export function jobLabel(a){return (a.dead?(a.job==='child'?'child':a.job):a.age<4?'baby':a.job);}
 export function hueOf(a){return ((a.home==='tavern'&&a.job!=='innkeeper')?a.hue:((P[a.home]&&P[a.home].hue)??a.hue));}
-export function techOn(id){return (S.tech[id]&&S.tech[id].state==='built'&&!(S.tech[id].brokenUntil>S.tick));}
+// a built idea is working unless broken (sabotage), stood idle (a slump) or closed for good (src/sim/conditions.js)
+export function techOn(id){const t=S.tech[id];return (t&&t.state==='built'&&!(t.brokenUntil>S.tick)&&!(t.idleUntil>S.tick)&&!t.closed);}
 export function techBuilt(id){return (S.tech[id]&&S.tech[id].state==='built');}
 export function placeShown(id){return !!P[id];}
 export function household(h){return (LIVE.filter(a=>a.home===h));}

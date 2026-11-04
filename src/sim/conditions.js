@@ -1,11 +1,11 @@
 // Historical conditions (src/data/conditions.js): rolled each spring, held for their years, and read by
 // the effects system while they hold. A visitation of sickness kills by the dice through its season.
 import { CONDITION } from '../data/conditions.js';
-import { MAXPOP } from '../data/world.js';
+import { MAXPOP, TPD, YEAR_DAYS } from '../data/world.js';
 import { effect, invalidateEffects } from './effects.js';
 import { log } from './log.js';
 import { arrive, die } from './people.js';
-import { calYear, currentAge, household, isAdult, listNames, LIVE, rnd, S, seasonOf } from './state.js';
+import { calYear, currentAge, household, isAdult, listNames, LIVE, rnd, S, seasonOf, techOn } from './state.js';
 
 /** The conditions record, made on first use (older saves have none). */
 export function conditionState() {
@@ -23,7 +23,7 @@ export function conditionsSpring() {
   const C = conditionState(), year = calYear(), list = currentAge().conditions || [];
   let changed = false;
   const ending = Object.keys(C.active).filter(id => year >= C.active[id].until);
-  for (const id of ending) { tellToll(CONDITION[id]); delete C.active[id]; changed = true; }
+  for (const id of ending) { tellToll(CONDITION[id]); restartWorks(CONDITION[id]); delete C.active[id]; changed = true; }
   for (const c of list) {
     if (C.active[c.id] || year < c.years[0] || year > c.years[1]) continue;
     if (C.past[c.id] != null && !c.repeats) continue;
@@ -35,6 +35,7 @@ export function conditionsSpring() {
     C.past[c.id] = year; changed = true;
     for (const [k, share] of Object.entries(c.stores || {})) if (k in S.stores) S.stores[k] *= share;
     log(again && c.again ? c.again : c.begin, 'bad', 'season', { condition: c.id });
+    stopWorks(c, C.active[c.id]);
   }
   // a condition that ended this spring and did not come again is over (a visitation tells its own end)
   for (const id of ending) {
@@ -69,6 +70,25 @@ export function conditionsDay() {
       }
     } else if (seasonOf() > m.season) tellToll(c);
   }
+}
+
+/** A slump may bring a works to a standstill for as long as it lasts. */
+function stopWorks(c, held) {
+  const s = c.stops, t = s && S.tech[s.idea];
+  if (!t || !techOn(s.idea) || rnd() >= s.chance) return;
+  t.idleUntil = S.tick + (held.until - held.since) * YEAR_DAYS * TPD + TPD;   // until the spring the slump ends
+  invalidateEffects();
+  log(s.idle, 'bad', 'season', { condition: c.id, tech: s.idea });
+}
+/** When the slump ends, an idle works opens again, or never does: likelier if its master is dead or poor. */
+function restartWorks(c) {
+  const s = c && c.stops, t = s && S.tech[s.idea];
+  if (!t || !t.idleUntil || t.closed) return;
+  const master = S.agents[t.inventor], weak = !master || master.dead || master.coins < 40;
+  t.idleUntil = 0;
+  if (rnd() < s.closeChance * (weak ? 1.6 : 0.6)) { t.closed = S.tick; log(s.closed, 'bad', 'season', { condition: c.id, tech: s.idea }); }
+  else log(s.reopened, 'event', 'season', { condition: c.id, tech: s.idea });
+  invalidateEffects();
 }
 
 /** Once a visitation's season is over, the annals give its toll. */

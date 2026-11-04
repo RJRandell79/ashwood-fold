@@ -7,6 +7,8 @@
 //   answers                  the pressure it answers: food, connectivity, economy or social (ideas sharing a signal compete)
 //   requires                 ideas that must be built first; an inner list means any one of them ([['canal', 'turnpike']])
 //   possibleWhen             a signal that must hold for anyone to think of it at all (the canal needs canal country)
+//   ruledOut                 what the annals say, once, when the idea's time has come but the valley rules it out
+//   revive                   chance an abandoned idea gets a fresh hearing when a new era opens (default 0.25)
 //   inventorJobs             trades whose members may have the idea (most diligent wins)
 //   inventorBias             optional { trait, weight, invert }: a trait that also favours an inventor
 //   backers, cost            supporters and pennies needed to build it
@@ -118,6 +120,7 @@ export const INDUSTRIAL_IDEAS = [
     requires: ['cottonmill'], inventorJobs: ['carter', 'reeve', 'miller', 'smith'], backers: 9, cost: 140, buildDays: 10, navvies: 3,
     pressure: { base: 0.1, when: { goodsStuck: 1.4 } },
     possibleWhen: 'canalCountry',
+    ruledOut: 'An engineer comes to look at the valley for a canal, and says it cannot be done: the ground rises too steeply and too often. If goods are to come, they will come by road.',
     threatens: { carter: 0.6 },
     effects: {
       weaverWage: { mul: 1.1 }, carterWage: { set: 0.045 }, winterUpkeep: { set: 0.8 },
@@ -155,11 +158,13 @@ export const INDUSTRIAL_IDEAS = [
     id: 'railway', answers: 'connectivity', name: 'Railway', what: 'puts Ashwood Fold an hour from Manchester', hint: 'Surveyors have been seen on the fells',
     line: 'railway', places: ['station'],
     requires: ['steam'], inventorJobs: ['reeve', 'smith', 'carter', 'miller'], backers: 10, cost: 180, buildDays: 10, navvies: 4,
+    possibleWhen: 'railCountry',
+    ruledOut: 'Surveyors for a railway company walk the valley for a week, and go away again. The clough is too narrow and too steep for a line, they say, and the trains will pass Ashwood Fold by.',
     pressure: { base: 0.2, when: { worksRunning: 0.8 } },
     threatens: { carter: 1 },
     effects: {
       carterWage: { set: 0.025 }, springMigrants: { set: 2 },
-      migrantReason: { set: 'on the train, looking for work' }, emigration: { set: 1 },
+      migrantReason: { set: 'on the train, looking for work' }, emigration: { set: 1 }, leavesBy: { set: 'train' },
     },
     sabotage: { place: 'station', what: 'a stretch of the line' },
     opensEra: 4,
@@ -191,6 +196,7 @@ export const EFFECT_BASE = {
   factoryJob: null,          // the trade poor youngsters are sent into
   millCough: 0,              // 1 = mill work shortens lives
   emigration: 0,             // 1 = young people may leave for the towns
+  leavesBy: 'foot',          // how they go: on foot, or by train once there is one
   rumourTrust: 1,            // multiplier on how far a rumour is believed
   rumourDoubtChance: 0,      // chance anyone doubts a rumour on hearing it
   juryBias: 0.6,             // how much friendship sways a juror

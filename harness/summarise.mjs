@@ -56,7 +56,7 @@ function play(seed, years, policy) {
       places.push(Object.keys(st.places).length);
       eraAt.push(`${st.age}:${st.era}`);
       // annals are capped in length, so keep what each year adds
-      for (const e of st.annals) if (e.t > seen) notes.push({ t: e.t, c: e.c, era: e.era, age: e.age, tech: e.tech, fizzle: e.fizzle, abandoned: e.abandoned, rebuild: /rebuilt in/.test(e.h), storm: /thatch from|slates from/.test(e.h), decay: /falling down/.test(e.h) });
+      for (const e of st.annals) if (e.t > seen) notes.push({ t: e.t, c: e.c, era: e.era, age: e.age, tech: e.tech, fizzle: e.fizzle, abandoned: e.abandoned, ruledOut: e.ruledOut, rebuild: /rebuilt in/.test(e.h), storm: /thatch from|slates from/.test(e.h), decay: /falling down/.test(e.h) });
       if (st.annals.length) seen = Math.max(seen, st.annals[st.annals.length - 1].t);
     },
   });
@@ -121,6 +121,8 @@ function play(seed, years, policy) {
     geo: { ...geography(S.valley.seed), canal: lineDifficulty(WATERWAY) },
     farBank: Object.values(S.places).filter(p => { const v = valley(S.valley.seed); return p.y + p.h / 2 > v.riverY(p.x + p.w / 2); }).length,
     crossing: S.crossing ? S.crossing.kind : null,
+    ruledOut: notes.filter(e => e.ruledOut).map(e => e.tech), closed: Object.entries(S.tech).filter(([, t]) => t.closed).map(([id]) => id),
+    left: Object.values(S.agents).filter(a => a.dead && /Manchester/.test(a.dead.cause || '')).length,
     rebuilds: notes.filter(e => e.rebuild).length, storms: notes.filter(e => e.storm).length, decayed: notes.filter(e => e.decay).length,
     offered: offered.size, taken,
   };

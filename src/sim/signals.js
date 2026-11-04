@@ -10,6 +10,8 @@ const WATERWAY = Object.keys(LINES).find(k => LINES[k].water);
 const weavers = () => LIVE.filter(a => a.job === 'weaver');
 // Above this difficulty (see lineDifficulty) a valley is too steep and broken for a canal: about a third of valleys.
 const CANAL_LIMIT = 1.4;
+const RAIL_LIMIT = 2.3;   // about three valleys in ten are too steep and narrow for a railway
+const RAILWAY = Object.keys(LINES).find(k => LINES[k].steady);
 
 /** Daily conditions: while one holds, ideas that list it gain extra pressure each day. */
 export const SIGNALS = {
@@ -30,6 +32,8 @@ export const SIGNALS = {
   // the valley side is gentle enough to carry a canal at one level, or it is not
   canalCountry: () => lineDifficulty(WATERWAY) < CANAL_LIMIT,
   hillCountry: () => lineDifficulty(WATERWAY) >= CANAL_LIMIT,
+  // a railway needs a valley it can climb at a steady gradient; a narrow, steep clough will not take one
+  railCountry: () => lineDifficulty(RAILWAY) < RAIL_LIMIT,
   // the next cottage would stand well out beyond the homes already built
   shortOfLand: () => {
     const p = choosePlot('cottage'); if (!p) return true;
