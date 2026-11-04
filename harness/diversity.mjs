@@ -158,6 +158,15 @@ function report(R, policies, n, years) {
     return [label, ...outcomes.map(([, f]) => `${pc(lo, f)} · ${pc(hi, f)}`), `${r1(mean(lo.map(r => r.living)))} · ${r1(mean(hi.map(r => r.living)))}`, `${r1(mean(lo.map(r => r.farBank)))} · ${r1(mean(hi.map(r => r.farBank)))}`];
   }));
 
+  // the annals: how repetitive they are
+  L.push('#### The annals', '');
+  const lines = new Map(); for (const r of base) for (const [t, c] of r.topLines || []) lines.set(t, (lines.get(t) || 0) + c);
+  table(L, ['Measure', 'Value'], [
+    ['Entries per village', span(base.map(r => r.entries || 0))],
+    ['Share of entries in wording already used five times (%)', span(base.map(r => Math.round((r.repeated || 0) * 100)))],
+    ...[...lines.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([t, c]) => [`Most repeated: “${t.slice(0, 90)}”`, `${Math.round(c / base.length)} a village`]),
+  ]);
+
   // 7. what nudging changes, across whole games
   if (policies.length > 1) {
     L.push('#### What nudges change across a whole game', '');

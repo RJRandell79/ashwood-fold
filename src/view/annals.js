@@ -39,7 +39,53 @@ export function yearIntro(y){
   if(r.harvest)bits.push(`The harvest was ${r.harvest}.`);
   return bits.join(' ');
 }
-export function paragraphs(ents){const out=[];let cur=[];for(const e of ents){cur.push(e.h+(e.place?showBtn(e.place):''));if(cur.length>=4){out.push(cur.join(' '));cur=[];}}if(cur.length)out.push(cur.join(' '));return out.map(p=>`<p>${p}</p>`).join('');}
+/** One entry as the book prints it: anchored so other entries can point to it, with a link back to what
+ *  led to it when that was in an earlier year (src/sim/log.js numbers entries and records their causes). */
+let byN=new Map();
+export function entryHTML(e,links=true){
+  const y=yearOf(e.t),cause=!links?null:(e.because||[]).map(n=>byN.get(n)).filter(c=>c&&yearOf(c.t)<y).sort((a,b)=>b.t-a.t)[0];
+  const link=cause?` <a class="cause" href="#" data-n="${cause.n}" title="${esc(plain(cause.h))}">see ${yearName(yearOf(cause.t))}</a>`:'';
+  return `<span class="ent"${e.n?` id="a${e.n}"`:''}>${e.h}${e.place?showBtn(e.place):''}${link}</span>`;
+}
+const plain=h=>h.replace(/<[^>]+>/g,'');
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+export function paragraphs(ents){const out=[];let cur=[];for(const e of ents){cur.push(entryHTML(e));if(cur.length>=4){out.push(cur.join(' '));cur=[];}}if(cur.length)out.push(cur.join(' '));return out.map(p=>`<p>${p}</p>`).join('');}
+
+/** How much an entry matters to the year's story: the year's main story is told first. */
+function weight(e){
+  if(e.c==='interlude'||e.c==='prologue')return 0;
+  if(e.c==='era')return 100;
+  if(e.condition&&/churchyard|took |died of it/.test(e.h))return 95;
+  if(e.abandoned)return 88;
+  if(e.condition&&e.k==='bad')return 82;
+  if(e.ruledOut)return 78;
+  if(e.built)return 72;
+  if(e.c==='court'&&/banished/.test(e.h))return 60;
+  if(e.fizzle&&e.why==='opposed')return 55;
+  if(e.c==='crossroads')return 50;
+  if(e.election)return /goes back to/.test(e.h)?41:0;   // only when the office changes hands
+  if(e.fizzle)return 42;
+  return 0;
+}
+export function leadOf(ents){let best=null,bw=40;for(const e of ents){const w=weight(e);if(w>bw){bw=w;best=e;}}return best;}
+
+/** Threads: the story of each contested idea from first thought to its end, and the families that stood
+ *  against new things, generation after generation. */
+function threads(){
+  const groups=new Map();
+  for(const e of S.annals){
+    if(!e.tech||!(e.idea||e.fizzle||e.built||e.abandoned||e.ruledOut||e.c==='crossroads'||/cannot yet find/.test(e.h)))continue;
+    const age=(S.years[yearOf(e.t)]||{}).age||S.age,k=age+':'+e.tech;
+    (groups.get(k)||groups.set(k,[]).get(k)).push(e);
+  }
+  const ideaThreads=[...groups.entries()].filter(([,es])=>es.some(e=>e.fizzle||e.ruledOut)).map(([k,es])=>{
+    const d=IDEA[k.split(':')[1]],end=es.find(e=>e.built)?`built in ${yearName(yearOf(es.find(e=>e.built).t))}`:es.find(e=>e.ruledOut)?'never possible here':es.find(e=>e.abandoned)?`given up in ${yearName(yearOf(es.find(e=>e.abandoned).t))}`:'not yet decided';
+    return `<div class="thread"><h3>The ${d?d.name.toLowerCase():k}<span>${end}</span></h3><ol>${es.map(e=>`<li><span class="ty">${yearName(yearOf(e.t))}</span> ${entryHTML(e,false)}</li>`).join('')}</ol></div>`;});
+  const famThreads=Object.values(S.dynasties||{}).filter(r=>r.deeds.filter(d=>d.kind==='opposed').length>=2).map(r=>
+    `<div class="thread"><h3>The ${familyPlural(r.name)}<span>against new things</span></h3><ol>${r.deeds.filter(d=>d.kind==='opposed').map(d=>{const e=d.n&&byN.get(d.n);return `<li><span class="ty">${d.year}</span> ${e?entryHTML(e,false):d.text+'.'}</li>`;}).join('')}</ol></div>`);
+  if(!ideaThreads.length&&!famThreads.length)return '';
+  return `<section class="chapter threads"><span class="num">Appendix</span><h2>Threads of the Story</h2><p class="intro">The ideas the village fought over, and the families that stood in their way.</p>${famThreads.join('')}${ideaThreads.join('')}</section>`;
+}
 export function castEntry(a){
   const life=a.born!=null?`born ${seasonName(a.born)}`:a.arrivedAt!=null?`came to the village ${seasonName(a.arrivedAt)}`:`aged ${Math.floor(a.dead?a.dead.age-(a.dead.t-36)/TPD/YEAR_DAYS:a.age-(S.tick-36)/TPD/YEAR_DAYS)} when this chronicle begins`;
   const end=a.dead?(a.dead.longAgo?`; lived in the days of ${a.dead.ageName.replace(/^The /,'the ')}`:a.dead.exiled?`; ${a.dead.cause}, ${seasonName(a.dead.t)}`:`; died ${seasonName(a.dead.t)}, ${a.dead.cause}, aged ${Math.floor(a.dead.age)}`):`; ${Math.floor(a.age)} years old now`;
@@ -58,6 +104,7 @@ export function snapshot(){
 /** The title of the interlude that closed an age. */
 function interludeTitle(age){const a=AGES[age];const I=a&&a.next?interludeFor(age,a.next):null;return I?I.title:'The Years Between';}
 export function buildStory(){
+  byN=new Map(S.annals.filter(e=>e.n).map(e=>[e.n,e]));
   const img=snapshot(),y0=yearOf(S.annals.length?S.annals[0].t:S.tick),y1=yearOf();
   let html=`<h1>The Annals of Ashwood Fold</h1><p class="sub">A true account of the village, from the spring of ${yearName(1)} to ${seasonName().replace(/^\w/,c=>c.toLowerCase())}</p>`;
   if(img)html+=`<figure><img src="${img}" alt="Ashwood Fold in ${SEASONS[seasonOf()].toLowerCase()}, as it stands today"><figcaption>Ashwood Fold as it stands, ${seasonName()}</figcaption></figure>`;
@@ -70,20 +117,22 @@ export function buildStory(){
     const all=S.annals.filter(e=>yearOf(e.t)===y&&!(e.c==='prologue'&&y===first));
     const between=all.filter(e=>e.c==='interlude'),ents=all.filter(e=>e.c!=='interlude');
     if(ents.length||S.years[y]){
-    html+=`<section class="chapter"><span class="num">${yearName(y)}</span><h2>${yearTitle(y,ents)}</h2><p class="intro">${yearIntro(y)}</p>`;
+    const lead=leadOf(ents);
+    html+=`<section class="chapter"><span class="num">${yearName(y)}</span><h2>${yearTitle(y,ents)}</h2><p class="intro">${yearIntro(y)}</p>${lead?`<p class="lead">${entryHTML(lead)}</p>`:''}`;
     for(let s=0;s<4;s++){
       const capN={friend:1,fight:2,feud:2,rumour:2,crime:3,court:3,politics:3,letter:1,departure:3},seen={};
-      const se=ents.filter(e=>seasonOf(e.t)===s&&!(e.c==='season'&&e.season===0)&&!/Now for the money|talks .* round to/.test(e.h)).filter(e=>{const c=capN[e.c];if(!c)return true;seen[e.c]=(seen[e.c]||0)+1;return seen[e.c]<=c;});
+      const se=ents.filter(e=>e!==lead&&seasonOf(e.t)===s&&!(e.c==='season'&&e.season===0)&&!/Now for the money|talks .* round to/.test(e.h)).filter(e=>{const c=capN[e.c];if(!c)return true;seen[e.c]=(seen[e.c]||0)+1;return seen[e.c]<=c;});
       if(!se.length)continue;
       html+=`<h3>${SEASONS[s]}</h3>${paragraphs(se)}`;
     }
     html+=`</section>`;
     }
     // the centuries between two ages: one chapter of their own
-    if(between.length){const nx=S.years[y+1];html+=`<section class="chapter interlude"><span class="num">${yearName(y)}–${nx&&nx.cal?nx.cal:''}</span><h2>${interludeTitle(rec&&rec.age)}</h2>${between.map(e=>`<p>${e.h}${e.place?showBtn(e.place):''}</p>`).join('')}</section><p class="orn">· · ·</p>`;}
+    if(between.length){const nx=S.years[y+1];html+=`<section class="chapter interlude"><span class="num">${yearName(y)}–${nx&&nx.cal?nx.cal:''}</span><h2>${interludeTitle(rec&&rec.age)}</h2>${between.map(e=>`<p>${entryHTML(e)}</p>`).join('')}</section><p class="orn">· · ·</p>`;}
   }
   const cast=[...S.agents].sort((a,b)=>(a.born??-1e9)-(b.born??-1e9)||b.age-a.age);
   const fams=familyCards();
+  html+=threads();
   html+=`<section class="chapter"><span class="num">Appendix</span><h2>The Arms of the Families</h2><div class="armorial">${fams.map(({k,live,members})=>{const ar=armsOf(k);return `<div>${armsSVG(ar,96,'Arms of the '+familyPlural(k))}<b>${familyPlural(k)}</b><span>“${ar.motto}”</span><i>${blazon(ar)}</i><i>${live.length?`${live.length} living, ${members.length-live.length} departed`:'The line has ended'}</i></div>`;}).join('')}</div></section>`;
   html+=`<section class="chapter"><span class="num">Appendix</span><h2>The Folk of Ashwood Fold</h2><div class="cast">${cast.map(castEntry).join('')}</div></section><p class="orn">· · ·</p>`;
   $('book').innerHTML=html;
@@ -104,3 +153,8 @@ $('copyStory').onclick=()=>{
   const done=()=>{$('copyStory').textContent='Copied';setTimeout(()=>$('copyStory').textContent='Copy as text',1800);};
   try{navigator.clipboard.writeText(text).then(done,()=>{$('copyStory').textContent='Copy failed: select the text instead';});}catch(e){$('copyStory').textContent='Copy failed: select the text instead';}
 };
+
+// a "see 1764" link: find the earlier entry in the book, bring it into view and mark it for a moment
+document.addEventListener('click',e=>{const a=e.target.closest('.cause');if(!a)return;e.preventDefault();
+  const t=document.getElementById('a'+a.dataset.n);if(!t)return;t.scrollIntoView({behavior:'smooth',block:'center'});
+  t.classList.remove('flash');void t.offsetWidth;t.classList.add('flash');});

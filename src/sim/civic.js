@@ -176,7 +176,7 @@ export function eraDay(){
     // the idea that opened the era may give it its own name (the Turnpike Years rather than the Canal Years)
     const by=IDEAS.filter(d=>d.opensEra===e&&S.tech[d.id].state==='built').sort((a,b)=>S.tech[b.id].builtAt-S.tech[a.id].builtAt)[0];
     if(by&&by.eraTitle)(S.eraTitles||(S.eraTitles={}))[e]=by.eraTitle;
-    S.era=e;log((by&&by.eraLine)||currentAge().eraLines[e],'nudge','era',{era:e,age:S.age});}
+    S.era=e;log((by&&by.eraLine)||currentAge().eraLines[e],'nudge','era',{era:e,age:S.age,...(by?{tech:by.id}:{})});}
 }
 export function startBuilding(id){
   const t=S.tech[id],T=IDEA[id];
@@ -217,7 +217,8 @@ export function emigrationDay(){
       const kin=LIVE.filter(b=>b!==a&&(isKin(b,a)||op(b,a)>60));
       const train=effect('leavesBy')==='train';
       exile(a,train?'left on the train for Manchester':'left on foot for Manchester');
-      log(train?`${N(a)} takes the train to Manchester to look for work.${kin[0]?` ${N(kin[0])} waves from the platform.`:''}`:`${N(a)} sets off on foot for Manchester to look for work in the mills.${kin[0]?` ${N(kin[0])} walks with them to the end of the lane.`:''}`,'life','departure',{ids:[a.id]});
+      const drove=Object.keys((S.conditions&&S.conditions.active)||{}).map(id=>S.conditions.lastN&&S.conditions.lastN[id]).filter(Boolean);
+      log(train?`${N(a)} takes the train to Manchester to look for work.${kin[0]?` ${N(kin[0])} waves from the platform.`:''}`:`${N(a)} sets off on foot for Manchester to look for work in the mills.${kin[0]?` ${N(kin[0])} walks with them to the end of the lane.`:''}`,'life','departure',{ids:[a.id],because:drove});
     }
   }
   for(const g of S.agents.filter(x=>x.dead&&/Manchester/.test(x.dead.cause))){

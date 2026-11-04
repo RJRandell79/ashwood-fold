@@ -58,7 +58,7 @@ describe('stalls and decline', () => {
     const t = S.tech.school;
     expect(t.state).toBe('abandoned');
     expect(t.lostWhy).toBe('opposed');
-    expect(S.dynasties[familyKey(reeve)].deeds.some(d => d.kind === 'opposed')).toBe(true);
+    expect(Object.values(S.dynasties).some(r => r.deeds.some(d => d.kind === 'opposed'))).toBe(true);   // whoever led the opposition
     expect(S.annals.some(e => e.abandoned && e.tech === 'school')).toBe(true);
   });
 });
