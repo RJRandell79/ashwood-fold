@@ -243,6 +243,10 @@ h2.sec{font-size:22px;margin-bottom:10px}
 #book .cause{font:500 12px var(--body);color:var(--muted);text-decoration:underline dotted;white-space:nowrap;margin-left:2px}
 #book .ent.flash{animation:entFlash 2s ease}
 @keyframes entFlash{0%,40%{background:rgba(224,164,58,.35)}100%{background:transparent}}
+#book .gaz{margin:12px 0}
+#book .gaz h3{margin:0 0 2px}
+#book .gaz p{margin:0}
+#book .gaz .cause{font:inherit;color:inherit;margin:0}
 #book .thread{margin:14px 0}
 #book .thread h3{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin:0 0 4px}
 #book .thread h3 span{font:400 13px var(--body);color:var(--muted)}

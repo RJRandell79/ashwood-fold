@@ -1,5 +1,5 @@
 // Ported from the v5 prototype by tools/port-v5.mjs.
-import { showPlace } from './placecard.js';
+import { placeLines, showPlace } from './placecard.js';
 import { eraName } from '../sim/effects.js';
 import { AGES } from '../data/ages.js';
 import { interludeFor } from '../data/interludes.js';
@@ -86,6 +86,31 @@ function threads(){
   if(!ideaThreads.length&&!famThreads.length)return '';
   return `<section class="chapter threads"><span class="num">Appendix</span><h2>Threads of the Story</h2><p class="intro">The ideas the village fought over, and the families that stood in their way.</p>${famThreads.join('')}${ideaThreads.join('')}</section>`;
 }
+/** The gazetteer: every public building and workplace standing now, with its record and where the annals
+ *  speak of it; the homes and fields in a line each; and the places of earlier ages that are gone. */
+function gazetteer(){
+  const year=e=>yearName(yearOf(e.t));
+  const ref=e=>`<a class="cause" href="#" data-n="${e.n}" title="${esc(plain(e.h))}">${year(e)}</a>`;
+  const places=Object.values(S.places).filter(p=>p.def!=='ruin'&&!p.home&&p.kind!=='field').sort((a,b)=>(a.record&&a.record.year||0)-(b.record&&b.record.year||0)||a.name.localeCompare(b.name));
+  const entry=p=>{
+    const r=p.record||{},since=r.keptFrom||r.year||-1e9;
+    // the annals that name it, from when it was built (an id can be reused by a later age's building)
+    const ents=S.annals.filter(e=>e.n&&e.place===p.id&&year(e)>=since);
+    const said=ents.length?` The annals name it ${ents.length===1?'once':numberWord(ents.length)+' times'}: first in ${ref(ents[0])}${ents.length>1?`, last in ${ref(ents[ents.length-1])}`:''}.`:'';
+    return `<div class="gaz"><h3>${cap(p.name)}${showBtn(p.id)}</h3><p>${placeLines(p).join(' ')}${said}</p></div>`;
+  };
+  const homes=Object.values(S.places).filter(p=>p.home&&p.def!=='ruin'),fields=Object.values(S.places).filter(p=>p.kind==='field'),ruins=Object.values(S.places).filter(p=>p.def==='ruin');
+  const oldest=homes.map(p=>p.record&&(p.record.keptFrom||p.record.year)).filter(Boolean).sort((a,b)=>a-b)[0];
+  const rest=[];
+  if(homes.length)rest.push(`${cap(numberWord(homes.length))} houses and cottages${oldest?`, the oldest standing since ${oldest}`:''}.`);
+  if(fields.length)rest.push(`${cap(numberWord(fields.length))} fields: ${fields.map(p=>p.name.replace(/^the /,'')).join(', ')}.`);
+  if(ruins.length)rest.push(`${cap(numberWord(ruins.length))} ruins: ${ruins.map(p=>p.wasName||'an older building').join(', ')}.`);
+  const lostHTML=((S.history&&S.history.ages)||[]).map(h=>{
+    const gone=[...(h.places.gone||[]),...(h.places.ruined||[])].filter(f=>!f.home&&f.kind!=='field');
+    return gone.length?`<h3>Gone by ${h.endYear}</h3><p>From ${((AGES[h.id]&&AGES[h.id].name)||'the old village').replace(/^The /,'the ')}: ${gone.map(f=>`${f.name}${f.year?`, built ${f.year}`:''}`).join('; ')}.</p>`:'';}).join('');
+  if(!places.length)return '';
+  return `<section class="chapter gazetteer"><span class="num">Appendix</span><h2>A Gazetteer of Ashwood Fold</h2><p class="intro">The places of the village as they stand, and where the annals speak of them.</p>${places.map(entry).join('')}${rest.length?`<p>${rest.join(' ')}</p>`:''}${lostHTML}</section>`;
+}
 export function castEntry(a){
   const life=a.born!=null?`born ${seasonName(a.born)}`:a.arrivedAt!=null?`came to the village ${seasonName(a.arrivedAt)}`:`aged ${Math.floor(a.dead?a.dead.age-(a.dead.t-36)/TPD/YEAR_DAYS:a.age-(S.tick-36)/TPD/YEAR_DAYS)} when this chronicle begins`;
   const end=a.dead?(a.dead.longAgo?`; lived in the days of ${a.dead.ageName.replace(/^The /,'the ')}`:a.dead.exiled?`; ${a.dead.cause}, ${seasonName(a.dead.t)}`:`; died ${seasonName(a.dead.t)}, ${a.dead.cause}, aged ${Math.floor(a.dead.age)}`):`; ${Math.floor(a.age)} years old now`;
@@ -133,6 +158,7 @@ export function buildStory(){
   const cast=[...S.agents].sort((a,b)=>(a.born??-1e9)-(b.born??-1e9)||b.age-a.age);
   const fams=familyCards();
   html+=threads();
+  html+=gazetteer();
   html+=`<section class="chapter"><span class="num">Appendix</span><h2>The Arms of the Families</h2><div class="armorial">${fams.map(({k,live,members})=>{const ar=armsOf(k);return `<div>${armsSVG(ar,96,'Arms of the '+familyPlural(k))}<b>${familyPlural(k)}</b><span>“${ar.motto}”</span><i>${blazon(ar)}</i><i>${live.length?`${live.length} living, ${members.length-live.length} departed`:'The line has ended'}</i></div>`;}).join('')}</div></section>`;
   html+=`<section class="chapter"><span class="num">Appendix</span><h2>The Folk of Ashwood Fold</h2><div class="cast">${cast.map(castEntry).join('')}</div></section><p class="orn">· · ·</p>`;
   $('book').innerHTML=html;
