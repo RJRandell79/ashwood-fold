@@ -2,11 +2,11 @@
 // builds it, and the village lives with the consequences. Everything specific to an idea comes
 // from its record in src/data/ideas.js.
 import { CHARGE_NAMES } from '../data/heraldry.js';
-import { IDEA, IDEAS } from '../data/ideas.js';
+import { IDEA, IDEA_RULES, IDEAS } from '../data/ideas.js';
 import { SEASON_DAYS, TPD, YEAR_DAYS } from '../data/world.js';
 import { bringCase, startBuilding } from './civic.js';
 import { effect, invalidateEffects } from './effects.js';
-import { armsOf, familyKey } from './heraldry.js';
+import { armsOf, familyKey, familyPlural } from './heraldry.js';
 import { addPlace, routeLine, setCrossing } from './placement.js';
 import { log } from './log.js';
 import { SIGNALS } from './signals.js';
@@ -137,6 +137,41 @@ function finish(d, t, inv, bk) {
   honourInventor(d, inv);
 }
 
+/** How much a person's opposition weighs: the reeve, the richest families and those whose living the idea
+ *  threatens count for more than an ordinary voice (IDEA_RULES.power). */
+export function powerOf(a, d) {
+  const P = IDEA_RULES.power, t = (d.threatens && d.threatens[a.job]) || 0;
+  const rich = LIVE.filter(isAdult).sort((x, y) => y.coins - x.coins).slice(0, 3);
+  return P.base + (a.job === 'reeve' ? P.reeve : 0) + (rich.includes(a) ? P.rich : 0) + (t >= 1 ? P.threatened : 0);
+}
+/** The family with the most money among its living members. */
+function richestFamily() {
+  const sums = {};
+  for (const a of LIVE) if (isAdult(a)) sums[familyKey(a)] = (sums[familyKey(a)] || 0) + a.coins;
+  return Object.entries(sums).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+}
+
+/** An idea that has run out of time. Twice, and the village sets its face against it for the age. */
+function fail(d, t, inv, opp, cost) {
+  const id = d.id, lead = opp.slice().sort((a, b) => powerOf(b, d) - powerOf(a, d))[0];
+  const reason = t.outvoted && lead ? 'opposed' : t.short ? 'money' : 'few';
+  const fam = lead && familyKey(lead), rec = fam && S.dynasties && S.dynasties[fam];
+  // a family that has stood against new things before: the annals remember the last time, by someone else
+  const before = rec && reason === 'opposed' && [...rec.deeds].reverse().find(x => x.kind === 'opposed' && !x.text.startsWith(lead.name));
+  const why = reason === 'opposed' ? `${listNames(opp.slice(0, 3))} stood against it` : reason === 'money' ? `the backers could not find the ${cost} pennies` : 'too few would back it';
+  const said = reason === 'opposed' ? `${N(lead)} saw to that${opp.length > 1 ? `, with ${listNames(opp.filter(o => o !== lead).slice(0, 2))}` : ''}.${before ? ` The ${familyPlural(fam)} have stood against new things before: ${before.text}, in ${before.year}.` : ''}`
+    : reason === 'money' ? `The backers could not find the ${cost} pennies between them.` : 'The village never quite took to it.';
+  log(`Nothing comes of ${N(inv)}'s ${lower(d)}. ${said}`, 'bad', 'tech', { tech: id, fizzle: 1, why: reason, ids: lead ? [inv.id, lead.id] : [inv.id] });
+  if (reason === 'opposed') addDeed(lead, `${lead.name} stood against the ${lower(d)}`, 'opposed');
+  t.fizzles = (t.fizzles || 0) + 1;
+  if (t.fizzles >= 2) {
+    Object.assign(t, { state: 'abandoned', abandonedEra: S.era || 0, abandonedAt: S.tick, pressure: 0, backers: [], opponents: [], lostWhy: reason, lostTo: fam || null });
+    const gone = reason === 'opposed' ? `The ${familyPlural(fam)} would not have it, and the village has given it up.` : reason === 'money' ? `Ashwood Fold could never raise the money, and the village has given it up.` : 'The village has set its face against it.';
+    log(`The ${lower(d)} is not to be. ${gone} Nobody will raise it again in these times.`, 'bad', 'tech', { tech: id, abandoned: 1, why: reason });
+    noteIdea(id, 'abandoned', why);
+  } else { Object.assign(t, { state: 'none', pressure: 40, backers: [], opponents: [], short: false, outvoted: false }); noteIdea(id, 'failed', why); }
+}
+
 /** One idea's day: thought of, argued over, funded, built, mended. */
 function ideaDay(d) {
   const id = d.id, t = S.tech[id];
@@ -145,36 +180,31 @@ function ideaDay(d) {
     if (!cands.length) return;
     let inv = null, best = -9;
     for (const a of cands) { const s = inventorScore(a, d); if (s > best) { best = s; inv = a; } }
-    Object.assign(t, { state: 'idea', inventor: inv.id, backers: [inv.id], opponents: [], since: S.tick, short: false });
+    Object.assign(t, { state: 'idea', inventor: inv.id, backers: [inv.id], opponents: [], since: S.tick, short: false, outvoted: false });
     log(`${N(inv)} has an idea: a ${lower(d)} that ${d.what}. It will need ${d.backers} backers and ${d.cost} pennies.`, 'good', 'tech', { tech: id, ids: [inv.id], idea: 1 });
     noteIdea(id, 'thought');
   } else if (t.state === 'idea') {
-    const inv = S.agents[t.inventor];
+    // Decided 4 Nov: an idea succeeds only when the valley allows it, the village can pay for it, and
+    // the interests of its people come together. Opponents weigh by their power; the backers pay from
+    // what they can spare; and the richest family's opposition makes the land dearer to come by.
+    const inv = S.agents[t.inventor], R = IDEA_RULES;
     t.backers = t.backers.filter(i => !S.agents[i].dead); t.opponents = t.opponents.filter(i => !S.agents[i].dead);
     if (inv.dead) { t.state = 'none'; t.pressure = 50; log(`With ${N(inv)} gone, nobody takes up the ${lower(d)}.`, 'event', 'tech', { tech: id }); return; }
-    const reeve = byJob('reeve'), need = d.backers + (reeve && t.opponents.includes(reeve.id) ? 2 : 0);
-    if (t.backers.length - t.opponents.length * .5 >= need) {
-      const bk = t.backers.map(i => S.agents[i]);
-      const avail = bk.reduce((s, b) => s + Math.floor(b.coins * .6), 0);
-      if (avail >= d.cost) {
-        let left = d.cost;
-        for (const b of bk.sort((x, y) => y.coins - x.coins)) { const g = Math.min(Math.floor(b.coins * .6), Math.ceil(left)); b.coins -= g; left -= g; if (left <= 0) break; }
+    const opp = t.opponents.map(i => S.agents[i]), weight = opp.reduce((s, o) => s + powerOf(o, d), 0);
+    const rich = richestFamily(), landlord = rich && opp.some(o => familyKey(o) === rich);
+    const cost = Math.round(d.cost * (landlord ? R.landlordMarkup : 1));
+    if (t.backers.length - weight >= d.backers) {
+      t.outvoted = false;
+      const bk = t.backers.map(i => S.agents[i]), spare = b => Math.floor(Math.max(0, b.coins - R.reserve) * R.share);
+      const avail = bk.reduce((s, b) => s + spare(b), 0);
+      if (avail >= cost) {
+        let left = cost;
+        for (const b of bk.sort((x, y) => y.coins - x.coins)) { const g = Math.min(spare(b), Math.ceil(left)); b.coins -= g; left -= g; if (left <= 0) break; }
         if (d.buildDays) { for (const b of bk) if (b !== inv) adj(b, inv, 6); startBuilding(id); return; }
         finish(d, t, inv, bk);
-      } else if (!t.short) { t.short = true; log(`${N(inv)} has the backers for the ${lower(d)} but not yet the money.`, 'event'); }
-    }
-    if (t.state === 'idea' && S.tick - t.since > TPD * 15) {
-      const opp = t.opponents.map(i => S.agents[i]);
-      // why it failed, for the annals' follow-up on a crossroads choice
-      const why = opp.length ? `${listNames(opp.slice(0, 3))} stood against it` : t.short ? 'the backers could not find the money' : 'too few would back it';
-      log(`Nothing comes of ${N(inv)}'s ${lower(d)}. ${opp.length ? `${listNames(opp.slice(0, 3))} saw to that.` : 'The village never quite took to it.'}`, 'bad', 'tech', { tech: id, fizzle: 1 });
-      t.fizzles = (t.fizzles || 0) + 1;
-      if (t.fizzles >= 2) {
-        Object.assign(t, { state: 'abandoned', abandonedEra: S.era || 0, abandonedAt: S.tick, pressure: 0, backers: [], opponents: [] });
-        log(`The village has set its face against the ${lower(d)}. Nobody will raise it again in these times.`, 'bad', 'tech', { tech: id, abandoned: 1 });
-        noteIdea(id, 'abandoned', why);
-      } else { Object.assign(t, { state: 'none', pressure: 40, backers: [], opponents: [] }); noteIdea(id, 'failed', why); }
-    }
+      } else if (!t.short) { t.short = true; log(`${N(inv)} has the backers for the ${lower(d)}, but between them they cannot yet find the ${cost} pennies it will cost${landlord ? `, with the ${familyPlural(rich)} asking so much for the land` : ''}.`, 'event', 'tech', { tech: id }); }
+    } else t.outvoted = weight > 0;
+    if (t.state === 'idea' && S.tick - t.since > TPD * (R.window + d.cost * R.windowPerCost)) fail(d, t, inv, opp, cost);
   } else if (t.state === 'built' && t.brokenUntil && t.brokenUntil <= S.tick) {
     t.brokenUntil = 0; invalidateEffects();
     const inv = S.agents[t.inventor]; if (inv && !inv.dead) inv.coins = Math.max(0, inv.coins - 4);

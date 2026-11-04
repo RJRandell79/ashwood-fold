@@ -72,8 +72,11 @@ describe('the river and the eras', () => {
     expect(bridged).toBe(true);
     const v = valley(S.valley.seed), far = Object.values(S.places).filter(p => p.y + p.h / 2 > v.riverY(p.x + p.w / 2));
     expect(far.length).toBeGreaterThan(0);
+    // someone must live over the river for the walk to be tested: if the far houses stand empty, move a household in
+    const farHome = far.find(p => p.home);
+    if (farHome && !S.agents.some(a => !a.dead && a.home === farHome.id)) { const a = S.agents.find(a => !a.dead && a.age >= 18 && a.home !== 'tavern'); a.home = farHome.id; }
     // walk a few days and check nobody wades: every step over the river is at the crossing
-    for (let i = 0; i < 144 * 5; i++) {
+    for (let i = 0; i < 144 * 20 && !(crossed > 3); i++) {   // walk until a few have crossed (up to a year)
       const before = S.agents.map(a => [a.x, a.y]);
       tick();
       S.agents.forEach((a, k) => {

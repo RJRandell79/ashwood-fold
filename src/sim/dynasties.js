@@ -4,7 +4,8 @@
 // the centuries; the annals and the families panel read them.
 //
 // S.dynasties[family] = { name, first, founder, age, seat, deeds: [{ year, text, kind }], peak, living, lastSeen, gone }
-//   deeds' kinds: honour (an idea built, arms granted), office (chosen reeve), disgrace (banished)
+//   deeds' kinds: honour (an idea built, arms granted), office (chosen reeve), disgrace (banished),
+//                 opposed (stood against an idea and saw it fail)
 import { familyKey } from './heraldry.js';
 import { calYear, LIVE, S } from './state.js';
 

@@ -134,7 +134,8 @@ function famRecord(k){const r=S.dynasties&&S.dynasties[k];if(!r)return '';const 
   // how the name carried on, and what the family left in the valley (src/sim/legacy.js)
   const old=r.descends||r.namesake,pl=old?familyPlural(old):'';
   const how=old?({descent:`Descended from the ${pl}.`,marriage:`The name came down through a marriage, from the ${pl}.`,land:`Took the name with the old ${pl}' land.`,name:`No tie to the old ${pl} is known.`}[r.how||(r.descends?'descent':'land')]||''):r.later&&r.later!==r.name?`The name went on as ${familyPlural(r.later)}.`:'';
-  const left=[r.landmark?`${r.landmark} is named for them.`:'',r.carved&&P[r.carved]?`Their arms are carved in ${P[r.carved].name}.`:''].filter(Boolean).join(' ');
+  const against=r.deeds.filter(x=>x.kind==='opposed').map(x=>`${x.text.replace(/^.* stood against /,'')} (${x.year})`);
+  const left=[against.length?`Stood against ${against.join(', ')}.`:'',r.landmark?`${r.landmark} is named for them.`:'',r.carved&&P[r.carved]?`Their arms are carved in ${P[r.carved].name}.`:''].filter(Boolean).join(' ');
   return `<span class="famrec">First recorded ${r.first}${r.gone?`, gone by ${r.gone}`:''}.${how?' '+how:''}${left?' '+left:''}${d?` Remembered: ${d.text}, ${d.year}.`:''}</span>`;}
 export function renderFamilies(){
   const html=familyCards().map(({k,members,live})=>{

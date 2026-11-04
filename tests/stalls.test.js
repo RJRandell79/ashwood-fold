@@ -6,7 +6,8 @@ import { CONDITION, INDUSTRIAL_CONDITIONS } from '../src/data/conditions.js';
 import { IDEA } from '../src/data/ideas.js';
 import { validateConditions } from '../src/sim/validate.js';
 import { tick } from '../src/sim/clock.js';
-import { possible } from '../src/sim/ideas.js';
+import { possible, powerOf } from '../src/sim/ideas.js';
+import { familyKey } from '../src/sim/heraldry.js';
 import { calYear, S, techOn } from '../src/sim/state.js';
 import { TPD, YEAR_DAYS } from '../src/data/world.js';
 
@@ -44,5 +45,20 @@ describe('stalls and decline', () => {
       expect(!!t.closed || techOn('cottonmill')).toBe(true);
       expect(S.annals.some(e => e.condition === 'clothSlump' && /mill/i.test(e.h))).toBe(true);
     } finally { slump.chance = keep.chance; slump.stops.chance = keep.stop; }
+  });
+
+  it('a powerful opponent can sink an idea, and the family is remembered for it', () => {
+    run(4, { years: 1, age: 'industrial' });
+    const live = S.agents.filter(a => !a.dead && a.age >= 18);
+    const reeve = live.find(a => a.job === 'reeve') || live[0], inv = live.find(a => a !== reeve);
+    const against = live.filter(a => a !== inv).map(a => a.id);   // the whole village, the reeve among them
+    Object.assign(S.tech.school, { state: 'idea', inventor: inv.id, backers: [inv.id], opponents: against, since: S.tech.school.since = S.tick, fizzles: 1 });
+    expect(powerOf(reeve, IDEA.school)).toBeGreaterThan(1);
+    for (let i = 0; i < TPD * 30 && S.tech.school.state === 'idea'; i++) tick();
+    const t = S.tech.school;
+    expect(t.state).toBe('abandoned');
+    expect(t.lostWhy).toBe('opposed');
+    expect(S.dynasties[familyKey(reeve)].deeds.some(d => d.kind === 'opposed')).toBe(true);
+    expect(S.annals.some(e => e.abandoned && e.tech === 'school')).toBe(true);
   });
 });

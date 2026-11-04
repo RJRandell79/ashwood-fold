@@ -37,7 +37,7 @@ describe('family legacies', () => {
       const rec = S.history.ages[0];
       for (const f of rec.families) {
         if (f.landmark) { counts.landmarks++; expect(f.landmark.startsWith(f.name + ' ')).toBe(true); }
-        if (f.carved) { counts.carved++; expect(S.places[f.carved].def).toBe('chapel'); expect(S.dynasties[f.name].deeds.some(d => d.kind !== 'disgrace')).toBe(true); }
+        if (f.carved) { counts.carved++; expect(S.places[f.carved].def).toBe('chapel'); expect(S.dynasties[f.name].deeds.some(d => d.kind === 'honour' || d.kind === 'office')).toBe(true); }
         if (f.kept) expect(f.standing).toBeTruthy(); else expect(f.standing).toBeNull();
       }
       for (const r of Object.values(S.dynasties)) if (r.descends || r.namesake) counts.how.add(r.how);
