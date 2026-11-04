@@ -25,7 +25,7 @@ import { ERAS, ERA_LINES, MEDIEVAL_ERAS, MEDIEVAL_ERA_LINES } from './eras.js';
 import { INDUSTRIAL_CAST, INDUSTRIAL_NAMES, MEDIEVAL_CAST, MEDIEVAL_NAMES, useNames } from './folk.js';
 import { INDUSTRIAL_IDEAS, MEDIEVAL_IDEAS, useIdeas } from './ideas.js';
 import { ERA_STYLES, MEDIEVAL_STYLES } from './styles.js';
-import { MEDIEVAL_CONDITIONS } from './conditions.js';
+import { INDUSTRIAL_CONDITIONS, MEDIEVAL_CONDITIONS } from './conditions.js';
 
 export const AGES = {
   medieval: {
@@ -51,6 +51,7 @@ export const AGES = {
     id: 'industrial', name: 'The Industrial Village', startYear: 1750,
     eras: ERAS, eraLines: ERA_LINES, ideas: INDUSTRIAL_IDEAS, crossroads: INDUSTRIAL_CROSSROADS, styles: ERA_STYLES, cast: INDUSTRIAL_CAST, people: INDUSTRIAL_NAMES, placeNames: {},
     founding: ['square', 'chapel', 'tavern', 'market', 'hall', 'mill', 'fields', 'forge', 'bakery', 'weaving', 'garden', 'holt', 'pendle', 'barrow', 'fair', 'calder', 'greaves'],
+    conditions: INDUSTRIAL_CONDITIONS,   // dear bread in the 1760s, and the cloth slump of the American war
     next: null,
   },
 };

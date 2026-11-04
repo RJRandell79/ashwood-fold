@@ -16,6 +16,7 @@ import { addRumour, adj, glyph, mem, op } from './social.js';
 import { LIVE, N, P, PN, S, byJob, household, isAdult, listNames, pick, rnd, techBuilt, techOn } from './state.js';
 
 const lower = d => d.name.toLowerCase();
+const REVIVE = 0.25;   // the chance an abandoned idea gets a fresh hearing when a new era opens
 
 /** Whether an idea's requirements are built: each entry is an idea, or a list of which any one will do. */
 export function requiresMet(d) {
@@ -78,8 +79,14 @@ function buildPressure() {
   const held = {};
   for (const d of IDEAS) {
     const t = S.tech[d.id];
-    // a new era, or ten years on, and an abandoned idea gets a fresh hearing (so a stall is never a dead end)
-    if (t.state === 'abandoned' && ((S.era || 0) > t.abandonedEra || S.tick - t.abandonedAt > TPD * YEAR_DAYS * 10)) { t.state = 'none'; t.fizzles = 0; t.pressure = 0; }
+    // decided 4 Nov: an idea the village has set its face against is gone for the age. Each new era gives it
+    // one chance of a fresh hearing (`revive`), and a crossroads may raise it again (src/sim/crossroads.js)
+    if (t.state === 'abandoned' && (S.era || 0) > (t.reviewedEra ?? t.abandonedEra)) {
+      t.reviewedEra = S.era || 0;
+      if (rnd() < (d.revive ?? REVIVE)) { t.state = 'none'; t.fizzles = 1; t.pressure = 30; log(`With the new times there is talk of the ${lower(d)} again, though many said it was finished with.`, 'event', 'tech', { tech: d.id }); }
+    }
+    // an idea the valley itself rules out is said once, so the annals record why it never came
+    if (t.state === 'none' && d.ruledOut && !t.ruledOut && requiresMet(d) && !possible(d)) { t.ruledOut = S.tick; log(d.ruledOut, 'event', 'tech', { tech: d.id, ruledOut: 1 }); }
     if (t.state !== 'none' || !requiresMet(d) || !possible(d)) continue;
     let v = d.pressure.base;
     for (const [sig, extra] of Object.entries(d.pressure.when || {})) {
@@ -164,7 +171,7 @@ function ideaDay(d) {
       t.fizzles = (t.fizzles || 0) + 1;
       if (t.fizzles >= 2) {
         Object.assign(t, { state: 'abandoned', abandonedEra: S.era || 0, abandonedAt: S.tick, pressure: 0, backers: [], opponents: [] });
-        log(`The village has set its face against the ${lower(d)}. Nobody will raise it again for a long while.`, 'bad', 'tech', { tech: id, abandoned: 1 });
+        log(`The village has set its face against the ${lower(d)}. Nobody will raise it again in these times.`, 'bad', 'tech', { tech: id, abandoned: 1 });
         noteIdea(id, 'abandoned', why);
       } else { Object.assign(t, { state: 'none', pressure: 40, backers: [], opponents: [] }); noteIdea(id, 'failed', why); }
     }

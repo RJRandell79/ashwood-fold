@@ -25,7 +25,7 @@ export function optionsOf(c) {
   return c.options.map((o, k) => ({ ...o, k })).filter(o => {
     if (o.relief) return true;
     const d = IDEA[o.favour], t = S.tech[o.favour];
-    return d && t && (t.state === 'none' || t.state === 'idea') && requiresMet(d) && possible(d);
+    return d && t && (t.state === 'none' || t.state === 'idea' || t.state === 'abandoned') && requiresMet(d) && possible(d);
   });
 }
 
@@ -92,8 +92,11 @@ function favour(entry, ideaId) {
   const d = IDEA[ideaId], t = S.tech[ideaId];
   Object.assign(entry, { idea: ideaId, status: 'favoured', until: S.tick + FAVOUR_DAYS * TPD });
   t.favouredUntil = entry.until;
+  // an idea the village had set its face against gets one more hearing: fail again and it is gone again
+  const again = t.state === 'abandoned';
+  if (again) Object.assign(t, { state: 'none', fizzles: 1, pressure: 0 });
   if (t.state === 'none') t.pressure = Math.min(140, t.pressure + 70);
-  log(`Talk in the village turns to a ${lower(d)}. People who had never thought of it are thinking of it now.`, 'nudge', 'crossroads', { tech: ideaId, xr: entry.id });
+  log(again ? `The ${lower(d)} is talked of again, though the village had set its face against it. Some are glad; some are not.` : `Talk in the village turns to a ${lower(d)}. People who had never thought of it are thinking of it now.`, 'nudge', 'crossroads', { tech: ideaId, xr: entry.id });
 }
 
 /** Called by the ideas engine when a favoured idea is thought of, built, or fails, to tell the rest of the story. */

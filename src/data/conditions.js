@@ -22,6 +22,9 @@
 //                        tells the toll ({dead} the number, {names} some of them); `few` when four or fewer
 //                        died ({names} all of them); `spared` if no one did.
 //   migrants             newcomers each spring while it holds, and the trade and reason they come for
+//   stops                a works the condition may bring to a standstill: { idea, chance } when it begins; when it
+//                        ends the works may never reopen (closeChance, likelier if its master is dead or poor).
+//                        idle, closed and reopened are what the annals say.
 //   begin, again, end    what the annals say when it begins, when it comes again, and when it is over
 export const MEDIEVAL_CONDITIONS = [
   {
@@ -56,4 +59,28 @@ export const MEDIEVAL_CONDITIONS = [
   },
 ];
 
-export const CONDITION = Object.fromEntries(MEDIEVAL_CONDITIONS.map(c => [c.id, c]));
+// The industrial village, 1750 on (decided 4 Nov: an industrial village can stall and decline). Dear bread in
+// the 1760s, and the war with the American colonies, which closed the markets for cloth.
+export const INDUSTRIAL_CONDITIONS = [
+  {
+    id: 'dearYears', years: [1766, 1767], chance: 0.6, repeats: true, lasts: 1,
+    effects: { farmYield: { mul: 0.55 }, cornCartCost: { mul: 2 } },
+    begin: 'A wet harvest and dear bread. There are food riots in the market towns, and a loaf costs twice what it did.',
+    again: 'Another poor harvest, and the price of bread climbs again.',
+    end: 'Bread comes down in price at last.',
+  },
+  {
+    id: 'clothSlump', years: [1775, 1778], chance: 0.35, lasts: 4,
+    effects: { millhandWage: { mul: 0.6 }, weaverWage: { mul: 0.7 }, millHandsCap: { mul: 0.5 }, emigration: { set: 1 }, strangersCome: { set: 0.3 } },
+    stops: {
+      idea: 'cottonmill', chance: 0.6, closeChance: 0.35,
+      idle: 'The mill stands idle. The masters cannot sell what it makes, and the hands are laid off.',
+      closed: 'The mill never opened again. Its windows were boarded up, and its hands went to the towns or back to the looms.',
+      reopened: 'The mill wheel turns again, and the hands are taken back on, those who stayed.',
+    },
+    begin: 'The war with the American colonies has closed the markets for cloth. The weavers are on short time, and there is talk of nothing but the war.',
+    end: 'The war is over, and there are buyers for cloth again.',
+  },
+];
+
+export const CONDITION = Object.fromEntries([...MEDIEVAL_CONDITIONS, ...INDUSTRIAL_CONDITIONS].map(c => [c.id, c]));

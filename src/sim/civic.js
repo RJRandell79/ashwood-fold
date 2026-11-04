@@ -215,8 +215,9 @@ export function emigrationDay(){
     const push=(a.coins<8?.5:0)+(a.lonely>.6?.3:0)+(a.mem.some(m=>/stocks|guilty/.test(m.t))?.4:0)+.2;
     if(rnd()<.004*push*3){
       const kin=LIVE.filter(b=>b!==a&&(isKin(b,a)||op(b,a)>60));
-      exile(a,'left on the train for Manchester');
-      log(`${N(a)} takes the train to Manchester to look for work.${kin[0]?` ${N(kin[0])} waves from the platform.`:''}`,'life','departure',{ids:[a.id]});
+      const train=effect('leavesBy')==='train';
+      exile(a,train?'left on the train for Manchester':'left on foot for Manchester');
+      log(train?`${N(a)} takes the train to Manchester to look for work.${kin[0]?` ${N(kin[0])} waves from the platform.`:''}`:`${N(a)} sets off on foot for Manchester to look for work in the mills.${kin[0]?` ${N(kin[0])} walks with them to the end of the lane.`:''}`,'life','departure',{ids:[a.id]});
     }
   }
   for(const g of S.agents.filter(x=>x.dead&&/Manchester/.test(x.dead.cause))){

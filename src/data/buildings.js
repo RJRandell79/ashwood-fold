@@ -107,10 +107,11 @@ export const COTTAGE_HUES = [240, 95, 330, 20, 160, 265, 60, 190, 300, 120, 0, 2
 
 // Long works that cut across the valley, routed along a contour when their idea is built.
 //   target: height above the hearth to follow; smooth: how hard the route resists bending
+//   steady: needs a steady gradient, so a valley too steep and narrow cannot take it (src/sim/signals.js railCountry)
 //   water: a waterway, which must keep one level (so not every valley can carry one)
 export const LINES = {
   canal:   { name: 'the canal', target: 0.4, smooth: 2.5, width: 1, water: true },
-  railway: { name: 'the railway', target: 2.2, smooth: 6, width: 1 },
+  railway: { name: 'the railway', target: 2.2, smooth: 6, width: 1, steady: true },
   turnpike: { name: 'the turnpike', target: 1.2, smooth: 3, width: 1 },
 };
 
