@@ -78,7 +78,8 @@ function stopWorks(c, held) {
   if (!t || !techOn(s.idea) || rnd() >= s.chance) return;
   t.idleUntil = S.tick + (held.until - held.since) * YEAR_DAYS * TPD + TPD;   // until the spring the slump ends
   invalidateEffects();
-  log(s.idle, 'bad', 'season', { condition: c.id, tech: s.idea });
+  const e = log(s.idle, 'bad', 'season', { condition: c.id, tech: s.idea });
+  t.idleAt = S.tick; t.idleN = e && e.n;
 }
 /** When the slump ends, an idle works opens again, or never does: likelier if its master is dead or poor. */
 function restartWorks(c) {
@@ -86,7 +87,7 @@ function restartWorks(c) {
   if (!t || !t.idleUntil || t.closed) return;
   const master = S.agents[t.inventor], weak = !master || master.dead || master.coins < 40;
   t.idleUntil = 0;
-  if (rnd() < s.closeChance * (weak ? 1.6 : 0.6)) { t.closed = S.tick; log(s.closed, 'bad', 'season', { condition: c.id, tech: s.idea }); }
+  if (rnd() < s.closeChance * (weak ? 1.6 : 0.6)) { t.closed = S.tick; const e = log(s.closed, 'bad', 'season', { condition: c.id, tech: s.idea }); t.closedN = e && e.n; }
   else log(s.reopened, 'event', 'season', { condition: c.id, tech: s.idea });
   invalidateEffects();
 }

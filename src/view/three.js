@@ -15,7 +15,8 @@ import { armsSVG } from './portraits.js';
 import { groundAt, leafMaterials, makeGround, makeTrees } from './terrain.js';
 import { $, select } from './ui.js';
 import { V } from './vstate.js';
-import { hidePlace, refreshPlace, showPlace } from './placecard.js';
+import { hidePlace, refreshPlace, showPlace, showTrace } from './placecard.js';
+import { buildTraces, tracesKey, worksState } from './traces.js';
 
 // Light and visibility, shared by the scene and the loop.
 export function darkness(h){const [r,s]=LIGHT[seasonOf()];if(h<r-1.5||h>=s+2)return .55;if(h<r+.5)return .55*(r+.5-h)/2;if(h>=s)return .55*(h-s)/2;return 0;}
@@ -76,6 +77,7 @@ function disposeWorld(){
   G.scene.remove(W.root);
   W.root.traverse(o=>{if(o.geometry)o.geometry.dispose();});
   for(const c of W.puffs)G.scene.remove(c);
+  if(W.traces)W.traces.traverse(o=>{if(o.geometry)o.geometry.dispose();});
   G.world=null;
 }
 function buildWorld(){
@@ -96,11 +98,12 @@ function addPlace3d(id){
   const b=buildPlace(p,def,{v:W.v,O:W.O,cropMat:G.cropMat,greenMat:G.greenMat});
   for(const c of b.chimneys){c.id=id;c.puffs=puffsFor(c);}
   let nm=p.name.replace(/^the /,'');if(p.home)nm=nm.replace(/ (Cottage|House|Farmhouse)( \w+)?$/,'');
+  const still=worksState(p);if(still)nm+=` · ${still}`;   // a works standing still says so on its label
   const lb=makeLabel(nm,{h:p.home?.7:.85});lb.position.set(p.x+p.w/2-W.O.x,b.top+.7,p.y+p.h/2-W.O.y);b.group.add(lb);b.label=lb;
   b.key=placeKey(p);b.group.userData.place=id;W.root.add(b.group);W.places[id]=b;
 }
 /** What a place's 3D form depends on: rebuilt, renamed, fallen to ruin, or worn to another stage. */
-const placeKey=p=>`${p.age}|${p.era}|${p.def}|${p.name}|${wearStage(p)}`;
+const placeKey=p=>`${p.age}|${p.era}|${p.def}|${p.name}|${wearStage(p)}|${worksState(p)}`;
 function removePlace3d(id){const W=G.world,b=W.places[id];W.root.remove(b.group);b.group.traverse(o=>{if(o.geometry)o.geometry.dispose();});releaseRoofs(b);
   for(const c of b.chimneys)for(const s of c.puffs){G.scene.remove(s);}delete W.places[id];}
 /** Brings the scene into line with S.places and S.lines: new buildings go up, lost ones come down. */
@@ -113,6 +116,8 @@ function syncPlaces(){
   if(ck&&(!W.crossing||W.crossing.kind!==ck)){if(W.crossing)W.root.remove(W.crossing.group);W.crossing=buildCrossing(crossingEnds(),ck,W.v,W.O);W.root.add(W.crossing.group);}
   for(const id in W.places)if(!P[id]){removePlace3d(id);changed=true;}
   if(changed)refreshPlace();
+  const tk=tracesKey();
+  if(tk!==W.tracesKey){W.tracesKey=tk;if(W.traces){W.root.remove(W.traces);W.traces.traverse(o=>{if(o.geometry&&o.geometry.type!=='CylinderGeometry')o.geometry.dispose();});}W.traces=buildTraces(THREE,W.v,W.O,makeLabel);W.root.add(W.traces);}
   for(const id in (S.lines||{}))if(!W.lines[id]){const L=(LINE_BUILDERS[id]||buildTurnpike)(S.lines[id],W.v,W.O);W.root.add(L.group);W.lines[id]=L;}
   for(const id in W.lines)if(!(S.lines&&S.lines[id])){W.root.remove(W.lines[id].group);delete W.lines[id];}
   const sig=Object.keys(P).join(',')+'|'+Object.keys(W.lines).join(',')+'|'+Object.keys(S.cleared||{}).length+'|'+Object.keys(S.roads||{}).length;
@@ -211,9 +216,10 @@ export function draw3d(al,dt){
   const spin=dt*(V.speed?.8:0)*(S.spoil>0?.3:1);
   for(const id in W.places){
     const b=W.places[id];
-    b.windows.color.set(awake[id]&&dk>.12?0xffc764:awake[id]?0x6a6253:0x2c3238);
+    const still=b.key.endsWith('|shut')?'shut':b.key.endsWith('|idle')?'idle':'';
+    b.windows.color.set(still==='shut'?0x5b4a38:awake[id]&&dk>.12?0xffc764:awake[id]?0x6a6253:0x2c3238);
     for(const t in b.tech)for(const part of b.tech[t])part.visible=techBuilt(t);
-    for(const w of b.wheels)if(w.visible)w.rotation.z-=spin;
+    if(!still)for(const w of b.wheels)if(w.visible)w.rotation.z-=spin;
     for(const c of b.chimneys){
       const on=(!c.tech||techBuilt(c.tech))&&(c.works?techOn('cottonmill')&&hourOf()>6&&hourOf()<19:(!!awake[id]||(season===3&&id!=='school'&&household(id).length>0)));
       c.puffs.forEach((p,i)=>{p.visible=on&&!storm;if(!p.visible)return;const t=((G.time*.35+i/c.puffs.length)%1);p.position.set(c.x+t*(c.big?1.8:.9),c.y+t*(c.big?3.5:2.2),c.z+t*.3);p.scale.setScalar(.6+t*1.4);p.material.opacity=.55*(1-t);});
@@ -304,7 +310,10 @@ export function pick3d(e){
     for(const id in G.agents){const m=G.agents[id];if(!m.g.visible)continue;sv.setFromMatrixPosition(m.head.matrixWorld).project(G.camera);
       const px=(sv.x+1)/2*r.width,py=(1-sv.y)/2*r.height,d=Math.hypot(px-(e.clientX-r.left),py-(e.clientY-r.top));if(d<bd){bd=d;best=+id;}}
     if(best>=0)select(best);
-    else{ // no one there: the building under the pointer, if any, shows its record
+    else{ // no one there: a trace on the land, or the building under the pointer, shows its card
+      const th=G.world.traces&&G.ray.intersectObject(G.world.traces,true)[0];
+      let t=th&&th.object;while(t&&!(t.userData&&t.userData.trace))t=t.parent;
+      if(t){showTrace(t.userData.trace);return;}
       const groups=Object.values(G.world.places).map(b=>b.group),h=G.ray.intersectObjects(groups,true)[0];
       let o=h&&h.object;while(o&&!(o.userData&&o.userData.place))o=o.parent;
       if(o)showPlace(o.userData.place);else hidePlace();

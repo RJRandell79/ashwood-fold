@@ -6,6 +6,7 @@ import { familyPlural } from '../sim/heraldry.js';
 import { wears } from '../sim/placement.js';
 import { FIRST_AGE } from '../data/ages.js';
 import { calYear, P } from '../sim/state.js';
+import { placeTraceLines, traceCard } from './traces.js';
 
 const $ = id => document.getElementById(id);
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
@@ -21,6 +22,7 @@ export function placeLines(p) {
   if (r.why && p.def !== 'ruin') out.push(`It stands ${esc(r.why)}.`);
   if (r.over && !(r.why || '').includes(r.over)) out.push(`${esc(cap(r.over))} stood here before it${r.overYear ? `, from ${r.overYear}` : ''}.`);
   for (const c of p.carved || []) out.push(`Carved above the door: the arms of the ${esc(familyPlural(c.family))}.`);
+  out.push(...placeTraceLines(p));
   if (p.def !== 'ruin' && wears(p)) {
     const w = p.wear || 0;
     out.push(p.decay || w >= 1 ? 'It is falling down, and no one has the money to mend it.' : w >= 0.55 ? 'It is worn, and patched where the weather has got in.' : 'It is in good repair.');
@@ -34,6 +36,14 @@ export function showPlace(id) {
   if (!p || !box) return;
   shown = id;
   box.innerHTML = `<button class="pcclose" type="button" aria-label="Close">×</button><h3>${esc(cap(p.name))}</h3>${placeLines(p).map(l => `<p>${l}</p>`).join('')}`;
+  box.hidden = false;
+}
+/** The card for a trace on the land: pegs where an idea was given up, or an old family's name. */
+export function showTrace(tr) {
+  const c = traceCard(tr), box = $('placeCard');
+  if (!c || !box) return hidePlace();
+  shown = null;
+  box.innerHTML = `<button class="pcclose" type="button" aria-label="Close">×</button><h3>${esc(c.title)}</h3>${c.lines.map(l => `<p>${l}</p>`).join('')}`;
   box.hidden = false;
 }
 export function hidePlace() { const box = $('placeCard'); if (box) box.hidden = true; shown = null; }

@@ -1,6 +1,7 @@
 // The ideas system: pressure builds, someone has the idea, argues for it, raises the money and
 // builds it, and the village lives with the consequences. Everything specific to an idea comes
 // from its record in src/data/ideas.js.
+import { clearStakes, stakeOut } from './traces.js';
 import { CHARGE_NAMES } from '../data/heraldry.js';
 import { IDEA, IDEA_RULES, IDEAS } from '../data/ideas.js';
 import { SEASON_DAYS, TPD, YEAR_DAYS } from '../data/world.js';
@@ -118,6 +119,7 @@ export function honourInventor(d, inv) {
 /** Puts up an idea's buildings, lines or crossing. `by` is whose idea it was, for the places' records;
  *  the chronicle says where each building went, and why there. */
 export function raiseBuildings(d, by = null) {
+  clearStakes(null, d.id);
   if (d.line) routeLine(d.line);
   if (d.crossing) setCrossing(d.crossing);
   for (const b of d.places || []) {
@@ -164,10 +166,12 @@ function fail(d, t, inv, opp, cost) {
   const e = log(`Nothing comes of ${N(inv)}'s ${lower(d)}. ${said}`, 'bad', 'tech', { tech: id, fizzle: 1, why: reason, ids: lead ? [inv.id, lead.id] : [inv.id], because: before && before.n ? [before.n] : [], fam: reason === 'opposed' ? fam : undefined });
   if (reason === 'opposed') addDeed(lead, `${lead.name} stood against the ${lower(d)}`, 'opposed', e && e.n);
   t.fizzles = (t.fizzles || 0) + 1;
+  stakeOut(d, e && e.n);   // the plot stays pegged out while the idea hangs, for anyone to wonder at
   if (t.fizzles >= 2) {
     Object.assign(t, { state: 'abandoned', abandonedEra: S.era || 0, abandonedAt: S.tick, pressure: 0, backers: [], opponents: [], lostWhy: reason, lostTo: fam || null });
     const gone = reason === 'opposed' ? `The ${familyPlural(fam)} would not have it, and the village has given it up.` : reason === 'money' ? `Ashwood Fold could never raise the money, and the village has given it up.` : 'The village has set its face against it.';
-    log(`The ${lower(d)} is not to be. ${gone} Nobody will raise it again in these times.`, 'bad', 'tech', { tech: id, abandoned: 1, why: reason });
+    const end = log(`The ${lower(d)} is not to be. ${gone} Nobody will raise it again in these times.`, 'bad', 'tech', { tech: id, abandoned: 1, why: reason });
+    stakeOut(d, end && end.n, true);
     noteIdea(id, 'abandoned', why);
   } else { Object.assign(t, { state: 'none', pressure: 40, backers: [], opponents: [], short: false, outvoted: false }); noteIdea(id, 'failed', why); }
 }
