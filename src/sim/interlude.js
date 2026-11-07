@@ -3,6 +3,7 @@
 // to ruin, replaceable ones vanish but their sites are remembered. Lanes, clearings and the crossing
 // carry on. Families come through or are lost by the dice, weighted by how many there are and how
 // much they mattered. Then the next age's people take up the valley, as heirs or namesakes.
+import { placeLandmark } from './traces.js';
 import { AGES } from '../data/ages.js';
 import { BUILDINGS } from '../data/buildings.js';
 import { interludeFor } from '../data/interludes.js';
@@ -124,7 +125,7 @@ export function beginInterlude() {
   }
   if (crofts.length) say(`Of ${crofts.length > 1 ? `${crofts[0]} and the other ${crofts.length - 1} homes of those days` : crofts[0]} nothing remains but low banks in the grass.`);
   for (const c of leg.carved) say(legacyLine('carved', S.dynasties[c.family]), { place: c.place });
-  for (const l of leg.landmarks) say(legacyLine('landmark', S.dynasties[l.family], l));
+  for (const l of leg.landmarks) { const e = say(legacyLine('landmark', S.dynasties[l.family], l)); l.n = e && e.n; }
   if (S.crossing) say(S.crossing.kind !== 'ford' ? 'The bridge was mended many times, and still carries the lane over the river.' : 'The ford is still the only way over the river.');
   const lanes = Object.keys(S.roads || {}).length;
   if (lanes) say('The old lanes are still the ways through the village, though few remember who first wore them.');
@@ -162,6 +163,9 @@ export function beginInterlude() {
 
   // --- the new village: its buildings around what survived, and its people ---
   placeFounding();
+  // the old names settle on the new village's land, and any pegs of the old age's lost ideas are long gone
+  S.stakes = [];
+  for (const l of H.landmarks) if (l.to === S.age && l.x === undefined) Object.assign(l, placeLandmark(l));
   // the new village over the old: a few of the new buildings stand where old ones stood
   let over = 0;
   for (const p of Object.values(P)) {

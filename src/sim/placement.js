@@ -1,6 +1,7 @@
 // Where buildings go. The game, not the player, chooses every site: each candidate plot is
 // scored against the building's placement rules (src/data/buildings.js) on the valley terrain.
 // Placement is deterministic: no draws from the simulation's dice, ties go to the first plot found.
+import { clearStakes } from './traces.js';
 import { BUILDINGS, COTTAGE_FIRST, COTTAGE_HUES, HOUSE_WORD, LINES, MAX_HOMES, MEMORY, NAME_PARTS, STYLED_ARCHETYPES } from '../data/buildings.js';
 import { effect } from './effects.js';
 import { TPD, YEAR_DAYS } from '../data/world.js';
@@ -204,6 +205,7 @@ export function addPlace(id, defId = id, { by = null, ...extra } = {}) {
     // a find is worth telling only now and then; the rest are dug up and forgotten
     if (S.tick - (H.lastFind ?? -1e12) > TPD * YEAR_DAYS * 5) { H.lastFind = S.tick; log(`Digging the footings for ${here.name}, the builders turn up old stones and broken pots: the remains of ${site.name}, built in ${site.year}.`, 'event', 'finds', { place: id }); }
   }
+  clearStakes(P[id]);
   const felled = clearWood(P[id]);
   if (felled >= 10) {
     P[id].felled = felled;

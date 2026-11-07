@@ -25,6 +25,13 @@ export function checkInvariants(S) {
     for (const i of [...t.backers, ...t.opponents]) if (!(i >= 0 && i < n)) bad.push(`idea ${id} lists unknown person ${i}`);
     if (t.state !== 'none' && t.inventor != null && !(t.inventor >= 0 && t.inventor < n)) bad.push(`idea ${id} has unknown inventor`);
   }
+  // Traces on the land: stakes for a known idea of this age, on no building; old names point at an entry.
+  for (const s of S.stakes || []) {
+    if (!S.tech[s.idea]) bad.push(`stakes for unknown idea ${s.idea}`);
+    else if (S.tech[s.idea].state === 'built') bad.push(`stakes left standing for the built ${s.idea}`);
+    if (Object.values(S.places || {}).some(p => p.x < s.x + s.w && s.x < p.x + p.w && p.y < s.y + s.h && s.y < p.y + p.h)) bad.push(`stakes for ${s.idea} lie under a building`);
+  }
+  for (const l of (S.history && S.history.landmarks) || []) if (l.to === S.age && !(l.n > 0)) bad.push(`${l.name} has no annals entry`);
   // Places: every one on dry land, inside the valley, clear of every other place and of the lines.
   if (S.places && S.valley) {
     const v = valley(S.valley.seed), ps = Object.values(S.places), taken = new Map();

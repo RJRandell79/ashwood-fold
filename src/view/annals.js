@@ -128,7 +128,7 @@ export function snapshot(){
 }
 /** The title of the interlude that closed an age. */
 function interludeTitle(age){const a=AGES[age];const I=a&&a.next?interludeFor(age,a.next):null;return I?I.title:'The Years Between';}
-export function buildStory(){
+export function buildStory(focus=null){
   byN=new Map(S.annals.filter(e=>e.n).map(e=>[e.n,e]));
   const img=snapshot(),y0=yearOf(S.annals.length?S.annals[0].t:S.tick),y1=yearOf();
   let html=`<h1>The Annals of Ashwood Fold</h1><p class="sub">A true account of the village, from the spring of ${yearName(1)} to ${seasonName().replace(/^\w/,c=>c.toLowerCase())}</p>`;
@@ -146,7 +146,7 @@ export function buildStory(){
     html+=`<section class="chapter"><span class="num">${yearName(y)}</span><h2>${yearTitle(y,ents)}</h2><p class="intro">${yearIntro(y)}</p>${lead?`<p class="lead">${entryHTML(lead)}</p>`:''}`;
     for(let s=0;s<4;s++){
       const capN={friend:1,fight:2,feud:2,rumour:2,crime:3,court:3,politics:3,letter:1,departure:3},seen={};
-      const se=ents.filter(e=>e!==lead&&seasonOf(e.t)===s&&!(e.c==='season'&&e.season===0)&&!/Now for the money|talks .* round to/.test(e.h)).filter(e=>{const c=capN[e.c];if(!c)return true;seen[e.c]=(seen[e.c]||0)+1;return seen[e.c]<=c;});
+      const se=ents.filter(e=>e!==lead&&seasonOf(e.t)===s&&!(e.c==='season'&&e.season===0)&&!/Now for the money|talks .* round to/.test(e.h)).filter(e=>{const c=capN[e.c];if(!c||e.n===focus)return true;seen[e.c]=(seen[e.c]||0)+1;return seen[e.c]<=c;});
       if(!se.length)continue;
       html+=`<h3>${SEASONS[s]}</h3>${paragraphs(se)}`;
     }
@@ -165,7 +165,12 @@ export function buildStory(){
   $('storyMeta').textContent=`${S.annals.length} entries · ${S.agents.length} lives`;
 }
 export let storySpeed=1;
-$('openStory').onclick=()=>{buildStory();$('story').hidden=false;$('story').scrollTop=0;document.body.style.overflow='hidden';storySpeed=V.speed;V.speed=0;$('closeStory').focus();};
+function openStory(focus=null){buildStory(focus);$('story').hidden=false;$('story').scrollTop=0;document.body.style.overflow='hidden';storySpeed=V.speed;V.speed=0;$('closeStory').focus();}
+$('openStory').onclick=()=>openStory();
+// "The annals tell why" on a card in the valley: open the book at the entry that answers it
+document.addEventListener('click',e=>{const a=e.target.closest('.toannals');if(!a)return;e.preventDefault();
+  const n=+a.dataset.n;openStory(n);
+  requestAnimationFrame(()=>{const t=document.getElementById('a'+n);if(!t)return;t.scrollIntoView({block:'center'});t.classList.remove('flash');void t.offsetWidth;t.classList.add('flash');});});
 export function closeStory(){$('story').hidden=true;document.body.style.overflow='';V.speed=storySpeed;$('openStory').focus();}
 $('closeStory').onclick=closeStory;
 // "Show" on a chronicle or annals entry: close the book if it is open, then go to the place in the valley.
