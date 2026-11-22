@@ -48,14 +48,14 @@ export function buildTraces(THREE, v, O, makeLabel) {
     const pad = new THREE.Mesh(new THREE.BoxGeometry(s.w, 0.6, s.h), new THREE.MeshBasicMaterial({ visible: false }));
     pad.position.set(s.x + s.w / 2 - O.x, y(s.x + s.w / 2, s.y + s.h / 2) + 0.3, s.y + s.h / 2 - O.y); sg.add(pad);
     for (const [x, z] of s.route || []) { const peg = new THREE.Mesh(pegGeo, pegMat); peg.scale.set(0.8, 0.7, 0.8); peg.position.set(x - O.x, y(x, z) + 0.2, z - O.y); sg.add(peg); }
-    const lb = makeLabel(`staked out, ${s.year}`, { h: 0.6, weight: 500, color: '#4a3b2a', bg: 'rgba(240,232,214,0.82)' });
-    lb.position.set(s.x + s.w / 2 - O.x, y(s.x + s.w / 2, s.y + s.h / 2) + 1.3, s.y + s.h / 2 - O.y); sg.add(lb);
+    const lb = makeLabel(`staked out, ${s.year}`, { ink: true, italic: true, faint: true, px: 11.5 });
+    lb.position.set(s.x + s.w / 2 - O.x, y(s.x + s.w / 2, s.y + s.h / 2) + 0.5, s.y + s.h / 2 - O.y); lb.userData.trace = sg.userData.trace; sg.add(lb);
     g.add(sg);
   });
   for (const l of (S.history && S.history.landmarks) || []) {
     if (l.to !== S.age || l.x == null) continue;
-    const lb = makeLabel(l.name, { h: 0.62, weight: 500, color: '#3d4a3a', bg: 'rgba(236,240,228,0.7)' });
-    lb.position.set(l.x - O.x, y(l.x, l.y) + 0.9, l.y - O.y); lb.userData.trace = { kind: 'name', name: l.name };
+    const lb = makeLabel(l.name, { ink: true, italic: true, px: 12.5 });
+    lb.position.set(l.x - O.x, y(l.x, l.y) + 0.3, l.y - O.y); lb.userData.trace = { kind: 'name', name: l.name };
     g.add(lb);
   }
   return g;

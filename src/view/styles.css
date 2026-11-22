@@ -255,3 +255,5 @@ h2.sec{font-size:22px;margin-bottom:10px}
 #book .thread .ty{flex:none;width:3.2em;color:var(--muted);font-variant-numeric:tabular-nums}
 @media (prefers-reduced-motion:reduce){#book .ent.flash{animation:none;background:rgba(224,164,58,.25)}}
 .placecard .toannals{white-space:nowrap;color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+.paintbtn{position:absolute;right:8px;bottom:8px;font:500 13px var(--body);padding:4px 10px;border-radius:3px;border:1px solid var(--line);background:var(--panel);color:var(--ink);opacity:.88;cursor:pointer}
+.paintbtn:hover{opacity:1;border-color:var(--accent)}

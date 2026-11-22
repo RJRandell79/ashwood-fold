@@ -64,7 +64,7 @@ export function makeGround(v, O) {
     geo.attributes.color.needsUpdate = true;
   }
 
-  const water = new THREE.Mesh(new THREE.PlaneGeometry(nx, ny), new THREE.MeshPhongMaterial({ color: 0x4d84a0, shininess: 20, specular: 0x263840 }));
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(nx, ny), new THREE.MeshPhongMaterial({ color: 0x6f97a8, shininess: 6, specular: 0x10161a }));
   water.rotation.x = -Math.PI / 2;
   water.position.set(v.W / 2 - O.x, -0.12, v.H / 2 - O.y);
   water.receiveShadow = true;
@@ -72,6 +72,27 @@ export function makeGround(v, O) {
 }
 
 /** Woods from the valley's wood cells, plus a scatter of field trees, kept off buildings, lines and paths. */
+// A tree's crown as a few soft blobs merged into one shape: [x, y, z, radius, squash] each, centred on the crown.
+const TALL = [[0, -0.35, 0, 0.62, 0.95], [0.12, 0.35, 0.05, 0.5, 1.05], [-0.18, 0.0, -0.12, 0.48, 0.9], [0.05, 0.85, -0.05, 0.32, 1.0]];
+const BROAD = [[0, 0, 0, 0.7, 0.8], [0.45, -0.12, 0.15, 0.5, 0.75], [-0.42, -0.08, -0.1, 0.52, 0.78], [0.05, 0.32, -0.3, 0.45, 0.8], [-0.1, 0.25, 0.38, 0.42, 0.8]];
+function clump(blobs) {
+  const pos = [], nor = [];
+  for (const [x, y, z, r, sq] of blobs) {
+    const g = new THREE.IcosahedronGeometry(r, 1).toNonIndexed();
+    g.scale(1, sq, 1); g.translate(x, y, z);
+    const p = g.attributes.position.array;
+    for (let i = 0; i < p.length; i += 3) {   // smooth normals, pointing out from the blob's centre
+      pos.push(p[i], p[i + 1], p[i + 2]);
+      const nx = p[i] - x, ny = (p[i + 1] - y) / sq, nz = p[i + 2] - z, l = Math.hypot(nx, ny, nz) || 1;
+      nor.push(nx / l, ny / l, nz / l);
+    }
+    g.dispose();
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  return out;
+}
 export function makeTrees(v, O, blocked, leafMats, trunkMat) {
   const spots = [];
   for (let y = 0; y < v.H; y++) for (let x = 0; x < v.W; x++) {
@@ -80,15 +101,18 @@ export function makeTrees(v, O, blocked, leafMats, trunkMat) {
     const r = hash(x, y, v.seed + 71);
     const want = v.wood[i] ? 0.55 : v.dist[i] > 2 && v.height[i] < 12 ? 0.025 : 0;
     if (r >= want) continue;
-    const jx = hash(x, y, v.seed + 72), jy = hash(x, y, v.seed + 73), s = 0.7 + hash(x, y, v.seed + 74) * 0.7;
-    spots.push({ x: x + 0.2 + jx * 0.6, y: y + 0.2 + jy * 0.6, s, kind: hash(x, y, v.seed + 75) < 0.45 ? 0 : 1, leaf: Math.floor(hash(x, y, v.seed + 76) * 3) % 3 });
+    const jx = hash(x, y, v.seed + 72), jy = hash(x, y, v.seed + 73), s = (v.wood[i] ? 1.05 : 0.75) + hash(x, y, v.seed + 74) * 0.6;
+    spots.push({ x: x + 0.2 + jx * 0.6, y: y + 0.2 + jy * 0.6, s, wood: !!v.wood[i], kind: hash(x, y, v.seed + 75) < 0.45 ? 0 : 1, leaf: Math.floor(hash(x, y, v.seed + 76) * 3) % 3 });
   }
   const group = new THREE.Group();
-  const trunkGeo = new THREE.CylinderGeometry(0.12, 0.16, 0.8, 6), cone = new THREE.ConeGeometry(0.75, 1.9, 7), round = new THREE.IcosahedronGeometry(0.85, 0);
+  // painted clumps, not cones and balls (docs/art-bible.md, section 7): a tall shape (alder, ash) and a broad one (oak)
+  const trunkGeo = new THREE.CylinderGeometry(0.12, 0.16, 0.8, 6), cone = clump(TALL), round = clump(BROAD);
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), p = new THREE.Vector3();
   const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, Math.max(1, spots.length));
   trunks.count = spots.length;
-  spots.forEach((t, k) => {
+  const lone = spots.filter(t => !t.wood);   // in a wood the crowns close over: no sticks showing
+  trunks.count = lone.length;
+  lone.forEach((t, k) => {
     const gy = groundAt(v, t.x, t.y);
     m4.compose(p.set(t.x - O.x, gy + 0.4 * t.s, t.y - O.y), q, sc.set(t.s, t.s, t.s));
     trunks.setMatrixAt(k, m4);
@@ -101,7 +125,7 @@ export function makeTrees(v, O, blocked, leafMats, trunkMat) {
     const im = new THREE.InstancedMesh(kind ? round : cone, leafMats[leaf], list.length);
     list.forEach((t, k) => {
       const gy = groundAt(v, t.x, t.y);
-      m4.compose(p.set(t.x - O.x, gy + 1.65 * t.s, t.y - O.y), q, sc.set(t.s, t.s, t.s));
+      m4.compose(p.set(t.x - O.x, gy + (t.wood ? 1.15 : 1.5) * t.s, t.y - O.y), q, sc.set(t.s * (t.wood ? 1.25 : 1), t.s, t.s * (t.wood ? 1.25 : 1)));
       im.setMatrixAt(k, m4);
     });
     im.castShadow = true;
