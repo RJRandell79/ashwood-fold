@@ -232,12 +232,14 @@ function workshop(p, def, ctx, out) {
 }
 function sacred(p, def, ctx, out) {
   const s = site(p, ctx, out), st = ctx.style, w = s.lw - 0.6, d = s.ld - 0.6, wh = 2.5;
+  const early = p.age === 'medieval', roof = early ? 0x8e8a7f : 0x56616b;   // grit stone under stone slate before Welsh slate
+  if (early) s.style = Object.assign({}, s.style, { timber: false });
   walls(s, w * 0.7, wh, d, 0xcfcabf);
-  const rh = gable(s, w * 0.7, d, wh, 0.5, 0x56616b, false);
+  const rh = gable(s, w * 0.7, d, wh, 0.5, roof, false);
   const tw = Math.min(1.3, w * 0.3);
   const tower = shade(box(tw, wh + 1.2, tw, 0xc4bfb3)); tower.position.set(w * 0.35 + tw / 2 - 0.2, (wh + 1.2) / 2, 0); s.frame.add(tower);
   let top = wh + 1.2;
-  if (def.features?.includes('spire')) { const sp = shade(new THREE.Mesh(new THREE.ConeGeometry(tw * 0.62, 2.2, 4), roofMat(0x56616b))); sp.rotation.y = Math.PI / 4; sp.position.set(w * 0.35 + tw / 2 - 0.2, top + 1.1, 0); s.frame.add(sp); top += 2.2; }
+  if (def.features?.includes('spire') && !early) { const sp = shade(new THREE.Mesh(new THREE.ConeGeometry(tw * 0.62, 2.2, 4), roofMat(0x56616b))); sp.rotation.y = Math.PI / 4; sp.position.set(w * 0.35 + tw / 2 - 0.2, top + 1.1, 0); s.frame.add(sp); top += 2.2; }
   door(s, d, -w * 0.1, st.trim);
   windowRow(s, out, d, [-w * 0.28], wh * 0.6);
   return s.base + Math.max(top, wh + rh);

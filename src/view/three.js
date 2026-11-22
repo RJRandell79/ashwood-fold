@@ -17,6 +17,7 @@ import { $, select } from './ui.js';
 import { V } from './vstate.js';
 import { hidePlace, refreshPlace, showPlace, showTrace } from './placecard.js';
 import { buildTraces, tracesKey, worksState } from './traces.js';
+import { LETTERING, makePaint, renderPlain } from './paint.js';
 
 // Light and visibility, shared by the scene and the loop.
 export function darkness(h){const [r,s]=LIGHT[seasonOf()];if(h<r-1.5||h>=s+2)return .55;if(h<r+.5)return .55*(r+.5-h)/2;if(h>=s)return .55*(h-s)/2;return 0;}
@@ -27,6 +28,7 @@ export const cv3=$('map3d');
 
 export function makeLabel(text,o){
   o=Object.assign({size:44,color:'#1d2725',bg:'rgba(244,246,241,0.88)',weight:600,h:.62},o||{});
+  if(o.ink)return inkLabel(text,o);
   const c=document.createElement('canvas'),x=c.getContext('2d'),font=`${o.weight} ${o.size}px "Alegreya Sans", "Gill Sans", sans-serif`;
   x.font=font;const w=Math.ceil(x.measureText(text).width+o.size*.9),hh=Math.ceil(o.size*1.5);c.width=w;c.height=hh;
   if(o.bg){const r=hh/2;x.fillStyle=o.bg;x.beginPath();x.moveTo(r,0);x.lineTo(w-r,0);x.arc(w-r,r,r,-Math.PI/2,Math.PI/2);x.lineTo(r,hh);x.arc(r,r,r,Math.PI/2,Math.PI*1.5);x.fill();}
@@ -34,6 +36,23 @@ export function makeLabel(text,o){
   const t=new THREE.CanvasTexture(c);t.minFilter=THREE.LinearFilter;
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));s.scale.set(o.h*w/hh,o.h,1);s.renderOrder=30;return s;
 }
+// Names lettered on the land in ink, as a surveyor would (docs/art-bible.md, section 9): IM Fell, roman for
+// buildings and italic for land and old names, with a thin paper halo, at one size on screen whatever the zoom.
+const INK='#45362a',INK_FAINT='#7a6652',HALO='rgba(241,234,217,0.82)';
+function inkLabel(text,o){
+  const size=48,c=document.createElement('canvas'),x=c.getContext('2d');
+  const font=`${o.italic?'italic ':''}${size}px "IM Fell English", Georgia, serif`;
+  x.font=font;const w=Math.ceil(x.measureText(text).width+size*.6),hh=Math.ceil(size*1.45);c.width=w;c.height=hh;
+  x.font=font;x.textAlign='center';x.textBaseline='middle';x.lineJoin='round';
+  x.strokeStyle=HALO;x.lineWidth=size*.2;x.strokeText(text,w/2,hh/2);
+  x.fillStyle=o.faint?INK_FAINT:INK;x.fillText(text,w/2,hh/2);
+  const t=new THREE.CanvasTexture(c);t.minFilter=THREE.LinearFilter;
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true,sizeAttenuation:false,fog:false}));
+  s.center.set(.5,0);s.renderOrder=30;s.layers.set(LETTERING);
+  s.userData.px=(o.px||13)*hh/size;s.userData.aspect=w/hh;sizeLabel(s);return s;
+}
+/** Keeps a lettered name at its size on screen. */
+function sizeLabel(s){const k=G?G.pxK||.0014:.0014,h=s.userData.px*k;s.scale.set(h*s.userData.aspect,h,1);}
 export const glyphTex={};
 export function glyphMat(c,k){const key=c+k;if(!glyphTex[key]){const col={good:'#3f9a57',bad:'#c8402c',rumour:'#d9971c',muted:'#55605b'}[k]||'#55605b';
   const s=makeLabel(c,{size:64,color:'#fff',bg:col,weight:700,h:.8});glyphTex[key]=s.material;}return glyphTex[key];}
@@ -66,7 +85,12 @@ export function init3d(){
   const leafM=leafMaterials(),cropMat=new THREE.MeshLambertMaterial({color:SEASON_CROP.colour[0]}),greenMat=new THREE.MeshLambertMaterial({color:0x9cc177});
   G={renderer,scene,camera,sun,hemi,stars,rain,rv,snow,threads,leafM,cropMat,greenMat,trunkM:mat(0x5a4130),agents:{},world:null,
      theta:-.35,phi:.92,radius:46,target:new THREE.Vector3(0,0,0),time:0,ray:new THREE.Raycaster(),seasonSeen:-1};
+  G.ray.layers.enableAll();   // lettering lives on its own layer, and old names are tapped by their lettering
+  let keep='1';try{keep=localStorage.getItem('af-paint')??'1';}catch(e){}
+  if(keep!=='0')G.paint=makePaint(renderer);
   bind3dControls();size3d();G.radius=defR();new ResizeObserver(size3d).observe(cv3);
+  // lettering drawn before the font arrived is lettered again once it has
+  if(document.fonts&&document.fonts.load)document.fonts.load('48px "IM Fell English"').then(()=>{const W=G.world;if(!W)return;for(const id in W.places)W.places[id].key='';W.tracesKey='';}).catch(()=>{});
   return true;
 }
 
@@ -90,7 +114,7 @@ function buildWorld(){
   syncPlaces();
 }
 function puffsFor(c){
-  const arr=[];for(let i=0;i<(c.big?4:3);i++){const s=new THREE.Mesh(new THREE.SphereGeometry(c.big?.45:.22,8,6),new THREE.MeshLambertMaterial({color:c.big?0x5a5a5a:0xd8d8d8,transparent:true,opacity:.6}));s.visible=false;G.scene.add(s);arr.push(s);G.world.puffs.push(s);}
+  const arr=[];for(let i=0;i<(c.big?4:3);i++){const s=new THREE.Mesh(new THREE.SphereGeometry(c.big?.45:.22,8,6),new THREE.MeshLambertMaterial({color:c.big?0x6a6560:0xd8d4cc,transparent:true,opacity:.6,depthWrite:false}));s.visible=false;G.scene.add(s);arr.push(s);G.world.puffs.push(s);}
   return arr;
 }
 function addPlace3d(id){
@@ -99,7 +123,7 @@ function addPlace3d(id){
   for(const c of b.chimneys){c.id=id;c.puffs=puffsFor(c);}
   let nm=p.name.replace(/^the /,'');if(p.home)nm=nm.replace(/ (Cottage|House|Farmhouse)( \w+)?$/,'');
   const still=worksState(p);if(still)nm+=` · ${still}`;   // a works standing still says so on its label
-  const lb=makeLabel(nm,{h:p.home?.7:.85});lb.position.set(p.x+p.w/2-W.O.x,b.top+.7,p.y+p.h/2-W.O.y);b.group.add(lb);b.label=lb;
+  const lb=makeLabel(nm,{ink:true,px:p.home?11.5:p.kind==='field'?12:13,italic:p.kind==='field'||!!still});lb.position.set(p.x+p.w/2-W.O.x,b.top+.25,p.y+p.h/2-W.O.y);b.group.add(lb);b.label=lb;
   b.key=placeKey(p);b.group.userData.place=id;W.root.add(b.group);W.places[id]=b;
 }
 /** What a place's 3D form depends on: rebuilt, renamed, fallen to ruin, or worn to another stage. */
@@ -156,7 +180,9 @@ export function updateBanners(){
   }
 }
 export function defR(){return 46*Math.pow(Math.max(1,1.5/(G.camera.aspect||1.5)),.85);}
-export function size3d(){if(!G)return;const r=cv3.getBoundingClientRect();if(!r.width)return;G.renderer.setSize(r.width,r.height,false);G.camera.aspect=r.width/r.height;G.camera.updateProjectionMatrix();}
+export function size3d(){if(!G)return;const r=cv3.getBoundingClientRect();if(!r.width)return;G.renderer.setSize(r.width,r.height,false);G.camera.aspect=r.width/r.height;G.camera.updateProjectionMatrix();
+  G.pxK=2/(G.camera.projectionMatrix.elements[5]*r.height);   // scale for one CSS pixel of lettering
+  G.scene.traverse(o=>{if(o.isSprite&&o.userData.px)sizeLabel(o);});}
 export function agentMesh(a){
   let m=G.agents[a.id];if(m)return m;
   const g=new THREE.Group();
@@ -168,7 +194,7 @@ export function agentMesh(a){
   body.userData.id=head.userData.id=a.id;
   const fig=new THREE.Group();fig.add(body,head,hat);g.add(fig);
   const ring=new THREE.Mesh(new THREE.TorusGeometry(.55,.06,6,24),new THREE.MeshBasicMaterial({color:0xe0a43a,depthTest:false,transparent:true}));ring.rotation.x=Math.PI/2;ring.position.y=.05;ring.renderOrder=26;ring.visible=false;g.add(ring);
-  const glyph=new THREE.Sprite(glyphMat('!','bad'));glyph.position.y=1.85;glyph.renderOrder=31;glyph.visible=false;g.add(glyph);
+  const glyph=new THREE.Sprite(glyphMat('!','bad'));glyph.position.y=1.85;glyph.renderOrder=31;glyph.visible=false;glyph.layers.set(LETTERING);g.add(glyph);
   const tag=makeLabel(a.first,{h:.5,bg:'rgba(29,39,37,0.85)',color:'#fff'});tag.position.y=2.45;tag.visible=false;g.add(tag);
   G.scene.add(g);
   m=G.agents[a.id]={g,fig,body,head,hat,ring,glyph,tag,mat:bodyM,mats:[bodyM,headM],pick:[body,head],hue:hueOf(a)};
@@ -210,7 +236,10 @@ export function draw3d(al,dt){
   if(S.era>=3)sky.lerp(new THREE.Color(0x8b8374),.2);
   G.scene.background.copy(sky);G.scene.fog.color.copy(sky);
   const dk=darkness(h)+(storm?.18:0);
-  G.stars.material.opacity=storm?0:clamp((dk-.25)*2.5,0,.9);G.stars.position.copy(T);
+  let dusk=0;
+  if(G.paint){const n=dusk=Math.max(clamp(dk/.55,0,1),day>0&&day<.35?(1-day/.35)*.55:0);   // painted dusk: the sky's light takes over from the low sun, so no black slabs of shadow
+    G.sun.intensity*=1-.8*n;G.hemi.intensity=Math.max(G.hemi.intensity,.45+.35*n);G.hemi.color.lerp(new THREE.Color(0xc9d2e6),n);}
+  G.stars.material.opacity=storm?0:clamp((dk-.25)*2.5,0,.9);G.stars.visible=!G.paint;G.stars.position.copy(T);
   // buildings: lit windows, smoke, the parts that come with ideas, turning wheels
   const awake={};for(const a of LIVE)if(a.arrived&&a.at&&P[a.at]&&P[a.at].indoor&&a.act.type!=='sleep')awake[a.at]=(awake[a.at]||0)+1;
   const spin=dt*(V.speed?.8:0)*(S.spoil>0?.3:1);
@@ -274,8 +303,39 @@ export function draw3d(al,dt){
   const c=G.camera,sp=Math.sin(G.phi);
   c.position.set(T.x+G.radius*sp*Math.sin(G.theta),T.y+G.radius*Math.cos(G.phi),T.z+G.radius*sp*Math.cos(G.theta));
   c.lookAt(T);
-  G.renderer.render(G.scene,c);
+  declutter(c);
+  if(G.paint){const fog=G.paint.paper.clone().lerp(new THREE.Color(0xbccfdb),.25);G.scene.fog.color.copy(fog);
+    G.paint.render(G.scene,c,{dusk,storm:storm?1:0,radius:G.radius});}
+  else renderPlain(G.renderer,G.scene,c);
 }
+// Lettering never collides (docs/art-bible.md, section 9): names are placed in order of importance and one that
+// would overlap a name already placed, or run off the frame, waits until there is room.
+const PRI={civic:4,work:3,trace:3.5,stake:2.5,field:2,home:1},pv=new THREE.Vector3();
+function declutter(cam){
+  const W=G.world;if(!W)return;
+  const r=cv3.getBoundingClientRect(),list=[];cam.updateMatrixWorld();
+  for(const id in W.places){const b=W.places[id],p=P[id];if(!b.label||!p)continue;
+    if(p.home&&G.radius>58){b.label.visible=false;continue;}
+    list.push({s:b.label,pri:p.home?PRI.home:p.kind==='field'?PRI.field:p.indoor===false?PRI.work:PRI.civic});}
+  if(W.traces)W.traces.traverse(o=>{if(o.isSprite&&o.userData.px)list.push({s:o,pri:o.userData.trace&&o.userData.trace.kind==='stake'?PRI.stake:PRI.trace});});
+  const placed=[];
+  for(const L of list){L.s.getWorldPosition(pv);L.d=pv.distanceTo(cam.position);pv.project(cam);
+    L.x=(pv.x+1)/2*r.width;L.y=(1-pv.y)/2*r.height;L.h=L.s.userData.px*.62;L.w=L.s.userData.px*L.s.userData.aspect;L.in=pv.z<1;}
+  list.sort((a,b)=>b.pri-a.pri||a.d-b.d);
+  for(const L of list){
+    const x0=L.x-L.w/2,x1=L.x+L.w/2,y0=L.y-L.h*1.35,y1=L.y-L.h*.2;   // the letters sit just above the anchor
+    let ok=L.in&&x0>2&&x1<r.width-2&&y0>2&&y1<r.height-2;
+    if(ok)for(const q of placed)if(x0<q[2]+4&&x1>q[0]-4&&y0<q[3]+2&&y1>q[1]-2){ok=false;break;}
+    L.s.visible=ok;if(ok)placed.push([x0,y0,x1,y1]);
+  }
+}
+/** Painted (the default) or plain, remembered on this device. */
+export function setPainted(on){
+  if(!G)return;try{localStorage.setItem('af-paint',on?'1':'0');}catch(e){}
+  if(on&&!G.paint)G.paint=makePaint(G.renderer);else if(!on&&G.paint){G.paint.dispose();G.paint=null;}
+  if(!on)G.scene.fog.color.copy(G.scene.background);
+}
+export function painted(){return !!(G&&G.paint);}
 export function bind3dControls(){
   const pts=new Map();let downAt=0,moved=0,pinch=0,mid=null;
   cv3.addEventListener('pointerdown',e=>{cv3.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY,b:e.button});if(pts.size===1){downAt=performance.now();moved=0;}pinch=0;mid=null;});
@@ -325,6 +385,8 @@ export function syncFollow(){$('vFollow').classList.toggle('on',follow);$('vFoll
 export function start3d(){
   if(!init3d()){cv3.parentElement.hidden=true;$('cam3d').hidden=true;$('viewNote').textContent='The view of the village needs WebGL, which this browser is not providing. The village carries on in the chronicle and the panels below.';return false;}
   cv3.hidden=false;$('cam3d').hidden=false;$('viewNote').textContent='Drag to turn. Pinch or scroll to zoom. Two fingers or right-drag to pan.';
+  const pb=$('paintBtn');if(pb){const show=()=>{pb.textContent=G.paint?'Painted':'Plain';pb.setAttribute('aria-pressed',!!G.paint);};show();
+    pb.onclick=e=>{e.stopPropagation();setPainted(!G.paint);show();};}
   size3d();return true;
 }
 /** Moves the camera to a place named in the chronicle and marks it for a few seconds. */
