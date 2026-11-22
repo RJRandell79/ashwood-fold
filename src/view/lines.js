@@ -37,7 +37,7 @@ export function along(path, t) {
   return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, z: a.z + (b.z - a.z) * k, heading: Math.atan2(b.x - a.x, b.z - a.z) };
 }
 
-const waterMat = () => new THREE.MeshPhongMaterial({ color: 0x3f6f7e, shininess: 40, specular: 0x4a6470, polygonOffset: true, polygonOffsetFactor: -2 });
+const waterMat = () => new THREE.MeshLambertMaterial({ color: 0x5f8a99, polygonOffset: true, polygonOffsetFactor: -2 });
 
 export function buildCanal(ys, v, O) {
   const path = linePath(ys, v, O, true), group = new THREE.Group();

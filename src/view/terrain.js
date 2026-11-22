@@ -64,7 +64,7 @@ export function makeGround(v, O) {
     geo.attributes.color.needsUpdate = true;
   }
 
-  const water = new THREE.Mesh(new THREE.PlaneGeometry(nx, ny), new THREE.MeshPhongMaterial({ color: 0x6f97a8, shininess: 6, specular: 0x10161a }));
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(nx, ny), new THREE.MeshLambertMaterial({ color: 0x6f97a8 }));
   water.rotation.x = -Math.PI / 2;
   water.position.set(v.W / 2 - O.x, -0.12, v.H / 2 - O.y);
   water.receiveShadow = true;
