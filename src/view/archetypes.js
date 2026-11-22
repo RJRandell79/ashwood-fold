@@ -142,6 +142,20 @@ function gable(s, w, d, y, pitch, colour, alongX = w >= d) {
   s.frame.add(g);
   return H * (s.wear >= 2 ? 0.75 : 1);
 }
+/** Thatch (docs/art-bible.md, section 6): deep, with eaves that come down low over the walls, a thick edge and a
+ *  rounded ridge. Returns its height above the wall top. */
+function thatch(s, w, d, y, pitch, colour) {
+  const alongX = w >= d, drop = 0.3, H = gable(s, w + 0.25, d + 0.75, y - drop, pitch * 0.95, colour, alongX);
+  const under = new THREE.Color(colour).multiplyScalar(0.62).getHex();
+  gable({ ...s, wear: 0 }, w + 0.2, d + 0.7, y - drop - 0.16, pitch * 0.95, under, alongX);   // the thickness of the eaves
+  const L = (alongX ? w : d) + 0.4, ridge = shade(new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, L, 8), mat(new THREE.Color(colour).multiplyScalar(0.85).getHex())));
+  ridge.rotation.z = Math.PI / 2; if (!alongX) ridge.rotation.y = Math.PI / 2;
+  ridge.position.y = y - drop + H - 0.05; s.frame.add(ridge);
+  return H - drop;
+}
+const thatched = st => /thatch/.test(st.material || '');
+/** The roof of the style of the day: thatch where the style is thatched, else a pitched roof of flags or slate. */
+function roof(s, w, d, y, pitch, colour) { return thatched(s.style) ? thatch(s, w, d, y, pitch, colour) : gable(s, w, d, y, pitch, colour); }
 function hipped(s, w, d, y, h, colour) {
   const r = shade(new THREE.Mesh(new THREE.ConeGeometry(Math.hypot(w, d) / 2 + 0.2, h, 4), roofMat(weathered(colour, s.wear, true))));
   r.rotation.y = Math.PI / 4;
@@ -155,8 +169,8 @@ function door(s, d, x = 0, colour = 0x4a3326, w = 0.55, h = 0.95) {
   m.position.set(x, h / 2, d / 2 + 0.02);
   s.frame.add(m);
 }
-function windowRow(s, out, d, xs, y) {
-  for (const x of xs) { const m = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.42), out.windows); m.position.set(x, y, d / 2 + 0.02); s.frame.add(m); }
+function windowRow(s, out, d, xs, y, size = 0.42, tall = 1) {
+  for (const x of xs) { const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size * tall), out.windows); m.position.set(x, y, d / 2 + 0.02); s.frame.add(m); }
 }
 function chimney(s, out, x, z, y, big = false, colour = 0x7d6a5c, tech = null) {
   const h = big ? 6 : 0.9, w = big ? 0.7 : 0.38;
@@ -185,14 +199,38 @@ function wheelAt(ctx, out, x, y, z, tech = null) {
 // --- archetypes -------------------------------------------------------------------------
 
 function house(p, def, ctx, out) {
-  const s = site(p, ctx, out), st = ctx.style, w = s.lw - 0.6, d = s.ld - 0.6;
-  const tall = st.storeys > 0, wh = tall ? 2.5 : 1.5;
-  walls(s, w, wh, d, (p.id.length + (p.hue || 0)) % 2 ? st.wall : st.wallAlt);
-  const rh = gable(s, w, d, wh, st.pitch, st.roof);
-  door(s, d, -w * 0.15, st.trim);
-  windowRow(s, out, d, [w * 0.22], wh * 0.55);
-  if (tall) windowRow(s, out, d, [-w * 0.22, w * 0.22], wh * 0.8);
-  if (def.features?.includes('chimney')) chimney(s, out, w / 2 - 0.35, 0, wh + rh * 0.3);
+  // each house its own (docs/art-bible.md, section 6), from its own visual dice: proportions, roof, openings, chimneys
+  const s = site(p, ctx, out), st = ctx.style, r = placeDice(p.id + ':form');
+  const medieval = !!st.timber, brick = /brick/.test(st.material), stone = !medieval && !thatched(st) && !brick;
+  const tall = st.storeys > 0 || stone;
+  const w = s.lw - 0.6, d = (s.ld - 0.6) * (medieval ? 0.8 + r() * 0.12 : 1);
+  const wh = medieval ? 1.15 + r() * 0.25 : tall ? 2.3 + r() * 0.35 : 1.45 + r() * 0.2;
+  walls(s, w, wh, d, r() < 0.5 ? st.wall : st.wallAlt);
+  const rh = roof(s, w, d, wh, st.pitch * (0.9 + r() * 0.2), r() < 0.5 ? st.roof : st.roofAlt);
+  const dx = (r() - 0.5) * w * 0.4;
+  if (medieval) {   // small dark openings: a low door and a shuttered hole
+    door(s, d, dx, 0x2f261f, 0.5, 0.85);
+    windowRow(s, out, d, [dx + (dx > 0 ? -1 : 1) * w * 0.28], wh * 0.62, 0.28);
+  } else {
+    door(s, d, dx, st.trim);
+    windowRow(s, out, d, [dx + (dx > 0 ? -1 : 1) * w * 0.25], wh * (tall ? 0.3 : 0.55), 0.38);
+    if (tall && stone) {   // the weavers' lights: a long row of small windows on the loom floor
+      const n = Math.max(3, Math.floor(w / 0.55)), xs = [];
+      for (let k = 0; k < n; k++) xs.push(-w / 2 + 0.4 + k * (w - 0.8) / (n - 1));
+      windowRow(s, out, d, xs, wh * 0.78, 0.3, 1.2);
+    } else if (tall) windowRow(s, out, d, [-w * 0.24, w * 0.24], wh * 0.78, 0.4, 1.15);
+  }
+  if (!medieval && r() < 0.35 && !tall) {   // a lean-to on one end, under the same roof
+    const side = r() < 0.5 ? -1 : 1, lw = 0.9 + r() * 0.4, lean = new THREE.Group();
+    const lwall = shade(box(lw, wh * 0.75, d * 0.8, weathered(st.wallAlt, s.wear, false))); lwall.position.y = wh * 0.375; lean.add(lwall);
+    const lr = shade(new THREE.Mesh(prism(d * 0.9, lw * 2, 0.55), roofMat(weathered(st.roofAlt, s.wear, true)))); lr.rotation.y = Math.PI / 2; lr.position.set(-lw / 2, wh * 0.72, 0); lean.add(lr);
+    lean.position.x = side * (w / 2 + lw / 2); if (side < 0) lean.rotation.y = Math.PI; s.frame.add(lean);
+  }
+  if (!medieval && (def.features?.includes('chimney') || tall)) {   // stone and brick houses have their chimneys: gable ends, or a stack on the ridge
+    const cc = brick ? 0x8f5a48 : 0x9c917c;
+    if (brick) chimney(s, out, (r() - 0.5) * w * 0.3, 0, wh + rh * 0.55, false, cc);
+    else { chimney(s, out, w / 2 - 0.25, 0, wh + rh * 0.45, false, cc); if (r() < 0.45) chimney(s, out, -w / 2 + 0.25, 0, wh + rh * 0.45, false, cc); }
+  } else if (medieval && def.features?.includes('chimney') && r() < 0.5) chimney(s, out, w / 2 - 0.5, 0, wh + rh * 0.4, false, 0x8a7d68);
   out.homeSpot = toWorld(s, w * 0.28, Math.min(wh * 0.8, 1.35) + (tall ? 0.6 : 0), d / 2 + 0.14);
   out.homeSpot.parent = out.group;
   return s.base + wh + rh;
@@ -201,7 +239,7 @@ function long(p, def, ctx, out) {
   const s = site(p, ctx, out), st = ctx.style, w = s.lw - 0.5, d = s.ld - 0.5, barn = p.def === 'barn';
   const wh = barn ? 2.2 : 2 + (st.storeys && p.def !== 'tavern' ? 0.6 : 0);
   walls(s, w, wh, d, barn ? 0x8a5a3c : st.wall);
-  const rh = gable(s, w, d, wh, barn ? 0.6 : st.pitch, barn ? 0x5b3a28 : st.roof);
+  const rh = barn && !thatched(st) ? gable(s, w, d, wh, 0.6, 0x5b3a28) : roof(s, w, d, wh, barn ? 0.7 : st.pitch, barn ? 0x9a7c4c : st.roof);
   if (barn) door(s, d, 0, 0x4a3326, 1.4, 1.6);
   else { door(s, d, 0, st.trim); windowRow(s, out, d, [-w * 0.32, -w * 0.15, w * 0.15, w * 0.32].filter(x => Math.abs(x) * 2 < w), wh * 0.58); }
   if (def.features?.includes('chimney')) chimney(s, out, -w / 2 + 0.5, 0, wh + rh * 0.3);
@@ -218,7 +256,7 @@ function long(p, def, ctx, out) {
 function workshop(p, def, ctx, out) {
   const s = site(p, ctx, out), st = ctx.style, w = s.lw - 0.5, d = s.ld - 0.5, wh = p.def === 'mill' ? 2.2 : 1.7;
   walls(s, w, wh, d, p.def === 'forge' ? 0x8f877b : st.wall);
-  const rh = gable(s, w, d, wh, st.pitch, p.def === 'forge' ? 0x4f4a45 : st.roof);
+  const rh = p.def === 'forge' ? gable(s, w, d, wh, st.pitch, 0x6f6a62) : roof(s, w, d, wh, st.pitch, st.roof);
   door(s, d, -w * 0.2, st.trim, p.def === 'forge' ? 1 : 0.55);
   windowRow(s, out, d, [w * 0.25], wh * 0.58);
   if (def.features?.includes('chimney')) chimney(s, out, w / 2 - 0.4, -d * 0.2, wh + rh * 0.2);
@@ -290,7 +328,7 @@ function market(p, def, ctx, out) {
   const st = shade(box(0.25, 2, 0.25, 0x8d877c)); st.position.y = 1; g.add(st);
   const ar = shade(box(1, 0.22, 0.25, 0x8d877c)); ar.position.y = 1.5; g.add(ar);
   for (const dx of [-1.8, 1.8]) {
-    const stall = shade(new THREE.Mesh(prism(1.4, 1, 0.5), roofMat(dx < 0 ? 0xb2503a : 0x3f6f8a))); stall.position.set(dx, 1.1, 0.2); g.add(stall);
+    const stall = shade(new THREE.Mesh(prism(1.4, 1, 0.5), roofMat(dx < 0 ? 0xa0705a : 0x6f8590))); stall.position.set(dx, 1.1, 0.2); g.add(stall);
     const tb = shade(box(1.2, 0.7, 0.8, 0x7a5a40)); tb.position.set(dx, 0.35, 0.2); g.add(tb);
   }
   g.position.set(cx - O.x, gy, cy - O.y);
@@ -319,8 +357,8 @@ function garden(p, def, ctx, out) {
   out.group.add(drape(v, O, p.x, p.y, p.w, p.h, 0x6f9550, 0.05));
   let k = 0;
   for (let x = p.x + 0.6; x < p.x + p.w - 0.3; x += 0.8) for (let y = p.y + 0.6; y < p.y + p.h - 0.3; y += 0.8) {
-    const b = shade(new THREE.Mesh(new THREE.IcosahedronGeometry(0.28, 0), mat([0x4e8a45, 0x8c6bb1, 0x5f9a4a, 0xc9a33b][k++ % 4])));
-    b.position.set(x - O.x, groundAt(v, x, y) + 0.25, y - O.y);
+    const b = shade(new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 7), mat([0x6d8a55, 0x8f8199, 0x7b9460, 0xb8a46a][k++ % 4])));
+    b.scale.y = 0.6; b.position.set(x - O.x, groundAt(v, x, y) + 0.14, y - O.y);
     out.group.add(b);
   }
   return groundAt(v, p.x + p.w / 2, p.y + p.h / 2) + 0.6;

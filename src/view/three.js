@@ -82,7 +82,7 @@ export function init3d(){
   const snow=new THREE.Points(snowG,new THREE.PointsMaterial({color:0xffffff,size:.18,transparent:true,opacity:.9}));snow.visible=false;snow.frustumCulled=false;scene.add(snow);
   const thG=new THREE.BufferGeometry();thG.setAttribute('position',new THREE.BufferAttribute(new Float32Array(60*6),3));thG.setAttribute('color',new THREE.BufferAttribute(new Float32Array(60*6),3));
   const threads=new THREE.LineSegments(thG,new THREE.LineBasicMaterial({vertexColors:true,depthTest:false,transparent:true,opacity:.85}));threads.renderOrder=25;threads.frustumCulled=false;scene.add(threads);
-  const leafM=leafMaterials(),cropMat=new THREE.MeshLambertMaterial({color:SEASON_CROP.colour[0]}),greenMat=new THREE.MeshLambertMaterial({color:0x9cc177});
+  const leafM=leafMaterials(),cropMat=new THREE.MeshLambertMaterial({color:SEASON_CROP.colour[0]}),greenMat=new THREE.MeshLambertMaterial({color:0x9fb07e});
   G={renderer,scene,camera,sun,hemi,stars,rain,rv,snow,threads,leafM,cropMat,greenMat,trunkM:mat(0x5a4130),agents:{},world:null,
      theta:-.35,phi:.92,radius:46,target:new THREE.Vector3(0,0,0),time:0,ray:new THREE.Raycaster(),seasonSeen:-1};
   G.ray.layers.enableAll();   // lettering lives on its own layer, and old names are tapped by their lettering
@@ -183,14 +183,17 @@ export function defR(){return 46*Math.pow(Math.max(1,1.5/(G.camera.aspect||1.5))
 export function size3d(){if(!G)return;const r=cv3.getBoundingClientRect();if(!r.width)return;G.renderer.setSize(r.width,r.height,false);G.camera.aspect=r.width/r.height;G.camera.updateProjectionMatrix();
   G.pxK=2/(G.camera.projectionMatrix.elements[5]*r.height);   // scale for one CSS pixel of lettering
   G.scene.traverse(o=>{if(o.isSprite&&o.userData.px)sizeLabel(o);});}
+// A cloaked figure turned on a lathe: broad at the hem, narrowing to the shoulders, no neck.
+const FIGURE=new THREE.LatheGeometry([[0,0],[.27,0],[.29,.1],[.25,.4],[.19,.62],[.13,.74],[.05,.8],[0,.81]].map(([x,y])=>new THREE.Vector2(x,y)),12);
 export function agentMesh(a){
   let m=G.agents[a.id];if(m)return m;
   const g=new THREE.Group();
-  const bodyM=new THREE.MeshLambertMaterial({color:new THREE.Color().setHSL(hueOf(a)/360,.55,.48),transparent:true});
-  const body=new THREE.Mesh(new THREE.CylinderGeometry(.24,.34,.8,10),bodyM);body.position.y=.4;body.castShadow=true;
-  const headM=new THREE.MeshLambertMaterial({color:0xf0d0ab,transparent:true});
-  const head=new THREE.Mesh(new THREE.SphereGeometry(.22,12,10),headM);head.position.y=1.02;head.castShadow=true;
-  const hat=new THREE.Mesh(new THREE.CylinderGeometry(.2,.26,.12,10),bodyM);hat.position.y=1.2;
+  // a person is a small dab of their family's colour, softened towards the paper, with a dot for a head (art bible, section 8)
+  const bodyM=new THREE.MeshLambertMaterial({color:new THREE.Color().setHSL(hueOf(a)/360,.42,.52),transparent:true});
+  const body=new THREE.Mesh(FIGURE,bodyM);body.castShadow=true;
+  const headM=new THREE.MeshLambertMaterial({color:0xe3c4a2,transparent:true});
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.15,10,8),headM);head.position.y=.9;head.castShadow=true;
+  const hat=new THREE.Object3D();
   body.userData.id=head.userData.id=a.id;
   const fig=new THREE.Group();fig.add(body,head,hat);g.add(fig);
   const ring=new THREE.Mesh(new THREE.TorusGeometry(.55,.06,6,24),new THREE.MeshBasicMaterial({color:0xe0a43a,depthTest:false,transparent:true}));ring.rotation.x=Math.PI/2;ring.position.y=.05;ring.renderOrder=26;ring.visible=false;g.add(ring);
@@ -206,7 +209,7 @@ export function applySeason(s){
   G.world.ground.colourise(s,S.foot,S.roads);G.world.footT=G.time;
   G.leafM.forEach((m,i)=>m.color.set(SEASON_LEAF[s][i]));
   G.cropMat.color.set(SEASON_CROP.colour[s]);
-  G.greenMat.color.set(s===3?0xe8edf0:s===2?0xa9b46c:0x9cc177);
+  G.greenMat.color.set(s===3?0xe8edf0:s===2?0xa9a876:0x9fb07e);
   for(const m of roofMats)m.color.copy(m.userData.base).lerp(new THREE.Color(0xf2f5f7),s===3?.65:0);
   const ch=SEASON_CROP.height[s];
   for(const id in G.world.places)for(const r of G.world.places[id].rows){r.scale.y=ch;r.position.y=r.userData.ground+.25*ch;}
@@ -238,7 +241,7 @@ export function draw3d(al,dt){
   const dk=darkness(h)+(storm?.18:0);
   let dusk=0;
   if(G.paint){const n=dusk=Math.max(clamp(dk/.55,0,1),day>0&&day<.35?(1-day/.35)*.55:0);   // painted dusk: the sky's light takes over from the low sun, so no black slabs of shadow
-    G.sun.intensity*=1-.8*n;G.hemi.intensity=Math.max(G.hemi.intensity,.45+.35*n);G.hemi.color.lerp(new THREE.Color(0xc9d2e6),n);}
+    G.sun.intensity*=1-.8*n;G.hemi.intensity=Math.max(G.hemi.intensity,.62+.18*n);/* more sky in the shade, so shade sides stay a light wash */G.hemi.color.lerp(new THREE.Color(0xc9d2e6),n);}
   G.stars.material.opacity=storm?0:clamp((dk-.25)*2.5,0,.9);G.stars.visible=!G.paint;G.stars.position.copy(T);
   // buildings: lit windows, smoke, the parts that come with ideas, turning wheels
   const awake={};for(const a of LIVE)if(a.arrived&&a.at&&P[a.at]&&P[a.at].indoor&&a.act.type!=='sleep')awake[a.at]=(awake[a.at]||0)+1;
@@ -279,7 +282,7 @@ export function draw3d(al,dt){
     m.fig.rotation.x=a.age>70?.18:0;
     const inside=a.arrived&&a.at&&P[a.at]&&P[a.at].indoor;
     for(const mt of m.mats){mt.depthTest=!inside;mt.opacity=inside?.72:1;}
-    m.body.renderOrder=m.head.renderOrder=m.hat.renderOrder=inside?15:0;
+    m.body.renderOrder=m.head.renderOrder=inside?15:0;
     m.ring.visible=a.id===V.sel;m.tag.visible=a.id===V.sel;
     if(a.glyph){m.glyph.material=glyphMat(a.glyph.c,a.glyph.k);m.glyph.visible=true;}else m.glyph.visible=false;
   }
