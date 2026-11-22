@@ -39,47 +39,74 @@ vec3 night(vec3 c){
   float lampLit = smoothstep(0.55, 0.8, L) * smoothstep(0.05, 0.2, c.r - c.b);   // a lit window: bright and warm
   return mix(n, vec3(0.96, 0.78, 0.45), lampLit);
 }
-void main(){
-  vec2 fc = gl_FragCoord.xy / dpr;                       // in CSS pixels, so grain looks the same on every screen
-  float raw = texture2D(tDep, vUv).x;
-  if(raw > 0.99999){                                     // the sky: bare paper with a thin wash towards the top
-    vec3 s = mix(paper, skyTop, smoothstep(0.25, 1.0, vUv.y) * (0.45 + 0.15*fbm(fc/220.)));
-    s = mix(s, s*vec3(0.72, 0.74, 0.78), storm*0.55);
-    s = mix(s, s*vec3(0.34, 0.38, 0.52), dusk);
-    s *= 0.95 + 0.05*fbm(fc/2.5);
-    gl_FragColor = vec4(s, 1.0); return;
-  }
-  vec2 uv = vUv + (vec2(fbm(fc/90.), fbm(fc/90. + 7.3)) - 0.5) * 4.0 * dpr / res;   // a wash's edge wanders a little
-#ifdef LITE
-  vec3 c = texture2D(tCol, uv).rgb;
-#else
-  float k = 2.0*dpr/res.x;
-  vec3 c = texture2D(tCol, uv).rgb*0.4 + (texture2D(tCol, uv+vec2(k,0.)).rgb + texture2D(tCol, uv-vec2(k,0.)).rgb
-         + texture2D(tCol, uv+vec2(0.,k)).rgb + texture2D(tCol, uv-vec2(0.,k)).rgb)*0.15;
-#endif
-  float dist = lin(uv);
-  if(dusk > 0.0) c = mix(c, night(c), dusk);
-  c = sat(c, 0.64);
+// The look of a value in the wash: the source colour moved onto the palette (night, saturation, warm light, cool
+// shade), before it becomes pigment.
+vec3 tone(vec3 c){
+  c = sat(c, 0.62);
   float gr = smoothstep(0.02, 0.15, c.g - max(c.r, c.b));                 // greens lean to sap and ochre, never acid
-  c = mix(c, c*vec3(1.06, 0.97, 0.88), gr*0.6);
+  c = mix(c, c*vec3(1.08, 0.97, 0.86), gr*0.75);
   float l = lum(c);
   c = mix(c, c*vec3(0.80, 0.84, 1.14), smoothstep(0.55, 0.12, l)*0.75);   // shade is a cool wash, never grey
-  c = max(c, vec3(0.13, 0.14, 0.2));
   c = mix(c, c*vec3(1.05, 1.01, 0.90), smoothstep(0.45, 0.80, l)*0.5);    // light leans warm
-  float band = floor(l*5.0 + fbm(fc/60.)*0.8)/5.0;                        // washes in a few values, not a gradient
-  c *= mix(1.0, (band + 0.1)/max(l, 0.05), 0.35);
-  c = mix(c, paper, 0.19 + 0.12*fbm(fc/140.) + smoothstep(0.5, 0.85, l)*0.25);   // the paper shows through, most in the light
-  vec3 far_ = mix(paper, skyTop, 0.25); if(dusk > 0.0) far_ = mix(far_, far_*vec3(0.34, 0.38, 0.52), dusk);
-  c = mix(c, far_, smoothstep(fadeNear, fadeFar, dist)*0.82);              // distance goes back to the paper
+  return max(c, vec3(0.1, 0.11, 0.16));
+}
+// Pigment, not light: how much of the paper's brightness a wash takes away, per channel. Colour brighter than the
+// paper carries no pigment at all, so highlights are bare paper.
+vec3 absorb(vec3 c){ return max(-log(max(c, vec3(0.02)) / paper), 0.0); }
+// Which wash a value falls in: three or four flat values per surface, their borders wandering as a brush would.
+float washOf(float a, vec2 fc){ return floor(a*3.4 + (fbm(fc/55.) - 0.5)*1.1); }
+void main(){
+  vec2 fc = gl_FragCoord.xy / dpr;                       // in CSS pixels, so grain looks the same on every screen
+  float tooth = fbm(fc/1.7 + 3.1);                       // the paper's surface: pigment settles in its hollows
+  float raw = texture2D(tDep, vUv).x;
+  if(raw > 0.99999){                                     // the sky: wet-in-wet, soft blooms of thin colour on paper
+    vec3 A = absorb(skyTop) * smoothstep(0.2, 1.0, vUv.y) * (0.35 + 0.8*fbm(fc/150. + vec2(0.0, fc.x/400.)));
+    A += absorb(vec3(0.62, 0.64, 0.68)) * storm * 0.6 * fbm(fc/90.);
+    vec3 s = paper * exp(-A);
+    s = mix(s, lum(s)*vec3(0.5, 0.56, 0.78) + vec3(0.03, 0.04, 0.08), dusk*0.6);
+    gl_FragColor = vec4(s, 1.0); return;
+  }
+  vec2 wob = (vec2(fbm(fc/90.), fbm(fc/90. + 7.3)) - 0.5) * 4.0 * dpr / res;   // a wash's edge wanders a little
+  vec2 uv = vUv + wob;
+  vec3 src = texture2D(tCol, uv).rgb, c = tone(src);
+  float lamp = smoothstep(0.62, 0.85, lum(src)) * smoothstep(0.08, 0.25, src.r - src.b) * dusk;   // a lit window
+  float dist = lin(uv);
+  vec3 A = absorb(c);
+  A = min(A * (1.0 - 0.38*dusk), vec3(1.7));             // even the darkest wash, and dusk, stay readable
+  float a = dot(A, vec3(0.3333)), w = washOf(a, fc);
+  A *= mix(1.0, ((w + 0.5)/3.4) / max(a, 0.03), 0.85) * 0.86;    // flat washes: each value laid as one flat coat
+  // pigment density: blotchy where it pooled and thinned, granular in the paper's hollows, heavier in the darks
+  float dens = 0.74 + 0.42*fbm(fc/46.) + 0.24*(fbm(fc/10.) - 0.5);
+  float laid = smoothstep(0.05, 0.6, a);
+  dens += (0.5 - tooth) * 0.6 * laid * (1.0 - 0.65*smoothstep(0.7, 1.5, a));   // granulation, easing off in the darkest washes
 #ifndef LITE
-  c *= 1.0 - 0.14*smoothstep(0.08, 0.25, colEdge(uv, 2.0*dpr));             // pigment gathers at a wash's edge
-  c *= 1.0 - 0.09*step(0.8, hash(floor(fc/1.5)))*(1.0 - l);                // granulation in the darks
+  // edge darkening: where this wash meets a lighter one, pigment has collected along its border
+  float o = 2.2*dpr, rim = 0.0;
+  for(int i = 0; i < 4; i++){
+    vec2 d = i == 0 ? vec2(o, 0.) : i == 1 ? vec2(-o, 0.) : i == 2 ? vec2(0., o) : vec2(0., -o);
+    float an = dot(absorb(tone(texture2D(tCol, uv + d/res).rgb)), vec3(0.3333));
+    rim = max(rim, step(washOf(an, fc + d/dpr) + 0.5, w));
+  }
+  dens += rim * 0.42;
 #endif
-  c *= 0.93 + 0.07*fbm(fc/2.5);                                            // grain
+  // the colour stops just short of the pen, leaving a sliver of paper beside the line
   float near_ = 1.0 - smoothstep(fadeNear*0.55, fadeNear*1.25, dist);
+  float line = depthEdge(vUv, 1.3*dpr);
+  float gap = depthEdge(vUv + vec2(1.8, -1.4)*dpr/res, 1.0*dpr) * (1.0 - line);
+  dens *= 1.0 - gap * 0.35 * near_;
+  // distance: less and less pigment, back to the paper
+  float fade = smoothstep(fadeNear, fadeFar, dist);
+  A = mix(A, absorb(mix(paper, skyTop, 0.3)) * 0.8, fade * 0.85);
+  c = paper * exp(-A * max(dens, 0.0));
+  if(dusk > 0.0) c = mix(c, c*vec3(0.92, 0.94, 1.0), dusk*fade);
+  c *= 1.0 - (1.0 - tooth) * 0.07 * laid * (1.0 - 0.6*smoothstep(0.7, 1.5, a));
+  c = mix(c, c*vec3(0.86, 0.9, 1.14), smoothstep(0.42, 0.12, lum(c))*0.55);   // the darkest shade stays a cool wash, not grey                                 // the grain shows in the pigment, not on bare paper
+  // dusk: a blue-grey glaze over the painting, never more than about half; lit windows are the only bright marks
+  c = mix(c, lum(c)*vec3(0.5, 0.56, 0.78) + vec3(0.03, 0.04, 0.08), dusk*0.45);
+  c = mix(c, vec3(0.93, 0.74, 0.4), lamp);
   float hand = 0.45 + 0.55*smoothstep(0.3, 0.7, fbm(fc/14.));            // the line breaks and changes weight
-  float pen = max(depthEdge(uv, 1.3*dpr), smoothstep(0.22, 0.4, colEdge(vUv, 1.0*dpr))*0.7*(1.0 - dusk)) * hand * near_;
-  c = mix(c, mix(ink, vec3(0.3, 0.32, 0.42), dusk), pen*0.72);
+  float pen = max(line, smoothstep(0.22, 0.4, colEdge(vUv, 1.0*dpr))*0.7*(1.0 - dusk)) * hand * near_;
+  c = mix(c, mix(ink, vec3(0.22, 0.24, 0.34), dusk), min(1.0, pen*1.05));
   gl_FragColor = vec4(c, 1.0);
 }`;
 
