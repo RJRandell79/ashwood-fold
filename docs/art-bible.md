@@ -155,6 +155,13 @@ Real Ribble valley building, as the 3D archetypes should draw it. Shape matters 
 
 People are small and few-stroked: a body as one dab in the family's colours, a head as a dot of the skin wash, no outline. Groups read as a cluster of colour. The player finds a person by tapping, not by seeing their face; the portrait in the panel does that job. Animals, where there are any, are a few strokes in `timber`, `paper` or `grit`.
 
+**People indoors** are not drawn through roofs; a painting can't see through walls. Decided 25 November 2026, the four together:
+
+1. **By default, the building shows it.** Someone awake inside means warm windows by day as well as at night, a door standing open with warm light behind it, and smoke when the hearth is lit. An empty building has dark windows and a shut door.
+2. **Close to, a tally.** When the camera is near, a row of small dots follows the building's name, one in each person's family colour for each person inside (eight at most). They drop out with the lettering.
+3. **Tapped, the roof lifts.** Tapping a building fades its roof to a faint outline, like a cutaway, and shows who is inside. The building card lists them by name, and tapping a name selects that person. It closes with the card. A selected person is always shown, indoors or not.
+4. **A gathering spills out of the door.** When a church, hall, alehouse or school has three or more people in it, or a workplace six or more, a few figures stand about outside its door in the colours of those inside.
+
 ## 9. Lettering and the estate map
 
 The white pill labels go. Names are lettered on the land in ink, as a surveyor or engraver would:

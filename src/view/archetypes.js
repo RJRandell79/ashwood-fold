@@ -148,7 +148,7 @@ function thatch(s, w, d, y, pitch, colour) {
   const alongX = w >= d, drop = 0.3, H = gable(s, w + 0.25, d + 0.75, y - drop, pitch * 0.95, colour, alongX);
   const under = new THREE.Color(colour).multiplyScalar(0.62).getHex();
   gable({ ...s, wear: 0 }, w + 0.2, d + 0.7, y - drop - 0.16, pitch * 0.95, under, alongX);   // the thickness of the eaves
-  const L = (alongX ? w : d) + 0.4, ridge = shade(new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, L, 8), mat(new THREE.Color(colour).multiplyScalar(0.85).getHex())));
+  const L = (alongX ? w : d) + 0.4, ridge = shade(new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, L, 8), roofMat(new THREE.Color(colour).multiplyScalar(0.85).getHex())));
   ridge.rotation.z = Math.PI / 2; if (!alongX) ridge.rotation.y = Math.PI / 2;
   ridge.position.y = y - drop + H - 0.05; s.frame.add(ridge);
   return H - drop;
@@ -165,9 +165,13 @@ function hipped(s, w, d, y, h, colour) {
   return h;
 }
 function door(s, d, x = 0, colour = 0x4a3326, w = 0.55, h = 0.95) {
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat(colour));
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshLambertMaterial({ color: colour }));
   m.position.set(x, h / 2, d / 2 + 0.02);
   s.frame.add(m);
+  if (building) {   // a door that can stand open, and where a crowd would gather
+    building.doors.push(m.material);
+    if (!building.doorSpot) building.doorSpot = { ...toWorld(s, x, 0, d / 2 + 0.9), out: toWorld(s, x, 0, d / 2 + 2) };
+  }
 }
 function windowRow(s, out, d, xs, y, size = 0.42, tall = 1) {
   for (const x of xs) { const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size * tall), out.windows); m.position.set(x, y, d / 2 + 0.02); s.frame.add(m); }
@@ -418,7 +422,7 @@ const BUILD = { house, long, workshop, sacred, civic, industrial, green, market,
 
 /** Builds the 3D form of one place. */
 export function buildPlace(p, def, ctx) {
-  const out = { group: new THREE.Group(), windows: new THREE.MeshBasicMaterial({ color: 0x2c3238 }), chimneys: [], wheels: [], tech: {}, rows: [], homeSpot: null, roofMats: [] };
+  const out = { group: new THREE.Group(), windows: new THREE.MeshBasicMaterial({ color: 0x2c3238 }), chimneys: [], wheels: [], tech: {}, rows: [], homeSpot: null, roofMats: [], doors: [], doorSpot: null };
   const fn = BUILD[def.archetype] || house;
   const styles = (AGES[p.age] || AGES[FIRST_AGE]).styles, style = styles[Math.max(0, Math.min(styles.length - 1, p.era || 0))];
   building = out;
