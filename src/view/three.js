@@ -15,7 +15,7 @@ import { armsSVG } from './portraits.js';
 import { groundAt, leafMaterials, makeGround, makeTrees } from './terrain.js';
 import { $, select } from './ui.js';
 import { V } from './vstate.js';
-import { hidePlace, refreshPlace, showPlace, showTrace } from './placecard.js';
+import { hidePlace, insideOf, refreshPlace, showPlace, shownPlace, showTrace } from './placecard.js';
 import { buildTraces, tracesKey, worksState } from './traces.js';
 import { LETTERING, makePaint, renderPlain } from './paint.js';
 
@@ -245,11 +245,17 @@ export function draw3d(al,dt){
   G.stars.material.opacity=storm?0:clamp((dk-.25)*2.5,0,.9);G.stars.visible=!G.paint;G.stars.position.copy(T);
   // buildings: lit windows, smoke, the parts that come with ideas, turning wheels
   const awake={};for(const a of LIVE)if(a.arrived&&a.at&&P[a.at]&&P[a.at].indoor&&a.act.type!=='sleep')awake[a.at]=(awake[a.at]||0)+1;
+  const open=shownPlace();
   const spin=dt*(V.speed?.8:0)*(S.spoil>0?.3:1);
   for(const id in W.places){
     const b=W.places[id];
     const still=b.key.endsWith('|shut')?'shut':b.key.endsWith('|idle')?'idle':'';
-    b.windows.color.set(still==='shut'?0x5b4a38:awake[id]&&dk>.12?0xffc764:awake[id]?0x6a6253:0x2c3238);
+    // someone home shows the way it does in a real village: warm windows, the door standing open (art bible, section 8)
+    b.windows.color.set(still==='shut'?0x5b4a38:awake[id]&&dk>.12?0xffc764:awake[id]?0xc9955a:0x2c3238);
+    for(const dm of b.doors)dm.emissive.setHex(awake[id]?(dk>.12?0xb07a34:0x5a3c1c):0);
+    const lift=id===open;   // the building whose card is open has its roof lifted, to look inside
+    if(b.lifted!==lift){b.lifted=lift;for(const rm of b.roofMats){rm.transparent=lift;rm.opacity=lift?.14:1;rm.depthWrite=!lift;rm.needsUpdate=true;}}
+    crowdAt(b,id,lift?0:awake[id]||0);
     for(const t in b.tech)for(const part of b.tech[t])part.visible=techBuilt(t);
     if(!still)for(const w of b.wheels)if(w.visible)w.rotation.z-=spin;
     for(const c of b.chimneys){
@@ -257,7 +263,8 @@ export function draw3d(al,dt){
       c.puffs.forEach((p,i)=>{p.visible=on&&!storm;if(!p.visible)return;const t=((G.time*.35+i/c.puffs.length)%1);p.position.set(c.x+t*(c.big?1.8:.9),c.y+t*(c.big?3.5:2.2),c.z+t*.3);p.scale.setScalar(.6+t*1.4);p.material.opacity=.55*(1-t);});
     }
   }
-  if(G.time-(G.bannerT||-9)>1){G.bannerT=G.time;updateBanners();}
+  if(G.time-(G.bannerT||-9)>1){G.bannerT=G.time;updateBanners();
+    if(open){const sig=insideOf(open).map(a=>a.id+(a.act.type==='sleep'?'z':'')).join();if(sig!==G.openSig){G.openSig=sig;refreshPlace();}}}
   for(const id in W.lines){
     const L=W.lines[id],back=id==='canal'||L.shuttle,t=(G.time*L.speed)%1,a=along(L.path,back?(t<.5?t*2:2-t*2):t);
     L.mover.position.set(a.x,a.y+(id==='canal'?.02:.12),a.z);L.mover.rotation.y=a.heading+(back&&t>=.5?Math.PI:0);
@@ -268,8 +275,9 @@ export function draw3d(al,dt){
   const sa=S.agents[V.sel];
   for(const id in G.agents){const a=S.agents[id];if(!a||a.dead){G.agents[id].g.visible=false;}}
   for(const a of LIVE){
-    const m=agentMesh(a),vis=visibleA(a)&&!G.hideAgents;m.g.visible=vis;if(!vis)continue;   // a scene may clear the lanes
-    const hu=hueOf(a);if(hu!==m.hue){m.hue=hu;m.mat.color.setHSL(hu/360,.55,.48);}
+    const indoors=a.arrived&&a.at&&P[a.at]&&P[a.at].indoor;
+    const m=agentMesh(a),vis=visibleA(a)&&!G.hideAgents&&(!indoors||a.at===open||a.id===V.sel);m.g.visible=vis;if(!vis)continue;   // a scene may clear the lanes; walls hide who is indoors
+    const hu=hueOf(a);if(hu!==m.hue){m.hue=hu;m.mat.color.setHSL(hu/360,.42,.52);}
     const sc=a.age<4?.45:a.age<14?.5+a.age*.035:a.age>70?.94:1;m.fig.scale.setScalar(sc);
     m.glyph.position.y=1.85*sc+.2;m.tag.position.y=2.45*sc+.2;
     const x=a.px+(a.x-a.px)*al,y=a.py+(a.y-a.py)*al;
@@ -306,10 +314,47 @@ export function draw3d(al,dt){
   const c=G.camera,sp=Math.sin(G.phi);
   c.position.set(T.x+G.radius*sp*Math.sin(G.theta),T.y+G.radius*Math.cos(G.phi),T.z+G.radius*sp*Math.cos(G.theta));
   c.lookAt(T);
-  declutter(c);
+  declutter(c);tallies(c);
   if(G.paint){const fog=G.paint.paper.clone().lerp(new THREE.Color(0xbccfdb),.25);G.scene.fog.color.copy(fog);
     G.paint.render(G.scene,c,{dusk,storm:storm?1:0,radius:G.radius});}
   else renderPlain(G.renderer,G.scene,c);
+}
+// A busy public building shows it from outside: a few figures standing about its door (art bible, section 8).
+const CROWD_MAX=4,SOCIAL=/chapel|church|hall|tavern|school/;
+function crowdAt(b,id,n){
+  const p=P[id],at=p&&SOCIAL.test(p.def)?3:6,want=b.doorSpot&&p&&!p.home&&n>=at?Math.min(CROWD_MAX,n-at+2):0;   // a gathering at church or the alehouse; a full workshop
+  if(!want){if(b.crowd)b.crowd.visible=false;return;}
+  if(!b.crowd){b.crowd=new THREE.Group();b.crowd.figs=[];
+    for(let k=0;k<CROWD_MAX;k++){const f=new THREE.Group(),mt=new THREE.MeshLambertMaterial({color:0x888888});
+      const body=new THREE.Mesh(FIGURE,mt),head=new THREE.Mesh(new THREE.SphereGeometry(.15,10,8),mat(0xe3c4a2));head.position.y=.9;f.add(body,head);
+      const a=(k/CROWD_MAX-.5)*1.6+(k%2?.25:-.25),r=.5+(k%3)*.35,d=b.doorSpot,o=d.out;
+      f.position.set(d.x+(o.x-d.x)*r+Math.cos(a)*.7*(k%2?1:-1)*k*.4,0,d.z+(o.z-d.z)*r+Math.sin(a)*.5);
+      f.position.y=Math.max(groundAt(G.world.v,f.position.x+G.world.O.x,f.position.z+G.world.O.y),-.1);
+      f.rotation.y=Math.atan2(d.x-f.position.x,d.z-f.position.z);f.mt=mt;b.crowd.add(f);b.crowd.figs.push(f);}
+    G.scene.add(b.crowd);}
+  const folk=insideOf(id);b.crowd.visible=true;
+  b.crowd.figs.forEach((f,k)=>{f.visible=k<want;if(f.visible&&folk[k])f.mt.color.setHSL(hueOf(folk[k])/360,.42,.52);});
+}
+// Close to, a row of small dots after a building's name, one in each person's family colour for each person inside.
+function tallyFor(cols){
+  const n=cols.length,r=13,sp=30,c=document.createElement('canvas'),x=c.getContext('2d');c.width=sp*n+8;c.height=34;
+  cols.forEach((h,k)=>{x.beginPath();x.arc(4+sp*k+sp/2,17,r,0,Math.PI*2);x.fillStyle=`hsl(${h},42%,52%)`;x.fill();x.lineWidth=2.5;x.strokeStyle='rgba(69,54,42,.75)';x.stroke();});
+  const t=new THREE.CanvasTexture(c);t.minFilter=THREE.LinearFilter;
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true,sizeAttenuation:false,fog:false}));
+  s.layers.set(LETTERING);s.renderOrder=30;s.userData.px=8;s.userData.aspect=c.width/c.height;return s;
+}
+function tallies(){
+  const W=G.world;if(!W)return;const near=G.radius<46,open=shownPlace();
+  const by={};if(near)for(const a of LIVE)if(a.arrived&&a.at&&P[a.at]&&P[a.at].indoor)(by[a.at]||(by[a.at]=[])).push(a);
+  for(const id in W.places){const b=W.places[id],folk=by[id];
+    const show=near&&b.label&&b.label.visible&&folk&&folk.length&&id!==open;
+    if(!show){if(b.tally)b.tally.visible=false;continue;}
+    const cols=folk.slice(0,8).map(hueOf),sig=cols.join();
+    if(!b.tally||b.tally.sig!==sig){if(b.tally){b.label.remove(b.tally);b.tally.material.map.dispose();b.tally.material.dispose();}
+      b.tally=tallyFor(cols);b.tally.sig=sig;b.label.add(b.tally);}
+    const L=b.label.userData,T=b.tally.userData;   // after the name, centred on its letters
+    b.tally.center.set(-(L.px*L.aspect/2+3)/(T.px*T.aspect),-(L.px*.5-T.px*.5)/T.px);
+    sizeLabel(b.tally);b.tally.scale.divide(b.label.scale);b.tally.visible=true;}
 }
 // Lettering never collides (docs/art-bible.md, section 9): names are placed in order of importance and one that
 // would overlap a name already placed, or run off the frame, waits until there is room.

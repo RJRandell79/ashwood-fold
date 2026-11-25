@@ -5,7 +5,7 @@ import { BUILDINGS } from '../data/buildings.js';
 import { familyPlural } from '../sim/heraldry.js';
 import { wears } from '../sim/placement.js';
 import { FIRST_AGE } from '../data/ages.js';
-import { calYear, P } from '../sim/state.js';
+import { calYear, LIVE, P } from '../sim/state.js';
 import { placeTraceLines, traceCard } from './traces.js';
 
 const $ = id => document.getElementById(id);
@@ -35,8 +35,19 @@ export function showPlace(id) {
   const p = P[id], box = $('placeCard');
   if (!p || !box) return;
   shown = id;
-  box.innerHTML = `<button class="pcclose" type="button" aria-label="Close">×</button><h3>${esc(cap(p.name))}</h3>${placeLines(p).map(l => `<p>${l}</p>`).join('')}`;
+  box.innerHTML = `<button class="pcclose" type="button" aria-label="Close">×</button><h3>${esc(cap(p.name))}</h3>${placeLines(p).map(l => `<p>${l}</p>`).join('')}${insideLine(p)}`;
   box.hidden = false;
+}
+/** Who is in a building now, each name tappable. */
+export function insideOf(id) { const p = P[id]; return p && p.indoor ? LIVE.filter(a => a.arrived && a.at === id) : []; }
+function insideLine(p) {
+  const folk = insideOf(p.id);
+  if (!p.indoor) return '';
+  if (!folk.length) return '<p class="inside">No one is in.</p>';
+  const asleep = folk.every(a => a.act.type === 'sleep');
+  const names = folk.slice(0, 10).map(a => `<span class="who" data-id="${a.id}">${esc(a.first)}</span>`);
+  const list = folk.length > 10 ? `${names.join(', ')}, and ${folk.length - 10} more` : names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0];
+  return `<p class="inside">${asleep ? 'Asleep inside' : 'Inside now'}: ${list}.</p>`;
 }
 /** The card for a trace on the land: pegs where an idea was given up, or an old family's name. */
 export function showTrace(tr) {
@@ -46,6 +57,8 @@ export function showTrace(tr) {
   box.innerHTML = `<button class="pcclose" type="button" aria-label="Close">×</button><h3>${esc(c.title)}</h3>${c.lines.map(l => `<p>${l}</p>`).join('')}`;
   box.hidden = false;
 }
+/** The building whose card is open, if any (its roof is lifted to show who is inside). */
+export function shownPlace() { return shown; }
 export function hidePlace() { const box = $('placeCard'); if (box) box.hidden = true; shown = null; }
 /** Keeps an open card current as the village changes (rebuilt, worn, fallen to ruin). */
 export function refreshPlace() { if (shown) { if (P[shown]) showPlace(shown); else hidePlace(); } }
